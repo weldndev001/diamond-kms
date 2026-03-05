@@ -60,6 +60,8 @@ const getNavLinks = (role?: string) => {
             { label: 'AI Usage', href: '/dashboard/hrd/ai-usage' },
             { label: 'AI Settings', href: '/dashboard/hrd/ai-settings' },
             { label: 'Settings', href: '/dashboard/hrd/settings' },
+            // Dipisah (di sidebar root level) sesuai feedback QC
+            { label: 'Maintenance', href: '/dashboard/maintenance' },
         ]
     }
 
