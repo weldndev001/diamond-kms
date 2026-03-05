@@ -9,7 +9,7 @@ import EditUserModal from '@/components/users/EditUserModal'
 import { Search, Plus } from 'lucide-react'
 
 export default function UsersPage() {
-    const { organization } = useCurrentUser()
+    const { organization, role } = useCurrentUser()
     const [users, setUsers] = useState<any[]>([])
     const [divisions, setDivisions] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -40,7 +40,7 @@ export default function UsersPage() {
     )
 
     return (
-        <RoleGuard allowedRoles={['SUPER_ADMIN']}>
+        <RoleGuard allowedRoles={['SUPER_ADMIN', 'GROUP_ADMIN']}>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold font-display text-navy-900">User Management</h1>
@@ -122,6 +122,7 @@ export default function UsersPage() {
                     isOpen={isInviteOpen}
                     onClose={() => setIsInviteOpen(false)}
                     divisions={divisions}
+                    creatorRole={role}
                 />
 
                 <EditUserModal

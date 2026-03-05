@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { RoleGuard } from '@/components/shared/RoleGuard'
 
 export default function ApprovalsPage() {
-    const { organization, user } = useCurrentUser()
+    const { organization, user, role, division } = useCurrentUser()
     const [queues, setQueues] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -21,7 +21,9 @@ export default function ApprovalsPage() {
 
     const loadData = async () => {
         if (!organization?.id) return
-        const res = await getApprovalQueueAction(organization.id)
+        // GROUP_ADMIN (Kadiv) hanya lihat approval divisi sendiri
+        const divFilter = role === 'GROUP_ADMIN' ? division?.id : undefined
+        const res = await getApprovalQueueAction(organization.id, divFilter)
         if (res.success) {
             setQueues(res.data || [])
         }
@@ -30,7 +32,7 @@ export default function ApprovalsPage() {
 
     useEffect(() => {
         loadData()
-    }, [organization?.id])
+    }, [organization?.id, division?.id])
 
     const handleApprove = async (id: string) => {
         if (!user || !confirm('Approve and publish this article?')) return
@@ -72,7 +74,7 @@ export default function ApprovalsPage() {
     )
 
     return (
-        <RoleGuard allowedRoles={['SUPER_ADMIN', 'GROUP_ADMIN', 'SUPERVISOR']}>
+        <RoleGuard allowedRoles={['SUPER_ADMIN', 'GROUP_ADMIN']}>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold font-display text-navy-900 flex items-center gap-2">

@@ -18,6 +18,7 @@ interface Citation {
     pageEnd: number
     divisionName: string
     chunkContent: string
+    sourceType?: 'DOCUMENT' | 'ARTICLE'
 }
 
 interface ChatSessionItem {
@@ -464,27 +465,35 @@ export default function AIAssistantPage() {
                                 Sumber Referensi
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                {citations.slice(0, 6).map((c, i) => (
-                                    <a
-                                        key={i}
-                                        href={`/dashboard/documents/${c.documentId}`}
-                                        className="block bg-surface-50 border border-surface-200 rounded-lg p-3 hover:border-navy-300 hover:bg-navy-50 transition text-xs"
-                                    >
-                                        <div className="flex items-start gap-2">
-                                            <FileText size={14} className="text-navy-500 mt-0.5 flex-shrink-0" />
-                                            <div className="min-w-0">
-                                                <p className="font-semibold text-navy-900 truncate">
-                                                    {c.documentTitle}
-                                                </p>
-                                                <p className="text-text-400 mt-0.5">
-                                                    Hal. {c.pageStart}
-                                                    {c.pageEnd !== c.pageStart ? `-${c.pageEnd}` : ''} •{' '}
-                                                    {c.divisionName}
-                                                </p>
+                                {citations.slice(0, 6).map((c, i) => {
+                                    const isArticle = c.sourceType === 'ARTICLE'
+                                    const href = isArticle
+                                        ? `/dashboard/contents/${c.documentId}`
+                                        : `/dashboard/documents/${c.documentId}`
+                                    return (
+                                        <a
+                                            key={i}
+                                            href={href}
+                                            className="block bg-surface-50 border border-surface-200 rounded-lg p-3 hover:border-navy-300 hover:bg-navy-50 transition text-xs"
+                                        >
+                                            <div className="flex items-start gap-2">
+                                                <FileText size={14} className="text-navy-500 mt-0.5 flex-shrink-0" />
+                                                <div className="min-w-0">
+                                                    <p className="font-semibold text-navy-900 truncate">
+                                                        {c.documentTitle}
+                                                    </p>
+                                                    <p className="text-text-400 mt-0.5">
+                                                        {isArticle ? `Bagian ${c.pageStart}` : `Hal. ${c.pageStart}${c.pageEnd !== c.pageStart ? `-${c.pageEnd}` : ''}`}
+                                                        {' '}&bull;{' '}{c.divisionName}
+                                                    </p>
+                                                    <span className={`inline-block mt-1 px-1.5 py-0.5 text-[10px] font-semibold rounded ${isArticle ? 'bg-amber-100 text-amber-700' : 'bg-navy-100 text-navy-700'}`}>
+                                                        {isArticle ? 'Konten' : 'Dokumen'}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </a>
-                                ))}
+                                        </a>
+                                    )
+                                })}
                             </div>
                         </div>
                     )}

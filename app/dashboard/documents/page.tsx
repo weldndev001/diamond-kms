@@ -26,23 +26,23 @@ export default function DocumentsPage() {
     const [divisions, setDivisions] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
-    const isStaff = role === 'STAFF'
+    const isAdmin = role === 'SUPER_ADMIN' || role === 'MAINTAINER'
     const [filterDiv, setFilterDiv] = useState('')
     const [initialized, setInitialized] = useState(false)
 
-    // Auto-set division filter for STAFF role
+    // Auto-set division filter for non-admin roles (STAFF, SUPERVISOR, GROUP_ADMIN)
     useEffect(() => {
         if (!initialized && division?.id) {
-            if (isStaff) {
+            if (!isAdmin) {
                 setFilterDiv(division.id)
             }
             setInitialized(true)
         }
-    }, [division?.id, isStaff, initialized])
+    }, [division?.id, isAdmin, initialized])
 
     const loadData = async () => {
         if (!organization?.id) return
-        const effectiveDiv = isStaff ? (division?.id || filterDiv) : (filterDiv || undefined)
+        const effectiveDiv = !isAdmin ? (division?.id || filterDiv) : (filterDiv || undefined)
         const [docsRes, divsRes] = await Promise.all([
             getDocumentsAction(organization.id, effectiveDiv),
             getDivisionsAction(organization.id)
@@ -105,7 +105,7 @@ export default function DocumentsPage() {
                             className="input-field pl-10"
                         />
                     </div>
-                    {!isStaff && (
+                    {isAdmin && (
                         <div className="flex items-center gap-3">
                             <Filter size={16} className="text-text-300" />
                             <select

@@ -17,6 +17,7 @@ export interface Citation {
     pageEnd: number
     divisionName: string
     chunkContent: string // snippet for preview
+    sourceType: 'DOCUMENT' | 'ARTICLE'
 }
 
 export interface RAGQueryParams {
@@ -189,6 +190,7 @@ Aturan:
         pageEnd: c.page_end,
         divisionName: c.division_name,
         chunkContent: c.content.slice(0, 150),
+        sourceType: c.source_type as 'DOCUMENT' | 'ARTICLE',
     }))
 
     return citations

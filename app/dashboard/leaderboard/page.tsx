@@ -47,7 +47,7 @@ export default function LeaderboardPage() {
                         Gamification & Rewards
                     </div>
                     <h1 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">
-                        {isStaff ? 'Division Leaderboard' : 'Organization Leaderboard'}
+                        {isStaff ? 'Pemahaman Pegawai Divisi' : 'Pemahaman Pegawai Organisasi'}
                     </h1>
                     <p className="text-blue-100 text-lg leading-relaxed opacity-90">
                         Compete with your peers by completing mandatory readings and scoring high on quizzes to showcase your expertise. Top learners shape the future of our knowledge base!

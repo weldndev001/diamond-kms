@@ -8,11 +8,13 @@ import { X, UserPlus, Eye, EyeOff, Loader2 } from 'lucide-react'
 export default function InviteUserModal({
     isOpen,
     onClose,
-    divisions
+    divisions,
+    creatorRole
 }: {
     isOpen: boolean
     onClose: () => void
     divisions: any[]
+    creatorRole?: string
 }) {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -66,8 +68,8 @@ export default function InviteUserModal({
                 <div className="p-6">
                     {status.msg && (
                         <div className={`p-3 rounded-lg mb-4 text-sm font-medium ${status.type === 'error' ? 'bg-red-50 text-red-600 border border-red-100'
-                                : status.type === 'success' ? 'bg-green-50 text-green-600 border border-green-100'
-                                    : 'bg-blue-50 text-blue-600 border border-blue-100'
+                            : status.type === 'success' ? 'bg-green-50 text-green-600 border border-green-100'
+                                : 'bg-blue-50 text-blue-600 border border-blue-100'
                             }`}>
                             {status.msg}
                         </div>
@@ -141,8 +143,14 @@ export default function InviteUserModal({
                                 >
                                     <option value="STAFF">Staff</option>
                                     <option value="SUPERVISOR">Supervisor</option>
-                                    <option value="GROUP_ADMIN">Group Admin (KaDiv)</option>
-                                    <option value="SUPER_ADMIN">Super Admin (HRD)</option>
+                                    {/* Kadiv (GROUP_ADMIN) hanya bisa buat Staff & Supervisor */}
+                                    {creatorRole !== 'GROUP_ADMIN' && (
+                                        <option value="GROUP_ADMIN">Group Admin (KaDiv)</option>
+                                    )}
+                                    {/* Hanya MAINTAINER yang bisa buat SUPER_ADMIN */}
+                                    {creatorRole === 'MAINTAINER' && (
+                                        <option value="SUPER_ADMIN">Super Admin (HRD)</option>
+                                    )}
                                 </select>
                             </div>
 

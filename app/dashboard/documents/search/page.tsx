@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { searchDocumentsAction } from '@/lib/actions/document.actions'
-import { Search, Bot, FileText, Hash, ArrowRight, Sparkles } from 'lucide-react'
+import { Search, Bot, FileText, Hash, ArrowRight, Sparkles, Tag, HardDrive } from 'lucide-react'
 import Link from 'next/link'
 
 export default function DocumentSearchPage() {
@@ -120,8 +120,20 @@ export default function DocumentSearchPage() {
                                             </Link>
                                             <div className="flex items-center gap-2 mt-1 text-xs text-text-500">
                                                 <span>{doc.file_name}</span>
-                                                <span>•</span>
+                                                <span>&bull;</span>
                                                 <span>{doc.division?.name || 'General'}</span>
+                                                {doc.file_size && (
+                                                    <>
+                                                        <span>&bull;</span>
+                                                        <span className="flex items-center gap-0.5">
+                                                            <HardDrive size={10} />
+                                                            {doc.file_size >= 1048576
+                                                                ? `${(doc.file_size / 1048576).toFixed(1)} MB`
+                                                                : `${Math.round(doc.file_size / 1024)} KB`
+                                                            }
+                                                        </span>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -129,6 +141,25 @@ export default function DocumentSearchPage() {
                                         Open <ArrowRight size={14} />
                                     </Link>
                                 </div>
+
+                                {/* AI Summary */}
+                                {doc.ai_summary && (
+                                    <p className="text-sm text-text-600 leading-relaxed mb-3 line-clamp-2">
+                                        {doc.ai_summary}
+                                    </p>
+                                )}
+
+                                {/* AI Tags */}
+                                {doc.ai_tags && doc.ai_tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 mb-3">
+                                        {(Array.isArray(doc.ai_tags) ? doc.ai_tags : []).slice(0, 6).map((tag: string, idx: number) => (
+                                            <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 bg-navy-50 text-navy-700 text-[11px] font-medium rounded-full border border-navy-200">
+                                                <Tag size={10} />
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
 
                                 {/* Matching chunks */}
                                 {doc.chunks?.length > 0 && (
@@ -143,7 +174,7 @@ export default function DocumentSearchPage() {
                                                     dangerouslySetInnerHTML={{ __html: highlightMatch(chunk.content, query) }}
                                                 />
                                                 {chunk.page_number && (
-                                                    <span className="text-[10px] text-text-300 mt-1 block">Page {chunk.page_number} • Chunk #{chunk.chunk_index + 1}</span>
+                                                    <span className="text-[10px] text-text-300 mt-1 block">Page {chunk.page_number} &bull; Chunk #{chunk.chunk_index + 1}</span>
                                                 )}
                                             </div>
                                         ))}

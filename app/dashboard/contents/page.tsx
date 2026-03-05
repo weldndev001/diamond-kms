@@ -15,8 +15,9 @@ export default function ContentsPage() {
 
     const loadData = async () => {
         if (!organization?.id) return
-        // Staff only sees their own division's content
-        const divFilter = isStaff ? division?.id : undefined
+        // Non-admin roles (STAFF, SUPERVISOR, GROUP_ADMIN) only see their own division's content
+        const isAdmin = role === 'SUPER_ADMIN' || role === 'MAINTAINER'
+        const divFilter = !isAdmin ? division?.id : undefined
         const res = await getContentsAction(organization.id, divFilter)
         if (res.success) {
             setContents(res.data || [])

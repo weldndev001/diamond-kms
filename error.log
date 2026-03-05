@@ -1,1 +1,0 @@
-﻿app/api/chat/entity/route.ts(103,21): error TS2353: Object literal may only specify known properties, and 'document_id' does not exist in type 'Without<ChatSessionCreateInput, ChatSessionUncheckedCreateInput> & ChatSessionUncheckedCreateInput'.

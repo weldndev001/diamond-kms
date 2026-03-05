@@ -17,7 +17,7 @@ const getIconForLabel = (label: string) => {
         case 'Documents': return <FileText size={16} />
         case 'Knowledge Base': return <Tags size={16} />
         case 'Quizzes': return <FileQuestion size={16} />
-        case 'Leaderboard': return <Award size={16} />
+        case 'Pemahaman Pegawai': return <Award size={16} />
         case 'FAQs / Help': return <Bot size={16} />
         case 'AI Assistant': return <Sparkles size={16} />
         case 'Maintenance': return <Wrench size={16} />
@@ -44,7 +44,7 @@ const getNavLinks = (role?: string) => {
         { label: 'Knowledge Base', href: '/dashboard/contents' },
         { label: 'AI Assistant', href: '/dashboard/ai-assistant' },
         { label: 'Quizzes', href: '/dashboard/quizzes' },
-        { label: 'Leaderboard', href: '/dashboard/leaderboard' },
+        { label: 'Pemahaman Pegawai', href: '/dashboard/leaderboard' },
         { label: 'FAQs / Help', href: '/dashboard/faqs' }
     ]
 
@@ -59,15 +59,23 @@ const getNavLinks = (role?: string) => {
             { label: 'Billing', href: '/dashboard/hrd/billing' },
             { label: 'AI Usage', href: '/dashboard/hrd/ai-usage' },
             { label: 'AI Settings', href: '/dashboard/hrd/ai-settings' },
-            { label: 'Maintenance', href: '/dashboard/hrd/maintenance' },
             { label: 'Settings', href: '/dashboard/hrd/settings' },
         ]
     }
 
-    if (role === 'GROUP_ADMIN' || role === 'SUPERVISOR') {
+    if (role === 'GROUP_ADMIN') {
         return [
             ...base,
             { label: 'Approvals', href: '/dashboard/approvals' },
+            { label: 'Read Trackers', href: '/dashboard/trackers' },
+            { label: 'Suggestions', href: '/dashboard/suggestions' },
+            { label: 'Users', href: '/dashboard/hrd/users' },
+        ]
+    }
+
+    if (role === 'SUPERVISOR') {
+        return [
+            ...base,
             { label: 'Read Trackers', href: '/dashboard/trackers' },
             { label: 'Suggestions', href: '/dashboard/suggestions' },
         ]
@@ -80,6 +88,7 @@ const getNavLinks = (role?: string) => {
             { label: 'Feature Flags', href: '/dashboard/maintainer/feature-flags' },
             { label: 'AI Providers', href: '/dashboard/maintainer/ai-providers' },
             { label: 'Logs', href: '/dashboard/maintainer/logs' },
+            { label: 'Maintenance', href: '/dashboard/maintenance' },
         ]
     }
 
@@ -119,6 +128,11 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
                     <div className="text-[11px] text-navy-400 mt-1 font-medium tracking-wide">
                         KNOWLEDGE MANAGEMENT
                     </div>
+                    {organization?.name && (
+                        <div className="text-[11px] text-navy-300 mt-2 font-medium truncate border-t border-white/10 pt-2">
+                            {organization.name}
+                        </div>
+                    )}
                 </div>
 
                 {/* Navigation Links */}
