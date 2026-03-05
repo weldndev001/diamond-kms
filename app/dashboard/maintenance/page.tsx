@@ -1,10 +1,26 @@
 'use client'
 
-// Maintenance page accessible at /dashboard/maintenance
-// Redirecting via router was slow; rendering the component directly is much faster.
-import MaintenanceContent from '@/app/dashboard/hrd/maintenance/page'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
 
 export default function MaintenanceSeparatePage() {
-    // MaintenanceContent already has its own RoleGuard for SUPER_ADMIN and MAINTAINER
-    return <MaintenanceContent />
+    const { role, isLoading } = useCurrentUser()
+    const router = useRouter()
+
+    useEffect(() => {
+        if (!isLoading) {
+            if (role === 'MAINTAINER' || role === 'SUPER_ADMIN') {
+                router.replace('/dashboard/hrd/maintenance')
+            } else {
+                router.replace('/dashboard')
+            }
+        }
+    }, [role, isLoading, router])
+
+    return (
+        <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-4 border-navy-200 border-t-navy-600 rounded-full animate-spin" />
+        </div>
+    )
 }
