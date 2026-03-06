@@ -1,36 +1,119 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DIAMOND Knowledge Management System (KMS)
 
-## Getting Started
+Welcome to **DIAMOND KMS**, a modern and comprehensive Knowledge Management System equipped with Artificial Intelligence (AI) to empower learning, knowledge sharing, and enterprise information management.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Knowledge Base & Content Management**
+  - Create, view, and organize documents and contents.
+  - Rich-text editing powered by [Tiptap](https://tiptap.dev/).
+  - Feature-complete management for internal knowledge and standard operating procedures (SOPs).
+  
+- **AI-Powered Capabilities**
+  - **AI Assistant:** Ask questions about company knowledge, extract insights, and summarize documents.
+  - Intelligent Semantic Search to locate information using natural language.
+  - Integrated with large language models including OpenAI and Google Generative AI (Gemini).
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Employee Engagement & Training**
+  - **Quizzes:** Assess employee comprehension (Pemahaman Pegawai).
+  - **Read Trackers:** Monitor document reading compliance.
+  - **Leaderboard:** Gamify the learning experience.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Enterprise Workflows**
+  - Advanced multi-role access control (Super Admin, Group Admin, Supervisor, Maintainer).
+  - Document and Content Approvals pipeline.
+  - User and Division management tailored for Human Resources (HRD).
+  - Suggestion box for employees to contribute ideas.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🛠 Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+Our application is built using the latest web technologies to ensure scalability, performance, and an exceptional user experience:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Framework:** [Next.js 14](https://nextjs.org/) (App Router format)
+- **Language:** TypeScript
+- **Database ORM:** [Prisma](https://www.prisma.io/)
+- **Database & Auth Provider:** [Supabase](https://supabase.com/) (PostgreSQL)
+- **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
+- **UI Components:** [Radix UI](https://www.radix-ui.com/) & [shadcn/ui](https://ui.shadcn.com/)
+- **State Management:** [Zustand](https://zustand-demo.pmnd.rs/)
+- **Form Handling & Validation:** React Hook Form + Zod
+- **AI SDK:** Custom integrations using `@google/generative-ai` and `openai`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 📦 Getting Started
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Prerequisites
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Node.js (v18 or higher recommended)
+- npm, yarn, pnpm, or bun
+- A PostgeSQL Database (preferably hosted on Supabase)
+
+### Setup Instructions
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd diamond-kms
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables:**
+   Create a `.env` file at the root of your project based on `.env.example`. You will need variables for:
+   - Database connection (`DATABASE_URL`, `DIRECT_URL`)
+   - Supabase project credentials
+   - Applicable AI API Keys (OpenAI, Gemini)
+
+4. **Initialize Database:**
+   Generate the Prisma client and run migrations (if any):
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   # Optional: run seeders if available
+   # npm run seed
+   ```
+
+5. **Start the Development Server:**
+   ```bash
+   npm run dev
+   ```
+   The application specifies port `7000`. Navigate to [http://localhost:7000](http://localhost:7000) in your browser.
+
+---
+
+## 📜 Development Scripts
+
+- `npm run dev`: Starts the Next.js development server on port 7000.
+- `npm run build`: Compiles the application for production deployment.
+- `npm run start`: Runs the production server on port 7000.
+- `npm run lint`: Runs ESLint to find and fix styling/syntax issues.
+- `npm run postinstall`: Automatically generates the Prisma client.
+
+---
+
+## 🔒 Security & Access
+
+Authentication is securely managed through Supabase Auth, combined with robust role-based routing natively integrated into the Next.js App Router (Middleware checks).
+
+### Defined System Roles:
+- **SUPER_ADMIN**: Full system access, configuration, and HR/Billing management.
+- **MAINTAINER**: Access to system overviews, error logs, and AI service provider configurations.
+- **GROUP_ADMIN**: Can manage users, track document readings, and oversee approvals inside a group.
+- **SUPERVISOR**: Can monitor team progress and reading trackers.
+- *(Standard Users)*: Access to knowledge bases, quizzes, and the AI Assistant.
+
+---
+
+## 💎 Design Guidelines
+
+Always maintain consistency with the defined design rules and spacing defined in `tailwind.config` / `postcss-variables`, ensuring a premium and modern UI utilizing subtle borders, glassmorphic touches, and smooth transitions.
+
+---
+
+For internal development support, reach out to the engineering team.
