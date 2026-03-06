@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { RoleGuard } from '@/components/shared/RoleGuard'
 import { getUsersAction, getDivisionsAction } from '@/lib/actions/user.actions'
-import EditUserModal from '@/components/users/EditUserModal'
 import { Search, Plus, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 
@@ -14,14 +13,13 @@ export default function UsersPage() {
     const [divisions, setDivisions] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
-    const [editingUser, setEditingUser] = useState<any>(null)
     const [searchTerm, setSearchTerm] = useState('')
 
     useEffect(() => {
         if (organization?.id) {
             loadData()
         }
-    }, [organization?.id, editingUser]) // reload when modal close
+    }, [organization?.id])
 
     const loadData = async () => {
         if (!organization?.id) return
@@ -105,12 +103,12 @@ export default function UsersPage() {
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            <button
-                                                onClick={() => setEditingUser(u)}
+                                            <Link
+                                                href={`/dashboard/hrd/users/${u.id}/edit`}
                                                 className="text-navy-600 hover:text-navy-700 hover:underline text-sm font-medium transition-colors"
                                             >
                                                 Edit
-                                            </button>
+                                            </Link>
                                         </td>
                                     </tr>
                                 ))
@@ -118,13 +116,6 @@ export default function UsersPage() {
                         </tbody>
                     </table>
                 </div>
-
-                <EditUserModal
-                    isOpen={!!editingUser}
-                    onClose={() => setEditingUser(null)}
-                    user={editingUser}
-                    divisions={divisions}
-                />
             </div>
         </RoleGuard>
     )

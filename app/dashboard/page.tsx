@@ -7,6 +7,7 @@ import {
     TrendingUp, BookOpen, BarChart3
 } from 'lucide-react'
 import Link from 'next/link'
+import SmartSearch from '@/components/search/SmartSearch'
 
 interface DashboardStats {
     totalDocuments: number
@@ -181,6 +182,11 @@ export default function DashboardPage() {
                         </div>
                     </Link>
                 )}
+            </div>
+
+            {/* Smart Search */}
+            <div className="mb-4">
+                <SmartSearch />
             </div>
 
             {/* Quick Actions */}

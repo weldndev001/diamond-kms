@@ -14,8 +14,8 @@ export interface HybridSearchResult {
     excerpt: string
     score: number // 0-1, combined rank
     source: 'semantic' | 'fulltext' | 'both'
-    pageStart?: number
-    pageEnd?: number
+    pageStart?: number | null
+    pageEnd?: number | null
     divisionName?: string
 }
 
@@ -69,37 +69,88 @@ async function fullTextSearch(params: {
         userRole === 'STAFF' ||
         (userRole === 'SUPERVISOR' && !crossDivisionEnabled)
 
-    const whereClause: Record<string, unknown> = {
+    const words = query.trim().split(/\s+/).filter(w => w.length > 2)
+    const exactQuery = query.trim()
+
+    const docWordConditions = words.flatMap(w => [
+        { ai_title: { contains: w, mode: 'insensitive' } },
+        { ai_summary: { contains: w, mode: 'insensitive' } },
+        { file_name: { contains: w, mode: 'insensitive' } },
+    ])
+
+    const contentWordConditions = words.flatMap(w => [
+        { title: { contains: w, mode: 'insensitive' } },
+        { body: { contains: w, mode: 'insensitive' } },
+    ])
+
+    const docWhereClause: Record<string, unknown> = {
         organization_id: orgId,
         is_processed: true,
-        OR: [
-            { ai_title: { contains: query, mode: 'insensitive' } },
-            { ai_summary: { contains: query, mode: 'insensitive' } },
-            { file_name: { contains: query, mode: 'insensitive' } },
+        OR: docWordConditions.length > 0 ? [
+            { ai_title: { contains: exactQuery, mode: 'insensitive' } },
+            { ai_summary: { contains: exactQuery, mode: 'insensitive' } },
+            { file_name: { contains: exactQuery, mode: 'insensitive' } },
+            ...docWordConditions
+        ] : [
+            { ai_title: { contains: exactQuery, mode: 'insensitive' } },
+            { ai_summary: { contains: exactQuery, mode: 'insensitive' } },
+            { file_name: { contains: exactQuery, mode: 'insensitive' } },
         ],
     }
-    if (scopedToDiv) {
-        whereClause.division_id = divisionId
+    const contentWhereClause: Record<string, unknown> = {
+        organization_id: orgId,
+        is_processed: true,
+        OR: contentWordConditions.length > 0 ? [
+            { title: { contains: exactQuery, mode: 'insensitive' } },
+            { body: { contains: exactQuery, mode: 'insensitive' } },
+            ...contentWordConditions
+        ] : [
+            { title: { contains: exactQuery, mode: 'insensitive' } },
+            { body: { contains: exactQuery, mode: 'insensitive' } },
+        ],
     }
 
-    const rows = await prisma.document.findMany({
-        where: whereClause as Parameters<typeof prisma.document.findMany>[0] extends { where?: infer W } ? W : never,
-        include: {
-            division: { select: { name: true } },
-        },
-        take: 10,
-        orderBy: { created_at: 'desc' },
-    })
+    if (scopedToDiv) {
+        docWhereClause.division_id = divisionId
+        contentWhereClause.division_id = divisionId
+    }
 
-    return rows.map((r) => ({
+    const [docRows, contentRows] = await Promise.all([
+        prisma.document.findMany({
+            where: docWhereClause as any,
+            include: { division: { select: { name: true } } },
+            take: 10,
+            orderBy: { created_at: 'desc' },
+        }),
+        prisma.content.findMany({
+            where: contentWhereClause as any,
+            include: { division: { select: { name: true } } },
+            take: 10,
+            orderBy: { created_at: 'desc' },
+        })
+    ])
+
+    const docResults = docRows.map((r) => ({
         id: r.id,
         type: 'document' as const,
         title: r.ai_title || r.file_name,
         excerpt: r.ai_summary?.slice(0, 200) || '',
         score: 0.5, // Base score for full-text match
         source: 'fulltext' as const,
-        divisionName: r.division.name,
+        divisionName: r.division?.name,
     }))
+
+    const contentResults = contentRows.map((r) => ({
+        id: r.id,
+        type: 'content' as const,
+        title: r.title,
+        excerpt: r.body.replace(/<[^>]*>?/gm, '').slice(0, 200), // Strip HTML and limit
+        score: 0.5,
+        source: 'fulltext' as const,
+        divisionName: r.division?.name,
+    }))
+
+    return [...docResults, ...contentResults]
 }
 
 // ─── Merge results ─────────────────────────────────────────────
@@ -109,10 +160,13 @@ function mergeResults(
 ): HybridSearchResult[] {
     const map = new Map<string, HybridSearchResult>()
 
-    ftResults.forEach((r) => map.set(r.id, r))
+    // Use a composite key like "type:id" to prevent collision between content and document
+    ftResults.forEach((r) => map.set(`${r.type}:${r.id}`, r))
 
     semResults.forEach((sem) => {
-        const existing = map.get(sem.documentId)
+        const key = `${sem.docType}:${sem.documentId}`
+        const existing = map.get(key)
+
         if (existing) {
             // Found in both — boost score
             existing.score = Math.min(Math.max(existing.score, sem.similarity) * 1.2, 1)
@@ -121,9 +175,9 @@ function mergeResults(
             existing.pageEnd = sem.pageEnd
             existing.excerpt = sem.chunkContent.slice(0, 200)
         } else {
-            map.set(sem.documentId, {
+            map.set(key, {
                 id: sem.documentId,
-                type: 'document',
+                type: sem.docType,
                 title: sem.documentTitle,
                 excerpt: sem.chunkContent.slice(0, 200),
                 score: sem.similarity,

@@ -1,0 +1,106 @@
+
+> diamond-kms@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.15
+  - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/46) ...
+[API auth/me] Starting request
+[Dashboard Stats] n [Error]: Dynamic server usage: Route /api/dashboard/stats couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (D:\CODING\diamond-kms\.next\server\chunks\9379.js:1:37156)
+    at f (D:\CODING\diamond-kms\.next\server\chunks\8485.js:23:4126)
+    at _ (D:\CODING\diamond-kms\.next\server\app\api\dashboard\stats\route.js:1:1583)
+    at D:\CODING\diamond-kms\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:36963
+    at D:\CODING\diamond-kms\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (D:\CODING\diamond-kms\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (D:\CODING\diamond-kms\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (D:\CODING\diamond-kms\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan (D:\CODING\diamond-kms\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854)
+    at D:\CODING\diamond-kms\node_modules\next\dist\server\lib\trace\tracer.js:122:103 {
+  description: "Route /api/dashboard/stats couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (11/46) 
+   Generating static pages (22/46) 
+   Generating static pages (34/46) 
+ ✓ Generating static pages (46/46)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    147 B          87.4 kB
+├ ○ /_not-found                          876 B          88.1 kB
+├ ƒ /api/admin/backup                    0 B                0 B
+├ ƒ /api/admin/error-logs                0 B                0 B
+├ ƒ /api/admin/restore                   0 B                0 B
+├ ƒ /api/ai/chat-content                 0 B                0 B
+├ ƒ /api/ai/chat-document                0 B                0 B
+├ ƒ /api/ai/process-content              0 B                0 B
+├ ƒ /api/ai/process-document             0 B                0 B
+├ ƒ /api/auth/me                         0 B                0 B
+├ ƒ /api/chat                            0 B                0 B
+├ ƒ /api/chat/entity                     0 B                0 B
+├ ƒ /api/chat/sessions                   0 B                0 B
+├ ƒ /api/chat/sessions/[id]              0 B                0 B
+├ ƒ /api/chat/sessions/[id]/messages     0 B                0 B
+├ ƒ /api/chat/sessions/[id]/summary      0 B                0 B
+├ ○ /api/check-docs                      0 B                0 B
+├ ƒ /api/dashboard/stats                 0 B                0 B
+├ ƒ /api/divisions                       0 B                0 B
+├ ƒ /api/divisions/[id]                  0 B                0 B
+├ ƒ /api/documents                       0 B                0 B
+├ ƒ /api/documents/[id]                  0 B                0 B
+├ ƒ /api/documents/[id]/download         0 B                0 B
+├ ƒ /api/documents/[id]/status           0 B                0 B
+├ ƒ /api/documents/pdf/[...path]         0 B                0 B
+├ ƒ /api/documents/signed-url/[...path]  0 B                0 B
+├ ƒ /api/users                           0 B                0 B
+├ ƒ /api/users/[id]                      0 B                0 B
+├ ƒ /auth/callback                       0 B                0 B
+├ ○ /dashboard                           2.69 kB         101 kB
+├ ○ /dashboard/ai-assistant              5.47 kB        92.7 kB
+├ ○ /dashboard/approvals                 3.91 kB          98 kB
+├ ○ /dashboard/contents                  3.16 kB        97.2 kB
+├ ƒ /dashboard/contents/[id]             8.71 kB         103 kB
+├ ○ /dashboard/contents/create           125 kB          219 kB
+├ ○ /dashboard/documents                 4.94 kB          99 kB
+├ ƒ /dashboard/documents/[id]            6.71 kB         101 kB
+├ ○ /dashboard/documents/search          306 B          98.6 kB
+├ ○ /dashboard/documents/upload          27.2 kB         121 kB
+├ ○ /dashboard/faqs                      4.15 kB        91.4 kB
+├ ○ /dashboard/hrd/ai                    7.23 kB        94.5 kB
+├ ○ /dashboard/hrd/billing               3.85 kB        91.1 kB
+├ ○ /dashboard/hrd/divisions             2.84 kB        96.9 kB
+├ ○ /dashboard/hrd/divisions/new         3.38 kB        97.5 kB
+├ ○ /dashboard/hrd/maintenance           7.74 kB          95 kB
+├ ○ /dashboard/hrd/settings              4.11 kB        91.4 kB
+├ ○ /dashboard/hrd/users                 3.14 kB        97.2 kB
+├ ƒ /dashboard/hrd/users/[id]/edit       3.61 kB         117 kB
+├ ○ /dashboard/hrd/users/new             3.31 kB         116 kB
+├ ○ /dashboard/leaderboard               3.98 kB        91.2 kB
+├ ○ /dashboard/maintenance               940 B          88.2 kB
+├ ○ /dashboard/profile                   3.26 kB         145 kB
+├ ○ /dashboard/quizzes                   3.63 kB        97.7 kB
+├ ƒ /dashboard/quizzes/[id]              3.54 kB        97.6 kB
+├ ○ /dashboard/quizzes/create            4.73 kB        98.8 kB
+├ ○ /dashboard/suggestions               3.56 kB        97.6 kB
+├ ○ /dashboard/trackers                  3.29 kB        90.5 kB
+├ ○ /login                               1.97 kB         135 kB
+├ ○ /register                            2.29 kB         136 kB
+└ ○ /reset-password                      1.81 kB         151 kB
++ First Load JS shared by all            87.2 kB
+  ├ chunks/2117-2bdefaf34daf48c4.js      31.6 kB
+  ├ chunks/fd9d1056-f7c705d19945a3d3.js  53.6 kB
+  └ other shared chunks (total)          2.01 kB
+
+
+ƒ Middleware                             74.5 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
