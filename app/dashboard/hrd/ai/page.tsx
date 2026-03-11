@@ -149,7 +149,7 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
                     <label className="block text-sm font-semibold text-navy-900">Provider Strategy</label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
-                            { id: 'managed', label: 'Managed by Movio', desc: 'Default Gemini integration' },
+                            { id: 'managed', label: 'Managed by WELDN_AI', desc: 'AI service dikelola oleh tim WELDN_AI' },
                             { id: 'byok', label: 'Bring Your Own Key', desc: 'Auto-detects Gemini or OpenAI APIs' },
                             { id: 'self_hosted', label: 'Self-Hosted / Ollama', desc: 'Connect to a local or custom endpoint' }
                         ].map((p) => (
@@ -170,6 +170,42 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
                         ))}
                     </div>
                 </div>
+
+                {/* WELDN_AI Managed Service Fields */}
+                {provider === 'managed' && (
+                    <div className="p-5 bg-surface-50 border border-surface-200 rounded-lg space-y-5">
+                        <div className="flex items-center gap-2 text-sm font-bold text-navy-900 mb-2">
+                            <Server size={16} className="text-navy-500" />
+                            WELDN_AI Service Configuration
+                        </div>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-medium text-navy-900">
+                                <LinkIcon size={14} className="text-text-400" /> Service URL
+                            </label>
+                            <input
+                                type="url"
+                                value={endpoint}
+                                onChange={(e) => setEndpoint(e.target.value)}
+                                placeholder="https://api.weldn.ai/v1"
+                                className="input-field font-mono text-sm"
+                            />
+                            <p className="text-xs text-text-400">URL endpoint layanan WELDN_AI yang ditentukan oleh tim.</p>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-medium text-navy-900">
+                                <Key size={14} className="text-text-400" /> API Key
+                            </label>
+                            <input
+                                type="password"
+                                value={apiKey}
+                                onChange={(e) => setApiKey(e.target.value)}
+                                placeholder="Masukkan API Key dari WELDN_AI..."
+                                className="input-field font-mono text-sm"
+                            />
+                            <p className="text-xs text-text-400">API key disediakan oleh tim WELDN_AI saat aktivasi layanan.</p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Conditional Fields based on Provider */}
                 {provider !== 'managed' && (

@@ -7,7 +7,8 @@ import { usePathname } from 'next/navigation'
 import {
     Home, FileText, Tags, Bot, Award, FileQuestion, Users,
     Network, CreditCard, Activity, CheckSquare, ListTodo,
-    Shield, FolderTree, Settings, Menu, Sparkles, Wrench
+    Shield, FolderTree, Settings, Menu, Sparkles, Wrench,
+    ChevronDown, KeyRound, Building
 } from 'lucide-react'
 import { NotificationBell } from '@/components/shared/NotificationBell'
 
@@ -34,14 +35,34 @@ const getIconForLabel = (label: string) => {
         case 'AI Providers': return <Bot size={16} />
         case 'AI Management': return <Sparkles size={16} />
         case 'Logs': return <Activity size={16} />
+        case 'Monitoring': return <Shield size={16} />
         case 'Dashboard': return <Home size={16} />
+        case 'OTP': return <KeyRound size={16} />
+        case 'Organization Settings': return <Building size={16} />
         default: return <FileText size={16} />
     }
 }
 
-// Simple sidebar mapping based on roles
-const getNavLinks = (role?: string) => {
-    const base = [
+interface NavItem {
+    label: string
+    href: string
+}
+
+interface NavGroup {
+    label: string
+    icon: string
+    children: NavItem[]
+}
+
+type NavEntry = NavItem | NavGroup
+
+function isNavGroup(entry: NavEntry): entry is NavGroup {
+    return 'children' in entry
+}
+
+// Nav structure per role
+const getNavEntries = (role?: string): NavEntry[] => {
+    const base: NavEntry[] = [
         { label: 'Dashboard', href: '/dashboard' },
         { label: 'Documents', href: '/dashboard/documents' },
         { label: 'Knowledge Base', href: '/dashboard/contents' },
@@ -59,11 +80,17 @@ const getNavLinks = (role?: string) => {
             { label: 'Suggestions', href: '/dashboard/suggestions' },
             { label: 'Users', href: '/dashboard/hrd/users' },
             { label: 'Divisions', href: '/dashboard/hrd/divisions' },
-            { label: 'Billing', href: '/dashboard/hrd/billing' },
-            { label: 'AI Management', href: '/dashboard/hrd/ai' },
-            { label: 'Settings', href: '/dashboard/hrd/settings' },
-            // Dipisah (di sidebar root level) sesuai feedback QC
-            { label: 'Maintenance', href: '/dashboard/maintenance' },
+            {
+                label: 'Settings',
+                icon: 'Settings',
+                children: [
+                    { label: 'Billing', href: '/dashboard/hrd/billing' },
+                    { label: 'AI Management', href: '/dashboard/hrd/ai' },
+                    { label: 'Maintenance', href: '/dashboard/hrd/maintenance' },
+                    { label: 'OTP', href: '/dashboard/hrd/otp' },
+                    { label: 'Organization Settings', href: '/dashboard/hrd/settings' },
+                ],
+            },
         ]
     }
 
@@ -89,14 +116,68 @@ const getNavLinks = (role?: string) => {
         return [
             { label: 'System Overview', href: '/dashboard/maintainer' },
             { label: 'Organizations', href: '/dashboard/maintainer/organizations' },
-            { label: 'Feature Flags', href: '/dashboard/maintainer/feature-flags' },
             { label: 'AI Providers', href: '/dashboard/maintainer/ai-providers' },
+            { label: 'Monitoring', href: '/dashboard/maintainer/monitoring' },
             { label: 'Logs', href: '/dashboard/maintainer/logs' },
-            { label: 'Maintenance', href: '/dashboard/maintenance' },
         ]
     }
 
     return base
+}
+
+/* ── Accordion sidebar group ── */
+function SidebarGroup({ group, pathname }: { group: NavGroup; pathname: string }) {
+    const hasActiveChild = group.children.some(c => pathname.startsWith(c.href))
+    const [open, setOpen] = useState(hasActiveChild)
+
+    return (
+        <div>
+            <button
+                onClick={() => setOpen(!open)}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-[14px] font-medium transition-colors ${
+                    hasActiveChild
+                        ? 'bg-navy-600/30 text-white'
+                        : 'text-surface-300 hover:text-white hover:bg-white/5'
+                }`}
+            >
+                <span className="flex items-center gap-3">
+                    <span className={hasActiveChild ? 'text-navy-400' : 'text-surface-300'}>
+                        <Settings size={16} />
+                    </span>
+                    {group.label}
+                </span>
+                <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${open ? 'rotate-180' : ''} ${hasActiveChild ? 'text-navy-400' : 'text-surface-400'}`}
+                />
+            </button>
+
+            {/* Sub-items */}
+            <div className={`overflow-hidden transition-all duration-200 ${open ? 'max-h-[300px] mt-1' : 'max-h-0'}`}>
+                <div className="pl-4 space-y-0.5">
+                    {group.children.map(child => {
+                        const isActive = pathname.startsWith(child.href)
+                        return (
+                            <Link
+                                key={child.href}
+                                href={child.href}
+                                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${
+                                    isActive
+                                        ? 'bg-navy-600/20 text-white'
+                                        : 'text-surface-400 hover:text-white hover:bg-white/5'
+                                }`}
+                            >
+                                <span className={isActive ? 'text-amber-400' : 'text-surface-400'}>
+                                    {getIconForLabel(child.label)}
+                                </span>
+                                {child.label}
+                            </Link>
+                        )
+                    })}
+                </div>
+            </div>
+        </div>
+    )
 }
 
 function DashboardLayoutInner({ children }: { children: ReactNode }) {
@@ -118,7 +199,7 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
         return null
     }
 
-    const navLinks = getNavLinks(role)
+    const navEntries = getNavEntries(role)
 
     return (
         <div className="flex h-screen bg-surface-50 overflow-hidden">
@@ -141,7 +222,11 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
 
                 {/* Navigation Links */}
                 <nav className="flex-1 px-3 py-2 flex flex-col gap-1 overflow-y-auto scrollbar-thin">
-                    {navLinks.map(link => {
+                    {navEntries.map((entry, idx) => {
+                        if (isNavGroup(entry)) {
+                            return <SidebarGroup key={entry.label} group={entry} pathname={pathname} />
+                        }
+                        const link = entry as NavItem
                         const isActive = link.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(link.href)
                         return (
                             <Link

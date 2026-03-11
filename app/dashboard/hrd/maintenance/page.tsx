@@ -10,7 +10,8 @@ import {
 import { RoleGuard } from '@/components/shared/RoleGuard'
 import {
     Shield, ToggleLeft, ToggleRight, Plus, AlertTriangle,
-    Bell, Database, Wrench, Clock, Download, Upload, CheckCircle, Loader2, FileDown, FileUp
+    Bell, Database, Wrench, Clock, Download, Upload, CheckCircle, Loader2, FileDown, FileUp,
+    KeyRound, Copy
 } from 'lucide-react'
 import { ErrorLogsSection } from './ErrorLogsSection'
 
@@ -22,6 +23,11 @@ export default function MaintenancePage() {
     const [maintenanceMsg, setMaintenanceMsg] = useState('Sistem sedang dalam pemeliharaan. Silakan coba lagi nanti.')
     const [newFlagKey, setNewFlagKey] = useState('')
     const [addingFlag, setAddingFlag] = useState(false)
+
+    // Remote OTP state
+    const [remoteOtp, setRemoteOtp] = useState<string | null>(null)
+    const [otpExpiry, setOtpExpiry] = useState<number>(0)
+    const [otpCopied, setOtpCopied] = useState(false)
 
     // Backup & Restore state
     const [backupStatus, setBackupStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle')
@@ -59,6 +65,35 @@ export default function MaintenancePage() {
     }
 
     useEffect(() => { loadData() }, [organization?.id])
+
+    // OTP countdown timer
+    useEffect(() => {
+        if (otpExpiry <= 0) return
+        const interval = setInterval(() => {
+            setOtpExpiry(prev => {
+                if (prev <= 1) { setRemoteOtp(null); return 0 }
+                return prev - 1
+            })
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [otpExpiry])
+
+    const generateRemoteOtp = () => {
+        const code = Math.random().toString(36).substring(2, 8).toUpperCase()
+        setRemoteOtp(code)
+        setOtpExpiry(1800) // 30 minutes
+        setOtpCopied(false)
+    }
+
+    const copyOtp = () => {
+        if (remoteOtp) {
+            navigator.clipboard.writeText(remoteOtp)
+            setOtpCopied(true)
+            setTimeout(() => setOtpCopied(false), 2000)
+        }
+    }
+
+    const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
 
     const handleToggleFlag = async (flagId: string, currentVal: boolean) => {
         const res = await toggleFeatureFlagAction(flagId, !currentVal)
@@ -233,6 +268,84 @@ export default function MaintenancePage() {
                                         />
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Remote Maintenance OTP */}
+                            <div className="card p-6 border-2 border-surface-200">
+                                <div className="flex items-start gap-4">
+                                    <div className="p-3 rounded-xl bg-navy-100 text-navy-600">
+                                        <KeyRound size={24} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h2 className="font-bold font-display text-navy-900 text-lg">Remote Maintenance OTP</h2>
+                                        <p className="text-sm text-text-500 mt-1 max-w-md">
+                                            Generate kode OTP sementara agar tim WELDN_AI dapat melakukan maintenance secara remote.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-5 p-4 bg-surface-50 border border-surface-200 rounded-xl">
+                                    {remoteOtp ? (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs text-text-400 font-semibold uppercase tracking-wider">Kode OTP Aktif</span>
+                                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${otpExpiry > 300 ? 'bg-green-100 text-green-700' : otpExpiry > 60 ? 'bg-warning-bg text-warning' : 'bg-danger-bg text-danger'}`}>
+                                                    <Clock size={10} className="inline mr-1" />
+                                                    {formatTime(otpExpiry)}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex-1 bg-white border-2 border-navy-200 rounded-xl px-5 py-4 text-center">
+                                                    <span className="text-3xl font-black font-mono tracking-[0.3em] text-navy-900">
+                                                        {remoteOtp}
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    onClick={copyOtp}
+                                                    className={`p-3 rounded-xl border-2 transition shrink-0 ${otpCopied ? 'bg-green-100 border-green-300 text-green-600' : 'bg-white border-surface-200 text-text-500 hover:border-navy-300 hover:text-navy-600'}`}
+                                                    title="Salin kode"
+                                                >
+                                                    {otpCopied ? <CheckCircle size={20} /> : <Copy size={20} />}
+                                                </button>
+                                            </div>
+                                            <div className="w-full bg-surface-200 rounded-full h-1.5 overflow-hidden">
+                                                <div
+                                                    className={`h-1.5 rounded-full transition-all duration-1000 ${otpExpiry > 300 ? 'bg-green-500' : otpExpiry > 60 ? 'bg-amber-500' : 'bg-red-500'}`}
+                                                    style={{ width: `${(otpExpiry / 1800) * 100}%` }}
+                                                />
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={generateRemoteOtp}
+                                                    className="text-xs font-medium text-navy-600 hover:text-navy-700 bg-navy-50 hover:bg-navy-100 px-3 py-1.5 rounded-lg transition"
+                                                >
+                                                    Generate Ulang
+                                                </button>
+                                                <button
+                                                    onClick={() => { setRemoteOtp(null); setOtpExpiry(0) }}
+                                                    className="text-xs font-medium text-danger hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition"
+                                                >
+                                                    Batalkan OTP
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-4">
+                                            <p className="text-sm text-text-400 mb-4">Belum ada OTP aktif untuk remote maintenance.</p>
+                                            <button
+                                                onClick={generateRemoteOtp}
+                                                className="btn btn-primary inline-flex items-center gap-2"
+                                            >
+                                                <KeyRound size={16} />
+                                                Generate OTP
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <p className="text-[11px] text-text-300 mt-3">
+                                    ⚠️ Kode akan expired dalam 30 menit. Berikan hanya kepada personil WELDN_AI yang terverifikasi.
+                                </p>
                             </div>
 
                             {/* Feature Flags */}

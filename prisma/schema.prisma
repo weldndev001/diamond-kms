@@ -575,3 +575,68 @@ model ErrorLog {
   @@index([organization_id])
   @@map("error_logs")
 }
+
+model ClientInstance {
+  id                String    @id @default(uuid())
+  instance_key      String    @unique            // unique key per client install
+  client_name       String
+  app_version       String    @default("1.0.0")
+  status            String    @default("offline") // online, offline, warning
+  last_heartbeat    DateTime?
+
+  // System resources (latest snapshot)
+  cpu_percent       Float     @default(0)
+  memory_percent    Float     @default(0)
+  disk_percent      Float     @default(0)
+  uptime_seconds    Int       @default(0)
+
+  // Database health
+  db_status         String    @default("unknown") // connected, disconnected, unknown
+  db_size_mb        Float     @default(0)
+  db_connections    Int       @default(0)
+
+  // Data counts
+  total_users       Int       @default(0)
+  total_divisions   Int       @default(0)
+  total_documents   Int       @default(0)
+  total_contents    Int       @default(0)
+  docs_pending      Int       @default(0)
+  docs_failed       Int       @default(0)
+
+  // AI pipeline
+  ai_provider       String    @default("unknown")  // managed, byok, self_hosted
+  ai_model          String    @default("unknown")
+  ai_status         String    @default("unknown")   // healthy, degraded, down
+  ai_avg_response_ms Int      @default(0)
+  ai_success_rate   Float     @default(0)
+  ai_tokens_30d     Int       @default(0)
+  embedding_total   Int       @default(0)
+  embedding_done    Int       @default(0)
+  embedding_failed  Int       @default(0)
+
+  // Engagement
+  dau_today         Int       @default(0)
+  chat_sessions_7d  Int       @default(0)
+  quiz_completions_7d Int     @default(0)
+  read_rate         Float     @default(0)
+  avg_quiz_score    Float     @default(0)
+  approval_pending  Int       @default(0)
+
+  // Errors (24h snapshot)
+  errors_total_24h  Int       @default(0)
+  errors_error_24h  Int       @default(0)
+  errors_warn_24h   Int       @default(0)
+  health_score      Float     @default(100)
+  latest_errors     Json?     // Array of recent error objects
+
+  // License
+  license_plan      String    @default("basic")
+  license_expires   DateTime?
+
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @default(now()) @updatedAt
+
+  @@index([status])
+  @@index([last_heartbeat])
+  @@map("client_instances")
+}
