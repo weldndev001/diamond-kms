@@ -10,7 +10,7 @@ import {
     Network, CreditCard, Activity, CheckSquare, ListTodo,
     Shield, FolderTree, Settings, Menu, Sparkles, Wrench, Search, X,
     ChevronDown, ChevronRight, PanelLeftOpen, PanelLeftClose,
-    KeyRound, Building, MonitorDot
+    KeyRound, Building, MonitorDot, Globe
 } from 'lucide-react'
 import { NotificationBell } from '@/components/shared/NotificationBell'
 import SmartSearch from '@/components/search/SmartSearch'
@@ -29,9 +29,11 @@ const getIconForLabel = (label: string) => {
         case 'FAQ':
         case 'FAQs / Help': return <Bot size={16} />
         case 'AISA':
+        case 'Cari & Tanya AI':
         case 'AI Assistant': return <Sparkles size={16} />
         case 'Knowledge Base': return <Tags size={16} />
         case 'Content':
+        case 'Kelola Konten':
         case 'Dokumen':
         case 'Documents': return <FileText size={16} />
         case 'Quizzes':
@@ -45,8 +47,10 @@ const getIconForLabel = (label: string) => {
         case 'Settings':
         case 'Maintenance':
         case 'Feature Flags':
-        case 'Organization Settings': return <Settings size={16} />
-        case 'OTP': return <KeyRound size={16} />
+        case 'Organization Settings':
+        case 'Organization': return <Settings size={16} />
+        case 'OTP':
+        case 'Activation': return <KeyRound size={16} />
         case 'Akses Remote': return <MonitorDot size={16} />
         case 'Leaderboard': return <Award size={16} />
         case 'Trackers':
@@ -58,6 +62,7 @@ const getIconForLabel = (label: string) => {
         case 'System Overview': return <Shield size={16} />
         case 'Organizations': return <FolderTree size={16} />
         case 'Logs': return <Activity size={16} />
+        case 'Website': return <Globe size={16} />
         default: return <FileText size={16} />
     }
 }
@@ -89,9 +94,9 @@ const getNavEntries = (role?: string): NavEntry[] => {
             label: 'Knowledge Base',
             icon: 'Tags',
             children: [
-                { label: 'Knowledge Base', href: '/dashboard/knowledge-base' },
+                { label: 'Cari & Tanya AI', href: '/dashboard/knowledge-base' },
                 { label: 'Dokumen', href: '/dashboard/documents' },
-                { label: 'Contents', href: '/dashboard/contents' }
+                { label: 'Kelola Konten', href: '/dashboard/content' }
             ]
         },
         {
@@ -125,8 +130,9 @@ const getNavEntries = (role?: string): NavEntry[] => {
                     { label: 'Billing', href: '/dashboard/hrd/billing' },
                     { label: 'AI Management', href: '/dashboard/hrd/ai' },
                     { label: 'Maintenance', href: '/dashboard/hrd/maintenance' },
-                    { label: 'OTP', href: '/dashboard/hrd/otp' },
-                    { label: 'Organization Settings', href: '/dashboard/hrd/settings' },
+                    { label: 'Activation', href: '/dashboard/hrd/otp' },
+                    { label: 'Organization', href: '/dashboard/hrd/settings' },
+                    { label: 'Website', href: '/dashboard/hrd/website' },
                 ],
             },
         ]

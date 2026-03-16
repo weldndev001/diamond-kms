@@ -151,7 +151,7 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
                         {[
                             { id: 'managed', label: 'Managed by WELDN_AI', desc: 'AI service dikelola oleh tim WELDN_AI' },
                             { id: 'byok', label: 'Bring Your Own Key', desc: 'Auto-detects Gemini or OpenAI APIs' },
-                            { id: 'self_hosted', label: 'Self-Hosted / Ollama', desc: 'Connect to a local or custom endpoint' }
+                            { id: 'self_hosted', label: 'Local Server AI', desc: 'Connect to a local or custom endpoint' }
                         ].map((p) => (
                             <label key={p.id} className={`flex items-start p-4 rounded-lg border-2 cursor-pointer transition-colors ${provider === p.id ? 'border-amber-500 bg-amber-50' : 'border-surface-200 hover:border-navy-300'}`}>
                                 <input
@@ -208,7 +208,7 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
                 )}
 
                 {/* Conditional Fields based on Provider */}
-                {provider !== 'managed' && (
+                {provider === 'byok' && (
                     <div className="p-5 bg-surface-50 border border-surface-200 rounded-lg space-y-5">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2 text-sm font-bold text-navy-900">

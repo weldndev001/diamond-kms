@@ -308,7 +308,7 @@ export default function UploadDocumentPage() {
                             id="file-input"
                             type="file"
                             className="hidden"
-                            accept=".pdf,.doc,.docx,.txt,.md,.csv,.xlsx,.pptx"
+                            accept=".pdf,.doc,.docx,.txt,.md,.csv,.xlsx,.pptx,.sql"
                             onChange={handleFileChange}
                         />
 
@@ -330,7 +330,7 @@ export default function UploadDocumentPage() {
                                 </div>
                                 <div>
                                     <p className="font-bold text-navy-900">Drop file di sini atau klik untuk browse</p>
-                                    <p className="text-sm text-text-500 mt-1">PDF, Word, Excel, PowerPoint, TXT, Markdown, CSV</p>
+                                    <p className="text-sm text-text-500 mt-1">PDF, Word, Excel, PowerPoint, TXT, Markdown, CSV, SQL</p>
                                 </div>
                             </div>
                         )}

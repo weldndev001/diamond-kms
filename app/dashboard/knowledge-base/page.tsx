@@ -654,6 +654,125 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
 }
 
 /* ═══════════════════════════════════════════
+   VIEW: KB DETAIL
+   ═══════════════════════════════════════════ */
+function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc }: {
+    kb: KnowledgeBase
+    onBack: () => void
+    onChat: () => void
+    onAddDoc: () => void
+    onUpload: () => void
+    onRemoveDoc: (id: string) => void
+}) {
+    return (
+        <div className="space-y-6 max-w-5xl mx-auto pb-12">
+            {/* Header / Breadcrumb */}
+            <div>
+                <button onClick={onBack}
+                    className="flex items-center gap-1.5 text-text-400 hover:text-navy-600 text-sm font-medium transition mb-4">
+                    <ArrowLeft size={14} /> Kembali ke Daftar
+                </button>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div>
+                        <h1 className="text-3xl font-bold font-display text-navy-900">{kb.name}</h1>
+                        <p className="text-text-500 mt-2 max-w-2xl">{kb.description}</p>
+                    </div>
+                    <button onClick={onChat}
+                        className="btn btn-primary px-8 py-3 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition duration-300 flex items-center gap-3">
+                        <Sparkles size={20} />
+                        <span className="text-lg">Chat dengan AISA</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Quick Info Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="card p-4 bg-navy-50/50 border-navy-100 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-navy-600">
+                        <FileText size={20} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Total Dokumen</p>
+                        <p className="text-xl font-bold text-navy-900">{kb.documents.filter(d => d.type === 'document').length}</p>
+                    </div>
+                </div>
+                <div className="card p-4 bg-amber-50/50 border-amber-100 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-amber-600">
+                        <BookOpen size={20} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Jumlah Sumber</p>
+                        <p className="text-xl font-bold text-navy-900">{kb.documents.length}</p>
+                    </div>
+                </div>
+                <div className="card p-4 bg-emerald-50/50 border-emerald-100 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-emerald-600">
+                        <Clock size={20} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Terakhir Update</p>
+                        <p className="text-sm font-bold text-navy-900">{new Date(kb.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</p>
+                    </div>
+                </div>
+                <div className="card p-4 bg-indigo-50/50 border-indigo-100 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-indigo-600">
+                        <User size={20} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Owner / Admin</p>
+                        <p className="text-sm font-bold text-navy-900 truncate">Super Admin</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Content Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-navy-900 text-lg flex items-center gap-2">
+                            <FolderOpen size={20} className="text-navy-500" />
+                            Dokumen dalam Knowledge Base
+                        </h3>
+                        <div className="flex gap-2">
+                            <button onClick={onUpload} className="btn bg-white border border-surface-200 text-text-600 px-4 py-2 text-sm hover:bg-surface-50">
+                                <FileText size={16} /> Upload Dokumen
+                            </button>
+                            <button onClick={onAddDoc} className="btn btn-primary px-4 py-2 text-sm">
+                                <Plus size={16} /> Tambah Konten
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="card divide-y overflow-hidden">
+                        {kb.documents.length === 0 ? (
+                            <div className="p-12 text-center text-text-400">
+                                <FolderOpen size={48} className="mx-auto mb-3 opacity-20" />
+                                <p>Belum ada dokumen yang terhubung ke KB ini.</p>
+                            </div>
+                        ) : kb.documents.map((doc, idx) => (
+                            <div key={doc.id} className="flex items-center gap-4 p-4 hover:bg-surface-50 transition group">
+                                <span className="text-text-300 font-mono text-xs w-4">{idx + 1}.</span>
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${doc.type === 'document' ? 'bg-navy-100' : 'bg-amber-100'}`}>
+                                    <FileText size={16} className={doc.type === 'document' ? 'text-navy-600' : 'text-amber-600'} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-navy-900 text-sm truncate">{doc.title}</p>
+                                    <p className="text-[11px] text-text-400 mt-0.5">{doc.division || 'Umum'} · {doc.type === 'document' ? 'PDF/Doc' : 'Artikel'}</p>
+                                </div>
+                                <button onClick={() => onRemoveDoc(doc.id)}
+                                    className="opacity-0 group-hover:opacity-100 p-2 text-text-300 hover:text-danger hover:bg-danger-bg rounded-lg transition">
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+/* ═══════════════════════════════════════════
    VIEW: ADD DOCS (Replaces old AddDocsModal)
    ═══════════════════════════════════════════ */
 function AddDocsView({ allDocs, existingIds, onBack, onAdd }: {
@@ -737,7 +856,7 @@ function AddDocsView({ allDocs, existingIds, onBack, onAdd }: {
 /* ═══════════════════════════════════════════
    MAIN PAGE CONTROLLER
    ═══════════════════════════════════════════ */
-type View = 'list' | 'create' | 'chat' | 'edit' | 'add-docs'
+type View = 'list' | 'create' | 'detail' | 'chat' | 'edit' | 'add-docs'
 
 export default function ContentsPage() {
     const { organization, role, division } = useCurrentUser()
@@ -792,13 +911,13 @@ export default function ContentsPage() {
     // Handlers
     const handleSelectKB = (kb: KnowledgeBase) => {
         setActiveKB(kb)
-        setView('chat')
+        setView('detail')
     }
 
     const handleCreateKB = (kb: KnowledgeBase) => {
         setKnowledgeBases(prev => [kb, ...prev])
         setActiveKB(kb)
-        setView('chat')
+        setView('detail')
     }
 
     const handleAddDocs = (docs: DocItem[]) => {
@@ -856,26 +975,36 @@ export default function ContentsPage() {
                     onCreateDone={handleCreateKB}
                 />
             )}
+            {view === 'detail' && activeKB && (
+                <KBDetailView
+                    kb={activeKB}
+                    onBack={() => { setView('list'); setActiveKB(null) }}
+                    onChat={() => setView('chat')}
+                    onAddDoc={() => setView('add-docs')}
+                    onUpload={() => {}} // Placeholder
+                    onRemoveDoc={handleRemoveDoc}
+                />
+            )}
             {view === 'chat' && activeKB && (
                 <KBChatView
                     kb={activeKB}
-                    onBack={() => { setView('list'); setActiveKB(null) }}
+                    onBack={() => setView('detail')}
                     onAddDoc={() => setView('add-docs')}
                     onRemoveDoc={handleRemoveDoc}
                     chatSessions={chatSessions}
                     onSaveSession={handleSaveSession}
-                    onLoadSession={() => {}}
-                    onNewSession={() => {}}
+                    onLoadSession={() => { }}
+                    onNewSession={() => { }}
                 />
             )}
             {view === 'add-docs' && activeKB && (
                 <AddDocsView
                     allDocs={allDocs}
                     existingIds={new Set(activeKB.documents.map(d => d.id))}
-                    onBack={() => setView('chat')}
+                    onBack={() => setView('detail')}
                     onAdd={(docs) => {
                         handleAddDocs(docs);
-                        setView('chat');
+                        setView('detail');
                     }}
                 />
             )}

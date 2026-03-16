@@ -114,7 +114,7 @@ async function processDocumentInBackground(documentId: string, document: any) {
 
         // STEP 2: Extract text based on file type
         const isPDF = document.mime_type === 'application/pdf'
-        const isText = ['text/plain', 'text/markdown', 'text/csv'].includes(
+        const isText = ['text/plain', 'text/markdown', 'text/csv', 'text/x-sql', 'application/sql', 'text/sql'].includes(
             document.mime_type
         )
 
