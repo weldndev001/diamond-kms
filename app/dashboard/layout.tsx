@@ -7,7 +7,7 @@ import { usePathname, useSearchParams, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import {
     Home, FileText, Tags, Bot, Award, FileQuestion, Users,
-    Network, CreditCard, Activity, CheckSquare, ListTodo,
+    Network, CreditCard, Activity,
     Shield, FolderTree, Settings, Menu, Sparkles, Wrench, Search, X,
     ChevronDown, ChevronRight, PanelLeftOpen, PanelLeftClose,
     KeyRound, Building, MonitorDot, Globe
@@ -42,11 +42,6 @@ const getIconForLabel = (label: string) => {
         case 'User':
         case 'Users':
         case 'Anggota': return <Users size={16} />
-        case 'Divisi': return <Network size={16} />
-        case 'Leaderboard': return <Award size={16} />
-        case 'Settings':
-        case 'Maintenance':
-        case 'Feature Flags':
         case 'Organization Settings':
         case 'Organization': return <Settings size={16} />
         case 'OTP':
@@ -110,8 +105,6 @@ const getNavEntries = (role?: string): NavEntry[] => {
     if (role === 'SUPER_ADMIN') {
         return [
             ...base,
-            { label: 'Read Trackers', href: '/dashboard/trackers' },
-            { label: 'Suggestions', href: '/dashboard/suggestions' },
             {
                 label: 'User',
                 icon: 'Users',
@@ -139,8 +132,6 @@ const getNavEntries = (role?: string): NavEntry[] => {
     if (role === 'GROUP_ADMIN') {
         return [
             ...base,
-            { label: 'Read Trackers', href: '/dashboard/trackers' },
-            { label: 'Suggestions', href: '/dashboard/suggestions' },
             {
                 label: 'User',
                 icon: 'Users',

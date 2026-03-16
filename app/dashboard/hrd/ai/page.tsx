@@ -218,30 +218,13 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
                             <button
                                 type="button"
                                 onClick={handleFetchModels}
-                                disabled={isFetchingModels || (provider === 'self_hosted' && !endpoint.trim())}
+                                disabled={isFetchingModels}
                                 className="text-xs font-semibold text-amber-600 hover:text-amber-700 disabled:opacity-50 flex items-center gap-1.5"
                             >
                                 {isFetchingModels ? <div className="w-3 h-3 border-2 border-amber-600/30 border-t-amber-600 rounded-full animate-spin" /> : <RefreshCcw size={12} />}
                                 Load Available Models
                             </button>
                         </div>
-
-                        {provider === 'self_hosted' && (
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-sm font-medium text-navy-900">
-                                    <LinkIcon size={14} className="text-text-400" /> Endpoint URL
-                                </label>
-                                <input
-                                    type="url"
-                                    value={endpoint}
-                                    onChange={(e) => setEndpoint(e.target.value)}
-                                    placeholder="https://llm01.weldn.ai/olla/openai/v1"
-                                    className="input-field font-mono text-sm"
-                                    required={provider === 'self_hosted'}
-                                />
-                                <p className="text-xs text-text-400">Must be an OpenAI-compatible /v1 endpoint.</p>
-                            </div>
-                        )}
 
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-medium text-navy-900">
@@ -253,10 +236,10 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
                                 onChange={(e) => setApiKey(e.target.value)}
                                 placeholder="Leave blank to keep existing key, or enter new key..."
                                 className="input-field font-mono text-sm"
-                                required={provider === 'byok' && !chatModel}
+                                required={!chatModel}
                             />
                             <p className="text-xs text-text-400">
-                                {provider === 'self_hosted' ? 'Optional for some Ollama setups.' : 'Required for BYOK. Securely encrypted before storage.'}
+                                Required for BYOK. Securely encrypted before storage.
                             </p>
                         </div>
 
