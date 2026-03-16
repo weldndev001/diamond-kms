@@ -52,10 +52,8 @@ const getIconForLabel = (label: string) => {
         case 'OTP':
         case 'Activation': return <KeyRound size={16} />
         case 'Akses Remote': return <MonitorDot size={16} />
+        case 'Divisi': return <Network size={16} />
         case 'Leaderboard': return <Award size={16} />
-        case 'Trackers':
-        case 'Read Trackers': return <Activity size={16} />
-        case 'Suggestions': return <ListTodo size={16} />
         case 'Divisions': return <Network size={16} />
         case 'Billing': return <CreditCard size={16} />
         case 'AI Management': return <Sparkles size={16} />
@@ -157,8 +155,6 @@ const getNavEntries = (role?: string): NavEntry[] => {
     if (role === 'SUPERVISOR') {
         return [
             ...base,
-            { label: 'Read Trackers', href: '/dashboard/trackers' },
-            { label: 'Suggestions', href: '/dashboard/suggestions' },
         ]
     }
 
