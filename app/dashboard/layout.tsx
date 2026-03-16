@@ -1,7 +1,7 @@
 'use client'
 
 import { useCurrentUser, UserProvider } from '@/hooks/useCurrentUser'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useState, Suspense } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
@@ -408,7 +408,11 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
 export default function DashboardLayout({ children }: { children: ReactNode }) {
     return (
         <UserProvider>
-            <DashboardLayoutInner>{children}</DashboardLayoutInner>
+            <Suspense fallback={<div className="flex h-screen items-center justify-center bg-surface-50">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-navy-600 border-t-transparent"></div>
+            </div>}>
+                <DashboardLayoutInner>{children}</DashboardLayoutInner>
+            </Suspense>
         </UserProvider>
     )
 }

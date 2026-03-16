@@ -4,6 +4,8 @@ import { cookies } from 'next/headers'
 import prisma from '@/lib/prisma'
 import { env } from '@/lib/env'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: NextRequest) {
     try {
         const cookieStore = await cookies()
