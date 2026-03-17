@@ -15,7 +15,8 @@ export default function TakeQuizPage() {
     const [quiz, setQuiz] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
-    const [answers, setAnswers] = useState<Record<string, string>>({})
+    const [answers, setAnswers] = useState<Record<string, number>>({}) // Stores questionId -> selectedOptionIndex
+
     const [result, setResult] = useState<any>(null)
     const [error, setError] = useState<string | null>(null)
     const [timeLeft, setTimeLeft] = useState<number | null>(null)
@@ -52,9 +53,9 @@ export default function TakeQuizPage() {
         return () => clearTimeout(tick)
     }, [timeLeft, result])
 
-    const handleOptionSelect = (questionId: string, option: string) => {
+    const handleOptionSelect = (questionId: string, optionIdx: number) => {
         if (result) return // prevent changing answers after submit
-        setAnswers({ ...answers, [questionId]: option })
+        setAnswers({ ...answers, [questionId]: optionIdx })
     }
 
     const handleSubmit = async (e?: React.FormEvent) => {
@@ -62,10 +63,20 @@ export default function TakeQuizPage() {
         if (!user || !quiz) return
         setSubmitting(true)
 
+        // Create text-based answers for submission
+        const textAnswers: Record<string, string> = {}
+        quiz.questions.forEach((q: any) => {
+            const selectedIdx = answers[q.id]
+            if (selectedIdx !== undefined && Array.isArray(q.options)) {
+                textAnswers[q.id] = q.options[selectedIdx]
+            }
+        })
+
         // Calculate score
         let correctCount = 0
         quiz.questions.forEach((q: any) => {
-            if (answers[q.id] === q.correct_answer) {
+            const selectedIdx = answers[q.id]
+            if (selectedIdx !== undefined && q.options[selectedIdx] === q.correct_answer) {
                 correctCount++
             }
         })
@@ -75,7 +86,7 @@ export default function TakeQuizPage() {
             quizId: quiz.id,
             userId: user.id,
             score,
-            answers
+            answers: textAnswers
         })
 
         if (res.success) {
@@ -187,24 +198,24 @@ export default function TakeQuizPage() {
                                 {Array.isArray(q.options) && q.options.map((opt: string, optIdx: number) => (
                                     <label
                                         key={optIdx}
-                                        className={`flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 group/option ${answers[q.id] === opt
+                                        className={`flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 group/option ${answers[q.id] === optIdx
                                             ? 'border-navy-600 bg-navy-50 dark:bg-navy-900/30 text-navy-900 dark:text-navy-100 shadow-[0_0_20px_rgba(30,58,138,0.08)]'
                                             : 'border-surface-100 dark:border-slate-800 hover:border-navy-200 dark:hover:border-navy-800 bg-white dark:bg-slate-900/50 text-text-700 dark:text-slate-300 hover:shadow-md'
                                             }`}
                                     >
-                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 transition-all ${answers[q.id] === opt
+                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 transition-all ${answers[q.id] === optIdx
                                             ? 'border-navy-600 bg-navy-600'
                                             : 'border-surface-300 dark:border-slate-600 group-hover/option:border-navy-400'
                                             }`}>
-                                            {answers[q.id] === opt && <div className="w-2 h-2 bg-white rounded-full shadow-sm" />}
+                                            {answers[q.id] === optIdx && <div className="w-2 h-2 bg-white rounded-full shadow-sm" />}
                                         </div>
                                         <input
                                             type="radio"
                                             name={`question-${q.id}`}
                                             value={opt}
-                                            checked={answers[q.id] === opt}
+                                            checked={answers[q.id] === optIdx}
                                             required
-                                            onChange={() => handleOptionSelect(q.id, opt)}
+                                            onChange={() => handleOptionSelect(q.id, optIdx)}
                                             className="hidden"
                                         />
                                         <span className="font-bold text-base">{opt}</span>
