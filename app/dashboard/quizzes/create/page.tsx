@@ -6,7 +6,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { createQuizAction, getQuizByIdAction, updateQuizFullAction } from '@/lib/actions/quiz.actions'
 import { getDivisionsAction } from '@/lib/actions/user.actions'
 import { getContentsAction } from '@/lib/actions/content.actions'
-import { Save, ArrowLeft, PlusCircle, Trash, Send, HelpCircle, Clock, Sparkles } from 'lucide-react'
+import { Save, ArrowLeft, PlusCircle, Trash, Send, HelpCircle, Clock, Sparkles, Image as ImageIcon, X } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
@@ -31,8 +31,8 @@ export default function CreateQuizPage() {
     const [contents, setContents] = useState<any[]>([])
 
     // Manage multiple questions dynamically
-    const [questions, setQuestions] = useState([
-        { question_text: '', options: ['', '', '', ''], correct_answer: '' }
+    const [questions, setQuestions] = useState<any[]>([
+        { question_text: '', options: ['', '', '', ''], correct_answer: '', image: null }
     ])
 
     useEffect(() => {
@@ -59,7 +59,8 @@ export default function CreateQuizPage() {
                         setQuestions(q.questions.map((quest: any) => ({
                             question_text: quest.question_text,
                             options: quest.options,
-                            correct_answer: quest.options.indexOf(quest.correct_answer).toString()
+                            correct_answer: quest.options.indexOf(quest.correct_answer).toString(),
+                            image: quest.image || null
                         })))
                     }
                 }
@@ -68,7 +69,18 @@ export default function CreateQuizPage() {
     }, [organization?.id, editId])
 
     const handleAddQuestion = () => {
-        setQuestions([...questions, { question_text: '', options: ['', '', '', ''], correct_answer: '' }])
+        setQuestions([...questions, { question_text: '', options: ['', '', '', ''], correct_answer: '', image: null }])
+    }
+
+    const handleImageUpload = async (index: number, file: File) => {
+        // Placeholder simulation for image upload
+        // In real scenario, upload to Supabase Storage and get URL
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const result = e.target?.result as string;
+            handleQuestionChange(index, 'image', result);
+        };
+        reader.readAsDataURL(file);
     }
 
     const handleRemoveQuestion = (index: number) => {
@@ -77,11 +89,11 @@ export default function CreateQuizPage() {
         setQuestions(newQs)
     }
 
-    const handleQuestionChange = (index: number, field: string, value: string | string[], optionIndex?: number) => {
+    const handleQuestionChange = (index: number, field: string, value: string | string[] | null, optionIndex?: number) => {
         const newQs = [...questions]
         if (field === 'options' && typeof optionIndex === 'number') {
             newQs[index].options[optionIndex] = value as string
-        } else if (field === 'correct_answer' || field === 'question_text') {
+        } else if (field === 'correct_answer' || field === 'question_text' || field === 'image') {
             (newQs[index] as any)[field] = value
         }
         setQuestions(newQs)
@@ -93,8 +105,12 @@ export default function CreateQuizPage() {
 
         // Validation
         for (let i = 0; i < questions.length; i++) {
+            if (!questions[i].question_text.trim()) {
+                setStatus({ type: 'error', msg: `Teks pertanyaan ke-${i + 1} tidak boleh kosong.` })
+                return
+            }
             if (!questions[i].correct_answer) {
-                setStatus({ type: 'error', msg: `Pertanyaan ${i + 1} harus memiliki kunci jawaban.` })
+                setStatus({ type: 'error', msg: `Pertanyaan ke-${i + 1} harus memiliki kunci jawaban.` })
                 return
             }
         }
@@ -242,7 +258,7 @@ export default function CreateQuizPage() {
                             <h2 className="text-2xl font-black font-display text-navy-900 dark:text-slate-100 tracking-tight">Quiz Builder (Penyusunan Soal)</h2>
                         </div>
 
-                        {questions.map((q, qIndex) => (
+                        {questions.map((q: any, qIndex: number) => (
                             <div key={qIndex} className="p-8 border border-surface-200 dark:border-slate-700 rounded-[32px] shadow-sm bg-white dark:bg-slate-800/50 relative overflow-hidden group">
                                 <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                                 {questions.length > 1 && (
@@ -257,9 +273,50 @@ export default function CreateQuizPage() {
                                 )}
 
                                 <div className="space-y-6">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-3">
                                         <span className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-black uppercase tracking-widest border border-indigo-100 dark:border-indigo-500/20">Soal {qIndex + 1}</span>
+                                        
+                                        {/* TOMBOL ADD IMAGE */}
+                                        <button 
+                                            type="button"
+                                            onClick={() => document.getElementById(`file-upload-${qIndex}`)?.click()}
+                                            className="flex items-center gap-2 px-3 py-1.5 bg-surface-100 dark:bg-slate-700 hover:bg-surface-200 dark:hover:bg-slate-600 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 rounded-lg transition-all border border-indigo-100 dark:border-indigo-500/10"
+                                        >
+                                            <ImageIcon size={14} />
+                                            {q.image ? 'Ganti Gambar' : 'Add Image'}
+                                        </button>
+
+                                        {/* Input File Tersembunyi */}
+                                        <input 
+                                            id={`file-upload-${qIndex}`}
+                                            type="file" 
+                                            className="hidden" 
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) handleImageUpload(qIndex, file);
+                                            }}
+                                        />
                                     </div>
+
+                                    {/* PREVIEW GAMBAR */}
+                                    {q.image && (
+                                        <div className="relative w-fit group/img">
+                                            <img 
+                                                src={q.image} 
+                                                alt="Preview Soal" 
+                                                className="max-h-40 rounded-xl object-cover border-2 border-surface-100 dark:border-slate-600 shadow-md"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => handleQuestionChange(qIndex, 'image', null)}
+                                                className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 hover:scale-110 transition-all border-2 border-white dark:border-slate-800"
+                                                title="Hapus Gambar"
+                                            >
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    )}
 
                                     <input
                                         required
@@ -271,7 +328,7 @@ export default function CreateQuizPage() {
                                     />
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-                                        {q.options.map((opt, optIndex) => (
+                                        {q.options.map((opt: string, optIndex: number) => (
                                             <div key={optIndex} className="relative group/opt">
                                                 <div className="flex items-center gap-3">
                                                     <div className="relative flex items-center">

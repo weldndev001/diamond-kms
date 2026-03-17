@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getQuizByIdAction, submitQuizResultAction } from '@/lib/actions/quiz.actions'
-import { ArrowLeft, Clock, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle, Send } from 'lucide-react'
 import Link from 'next/link'
 
 export default function TakeQuizPage() {
@@ -141,20 +141,42 @@ export default function TakeQuizPage() {
             ) : (
                 <form onSubmit={handleSubmit} className="space-y-8 pb-12">
                     {quiz.questions.map((q: any, i: number) => (
-                        <div key={q.id} className="card-sm border p-6">
-                            <h3 className="font-semibold text-lg text-navy-900 mb-4 tracking-tight">
-                                <span className="text-navy-600 mr-2">{i + 1}.</span> {q.question_text}
+                        <div key={q.id} className="p-8 border border-surface-200 dark:border-slate-700 rounded-[32px] shadow-sm bg-white dark:bg-slate-800/50 relative overflow-hidden group">
+                            <div className="absolute top-0 left-0 w-1.5 h-full bg-navy-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            
+                            <h3 className="font-bold text-xl text-navy-900 dark:text-white mb-6 tracking-tight leading-relaxed">
+                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-navy-50 dark:bg-navy-900/50 text-navy-600 dark:text-navy-400 text-sm font-black mr-3 border border-navy-100 dark:border-navy-500/20">{i + 1}</span>
+                                {q.question_text || "Lihat Gambar di Bawah:"}
                             </h3>
 
-                            <div className="space-y-3">
+                            {q.image && (
+                                <div className="mb-8 flex justify-center">
+                                    <div className="relative group/img-container">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-navy-500 to-indigo-500 rounded-2xl blur opacity-20 group-hover/img-container:opacity-30 transition duration-1000"></div>
+                                        <img 
+                                            src={q.image} 
+                                            alt={`Soal ${i + 1}`} 
+                                            className="relative max-h-80 w-auto rounded-xl shadow-2xl border border-white dark:border-slate-700 object-contain bg-white dark:bg-slate-900 p-1"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 gap-4">
                                 {Array.isArray(q.options) && q.options.map((opt: string, optIdx: number) => (
                                     <label
                                         key={optIdx}
-                                        className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition ${answers[q.id] === opt
-                                            ? 'border-navy-600 bg-navy-50 text-blue-900'
-                                            : 'border-surface-200 hover:border-surface-200 bg-white text-text-700'
+                                        className={`flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 group/option ${answers[q.id] === opt
+                                            ? 'border-navy-600 bg-navy-50 dark:bg-navy-900/30 text-navy-900 dark:text-navy-100 shadow-[0_0_20px_rgba(30,58,138,0.08)]'
+                                            : 'border-surface-100 dark:border-slate-800 hover:border-navy-200 dark:hover:border-navy-800 bg-white dark:bg-slate-900/50 text-text-700 dark:text-slate-300 hover:shadow-md'
                                             }`}
                                     >
+                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 transition-all ${answers[q.id] === opt
+                                            ? 'border-navy-600 bg-navy-600'
+                                            : 'border-surface-300 dark:border-slate-600 group-hover/option:border-navy-400'
+                                            }`}>
+                                            {answers[q.id] === opt && <div className="w-2 h-2 bg-white rounded-full shadow-sm" />}
+                                        </div>
                                         <input
                                             type="radio"
                                             name={`question-${q.id}`}
@@ -162,22 +184,27 @@ export default function TakeQuizPage() {
                                             checked={answers[q.id] === opt}
                                             required
                                             onChange={() => handleOptionSelect(q.id, opt)}
-                                            className="w-4 h-4 text-navy-600 border-surface-200 focus:ring-navy-600 ml-2"
+                                            className="hidden"
                                         />
-                                        <span className="ml-3 font-medium">{opt}</span>
+                                        <span className="font-bold text-base">{opt}</span>
                                     </label>
                                 ))}
                             </div>
                         </div>
                     ))}
 
-                    <div className="flex justify-end pt-4">
+                    <div className="flex justify-end pt-8">
                         <button
                             type="submit"
                             disabled={submitting || Object.keys(answers).length < quiz.questions.length}
-                            className="btn btn-primary"
+                            className="inline-flex items-center gap-2 px-8 py-4 bg-navy-900 dark:bg-navy-600 text-white rounded-2xl hover:bg-navy-800 dark:hover:bg-navy-500 transition-all font-black uppercase tracking-widest text-sm shadow-xl hover:shadow-2xl hover:-translate-y-1 disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none"
                         >
-                            {submitting ? 'Submitting...' : 'Submit Answers'}
+                            {submitting ? 'Submitting...' : (
+                                <>
+                                    <span>Submit Answers</span>
+                                    <Send size={18} />
+                                </>
+                            )}
                         </button>
                     </div>
                 </form>

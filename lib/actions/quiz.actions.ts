@@ -66,6 +66,7 @@ export async function createQuizAction(data: {
         question_text: string
         options: string[]
         correct_answer: string
+        image?: string | null
     }>
 }) {
     try {
@@ -92,8 +93,9 @@ export async function createQuizAction(data: {
                     create: data.questions.map((q, i) => ({
                         question_text: q.question_text,
                         question_type: 'MULTIPLE_CHOICE',
-                        options: q.options,
+                        options: q.options || [],
                         correct_answer: q.correct_answer,
+                        image: q.image || undefined,
                         order_index: i
                     }))
                 }
@@ -176,8 +178,9 @@ export async function updateQuizFullAction(id: string, data: {
     questions: Array<{
         id?: string
         question_text: string
-        options: string[]
+        options: string[] | any
         correct_answer: string
+        image?: string | null
     }>
     created_by?: string
 }) {
@@ -217,8 +220,9 @@ export async function updateQuizFullAction(id: string, data: {
                     quiz_id: id,
                     question_text: q.question_text,
                     question_type: 'MULTIPLE_CHOICE',
-                    options: q.options,
+                    options: q.options || [],
                     correct_answer: q.correct_answer,
+                    image: q.image || undefined,
                     order_index: i
                 }))
             })

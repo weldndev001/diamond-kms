@@ -55,6 +55,7 @@
     "lucide-react": "^0.575.0",
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^5.4.624",
+    "prisma": "^7.4.1",
     "shadcn": "^3.8.5",
     "tailwindcss": "^4",
     "tiptap": "^1.32.2",

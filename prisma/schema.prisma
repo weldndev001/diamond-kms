@@ -339,6 +339,7 @@ model QuizQuestion {
   question_type    String   // MULTIPLE_CHOICE | TRUE_FALSE
   options          Json
   correct_answer   String
+  image            String?  @db.Text
   order_index      Int
 
   quiz             Quiz     @relation(fields: [quiz_id], references: [id], onDelete: Cascade)
