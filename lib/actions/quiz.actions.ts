@@ -184,7 +184,12 @@ export async function updateQuizFullAction(id: string, data: {
     }>
     created_by?: string
 }) {
+    console.log(`[updateQuizFullAction] Updating quiz ${id}, questions count: ${data.questions?.length}`);
     try {
+        if (!id) throw new Error("Quiz ID is required");
+        if (!data.questions || data.questions.length === 0) {
+            throw new Error("Quiz must have at least one question");
+        }
         if (data.is_published && data.created_by) {
             const userDivisions = await prisma.userDivision.findMany({
                 where: { user_id: data.created_by },
@@ -218,17 +223,19 @@ export async function updateQuizFullAction(id: string, data: {
             await tx.quizQuestion.createMany({
                 data: data.questions.map((q, i) => ({
                     quiz_id: id,
-                    question_text: q.question_text,
+                    question_text: q.question_text || "Lihat Gambar di Bawah",
                     question_type: 'MULTIPLE_CHOICE',
-                    options: q.options || [],
-                    correct_answer: q.correct_answer,
-                    image: q.image || undefined,
+                    options: Array.isArray(q.options) ? q.options : [],
+                    correct_answer: q.correct_answer || "",
+                    image: q.image || null,
                     order_index: i
                 }))
             })
 
             return quiz
         })
+
+        console.log(`[updateQuizFullAction] Successfully updated quiz ${id}`);
 
         revalidatePath('/dashboard/quizzes')
         revalidatePath(`/dashboard/quizzes/create?edit=${id}`)

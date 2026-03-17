@@ -17,6 +17,7 @@ export default function TakeQuizPage() {
     const [submitting, setSubmitting] = useState(false)
     const [answers, setAnswers] = useState<Record<string, string>>({})
     const [result, setResult] = useState<any>(null)
+    const [error, setError] = useState<string | null>(null)
     const [timeLeft, setTimeLeft] = useState<number | null>(null)
 
     useEffect(() => {
@@ -28,6 +29,8 @@ export default function TakeQuizPage() {
                     if (res.data.time_limit_minutes) {
                         setTimeLeft(res.data.time_limit_minutes * 60)
                     }
+                } else {
+                    setError(res.error || 'Failed to load kuis')
                 }
                 setLoading(false)
             })
@@ -89,8 +92,26 @@ export default function TakeQuizPage() {
         return `${m}:${s < 10 ? '0' : ''}${s}`
     }
 
-    if (loading) return <div className="p-8 text-center animate-pulse">Loading Quiz...</div>
-    if (!quiz) return <div className="p-8 text-center text-danger">Quiz not found</div>
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center py-32">
+            <div className="w-14 h-14 border-4 border-navy-100 border-t-navy-600 rounded-full animate-spin mb-6"></div>
+            <p className="text-text-400 font-black uppercase tracking-[0.2em] text-[11px]">Memuat Kuis...</p>
+        </div>
+    )
+    if (error || !quiz) return (
+        <div className="max-w-4xl mx-auto p-12 text-center bg-white dark:bg-slate-800 rounded-[40px] border border-surface-200 dark:border-slate-700 shadow-xl mt-10">
+            <div className="w-20 h-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Send size={32} className="rotate-45" />
+            </div>
+            <h2 className="text-2xl font-black text-text-900 dark:text-white mb-2">Kuis Tidak Ditemukan</h2>
+            <p className="text-text-500 dark:text-slate-400 mb-8 max-w-sm mx-auto">
+                {error || 'Kuis yang Anda cari tidak tersedia atau terjadi kesalahan teknis.'}
+            </p>
+            <Link href="/dashboard/quizzes" className="btn btn-primary px-8 py-3 rounded-2xl">
+                Kembali ke Daftar Kuis
+            </Link>
+        </div>
+    )
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">

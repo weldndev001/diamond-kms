@@ -56,13 +56,23 @@ export default function CreateQuizPage() {
                     setContentId(q.content_id || '')
                     setIsPublished(q.is_published)
                     if (q.questions && q.questions.length > 0) {
-                        setQuestions(q.questions.map((quest: any) => ({
-                            question_text: quest.question_text,
-                            options: quest.options,
-                            correct_answer: quest.options.indexOf(quest.correct_answer).toString(),
-                            image: quest.image || null
-                        })))
+                        setQuestions(q.questions.map((quest: any) => {
+                            // Mencari index kunci jawaban dengan aman
+                            let correctIdx = -1;
+                            if (Array.isArray(quest.options)) {
+                                correctIdx = quest.options.indexOf(quest.correct_answer);
+                            }
+                            
+                            return {
+                                question_text: quest.question_text,
+                                options: Array.isArray(quest.options) ? quest.options : ['', '', '', ''],
+                                correct_answer: correctIdx !== -1 ? correctIdx.toString() : '',
+                                image: quest.image || null
+                            };
+                        }))
                     }
+                } else {
+                    setStatus({ type: 'error', msg: res.error || 'Failed to fetch quiz data.' })
                 }
             })
         }
