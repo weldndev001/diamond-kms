@@ -4,20 +4,27 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import Link from '@tiptap/extension-link'
+import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import {
     Bold, Italic, Underline as UnderlineIcon, Strikethrough,
     List, ListOrdered, Heading1, Heading2, Heading3,
-    Quote, Code, Undo, Redo, Link as LinkIcon, BookOpen
+    Quote, Code, Undo, Redo, Link as LinkIcon, BookOpen, Image as ImageIcon, Loader2
 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { useRef, useState } from 'react'
 
 interface TiptapEditorProps {
     content: string
     onChange: (html: string) => void
     onOpenSources?: () => void
+    orgId?: string
 }
 
-export function TiptapEditor({ content, onChange, onOpenSources }: TiptapEditorProps) {
+export function TiptapEditor({ content, onChange, onOpenSources, orgId }: TiptapEditorProps) {
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const [uploading, setUploading] = useState(false)
+
     const editor = useEditor({
         immediatelyRender: false,
         extensions: [
@@ -26,6 +33,12 @@ export function TiptapEditor({ content, onChange, onOpenSources }: TiptapEditorP
             }),
             Underline,
             Link.configure({ openOnClick: false }),
+            Image.configure({
+                allowBase64: true,
+                HTMLAttributes: {
+                    class: 'rounded-lg max-w-full h-auto my-4',
+                },
+            }),
             Placeholder.configure({ placeholder: 'Start writing your article content here...' }),
         ],
         content,
@@ -38,6 +51,35 @@ export function TiptapEditor({ content, onChange, onOpenSources }: TiptapEditorP
             },
         },
     })
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file || !orgId || !editor) return
+
+        setUploading(true)
+        try {
+            const supabase = createClient()
+            const storagePath = `${orgId}/content_images/${Date.now()}_${file.name}`
+
+            const { data, error } = await supabase.storage
+                .from('documents')
+                .upload(storagePath, file)
+
+            if (error) throw error
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('documents')
+                .getPublicUrl(storagePath)
+
+            editor.chain().focus().setImage({ src: publicUrl }).run()
+        } catch (error) {
+            console.error('Image upload failed:', error)
+            alert('Failed to upload image')
+        } finally {
+            setUploading(false)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
 
     if (!editor) return null
 
@@ -108,6 +150,21 @@ export function TiptapEditor({ content, onChange, onOpenSources }: TiptapEditorP
                 >
                     <LinkIcon size={16} />
                 </ToolButton>
+
+                <ToolButton
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Insert Image"
+                    isActive={uploading}
+                >
+                    {uploading ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
+                </ToolButton>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                />
 
                 <div className="w-px h-6 bg-surface-200 mx-1" />
 

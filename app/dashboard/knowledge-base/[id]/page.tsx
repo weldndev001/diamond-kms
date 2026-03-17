@@ -797,6 +797,12 @@ export default function ContentDetailPage() {
                             {content.title}
                         </h1>
 
+                        {content.image_url && (
+                            <div className="mb-8 aspect-[21/9] w-full overflow-hidden rounded-2xl border border-surface-200">
+                                <img src={content.image_url} alt={content.title} className="h-full w-full object-cover" />
+                            </div>
+                        )}
+
                         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-10 pb-6 border-b text-sm text-text-500">
                             <div className="flex items-center gap-2">
                                 <span className="font-semibold text-text-700">Author:</span>

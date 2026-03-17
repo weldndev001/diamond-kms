@@ -60,6 +60,7 @@ export async function createContentAction(data: {
     orgId: string
     authorId: string
     isMandatory?: boolean
+    imageUrl?: string
 }) {
     try {
         const content = await prisma.content.create({
@@ -70,6 +71,7 @@ export async function createContentAction(data: {
                 author_id: data.authorId,
                 status: ContentStatus.DRAFT,
                 is_mandatory_read: data.isMandatory || false,
+                image_url: data.imageUrl || null,
                 organization: {
                     connect: { id: data.orgId }
                 },

@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { createContentAction } from '@/lib/actions/content.actions'
 import { getDivisionsAction } from '@/lib/actions/user.actions'
-import { Save, ArrowLeft, BookOpen, Search, X, CheckCircle2 } from 'lucide-react'
+import { Save, ArrowLeft, BookOpen, Search, X, CheckCircle2, Upload, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { TiptapEditor } from '@/components/editor/TiptapEditor'
+import { createClient } from '@/lib/supabase/client'
 
 export default function CreateContentPage() {
     const router = useRouter()
@@ -18,6 +19,8 @@ export default function CreateContentPage() {
     const [divisionId, setDivisionId] = useState('')
     const [bodyHtml, setBodyHtml] = useState('')
     const [isMandatory, setIsMandatory] = useState(false)
+    const [headerImage, setHeaderImage] = useState('')
+    const [uploadingHeader, setUploadingHeader] = useState(false)
     const [status, setStatus] = useState({ type: '', msg: '' })
 
     const [divisions, setDivisions] = useState<any[]>([])
@@ -61,9 +64,35 @@ export default function CreateContentPage() {
     }
 
     const appendSourceToEditor = () => {
-        // Here we could inject a formatted block into the Tiptap editor via a ref
-        // But for MVP, keeping references linked in the backend is usually enough
         setIsSourceModalOpen(false)
+    }
+
+    const handleHeaderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file || !organization?.id) return
+
+        setUploadingHeader(true)
+        try {
+            const supabase = createClient()
+            const storagePath = `${organization.id}/header_images/${Date.now()}_${file.name}`
+
+            const { error } = await supabase.storage
+                .from('documents')
+                .upload(storagePath, file)
+
+            if (error) throw error
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('documents')
+                .getPublicUrl(storagePath)
+
+            setHeaderImage(publicUrl)
+        } catch (error) {
+            console.error('Header upload failed:', error)
+            alert('Gagal mengunggah header image')
+        } finally {
+            setUploadingHeader(false)
+        }
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -84,7 +113,8 @@ export default function CreateContentPage() {
             divisionId,
             orgId: organization.id,
             authorId: user.id,
-            isMandatory
+            isMandatory,
+            imageUrl: headerImage
         })
 
         if (res.success) {
@@ -138,6 +168,49 @@ export default function CreateContentPage() {
                                 />
                             </div>
 
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-text-700">Header Image</label>
+                                {headerImage ? (
+                                    <div className="relative aspect-[21/9] w-full overflow-hidden rounded-xl border border-surface-200 bg-surface-50 group">
+                                        <img src={headerImage} alt="Header" className="h-full w-full object-cover" />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setHeaderImage('')}
+                                                className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-md"
+                                                title="Hapus Image"
+                                            >
+                                                <Trash2 size={20} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div
+                                        onClick={() => document.getElementById('header-input')?.click()}
+                                        className="border-2 border-dashed border-surface-200 rounded-xl p-8 flex flex-col items-center gap-2 cursor-pointer hover:border-navy-400 hover:bg-surface-50 transition-all"
+                                    >
+                                        <div className="p-3 bg-surface-100 text-text-300 rounded-full">
+                                            <ImageIcon size={24} />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-sm font-bold text-navy-900">
+                                                {uploadingHeader ? 'Sedang mengunggah...' : 'Unggah Header Image'}
+                                            </p>
+                                            <p className="text-xs text-text-400 mt-0.5">Disarankan rasio 21:9 (Contoh: 1200x500px)</p>
+                                        </div>
+                                        {uploadingHeader && <Loader2 size={16} className="animate-spin text-navy-600 mt-1" />}
+                                    </div>
+                                )}
+                                <input
+                                    id="header-input"
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleHeaderUpload}
+                                    disabled={uploadingHeader}
+                                />
+                            </div>
+
                             <div className="space-y-2 relative">
                                 <label className="flex items-center justify-between text-sm font-medium text-text-700 mb-1">
                                     <span>Isi Konten <span className="text-danger">*</span></span>
@@ -147,6 +220,7 @@ export default function CreateContentPage() {
                                     content={bodyHtml}
                                     onChange={setBodyHtml}
                                     onOpenSources={() => setIsSourceModalOpen(true)}
+                                    orgId={organization?.id}
                                 />
 
                                 {selectedSources.length > 0 && (

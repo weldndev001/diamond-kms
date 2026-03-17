@@ -188,6 +188,7 @@ model Content {
   category          String
   status            ContentStatus         @default(DRAFT)
   is_mandatory_read Boolean               @default(false)
+  image_url         String?
   source_documents  String[]
   is_processed      Boolean               @default(false)
   processing_status String                @default("idle")

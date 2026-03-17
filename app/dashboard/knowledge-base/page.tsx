@@ -735,10 +735,10 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc }: {
                         </h3>
                         <div className="flex gap-2">
                             <button onClick={onUpload} className="btn bg-white border border-surface-200 text-text-600 px-4 py-2 text-sm hover:bg-surface-50">
-                                <FileText size={16} /> Upload Dokumen
+                                <FileText size={16} /> Hubungkan Dokumen
                             </button>
                             <button onClick={onAddDoc} className="btn btn-primary px-4 py-2 text-sm">
-                                <Plus size={16} /> Tambah Konten
+                                <Plus size={16} /> Hubungkan Konten
                             </button>
                         </div>
                     </div>
@@ -981,7 +981,7 @@ export default function ContentsPage() {
                     onBack={() => { setView('list'); setActiveKB(null) }}
                     onChat={() => setView('chat')}
                     onAddDoc={() => setView('add-docs')}
-                    onUpload={() => {}} // Placeholder
+                    onUpload={() => setView('add-docs')}
                     onRemoveDoc={handleRemoveDoc}
                 />
             )}

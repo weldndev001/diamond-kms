@@ -29,12 +29,15 @@ const getIconForLabel = (label: string) => {
         case 'FAQ':
         case 'FAQs / Help': return <Bot size={16} />
         case 'AISA':
+        case 'Kelola Knowledge Base':
         case 'Cari & Tanya AI':
         case 'AI Assistant': return <Sparkles size={16} />
         case 'Knowledge Base': return <Tags size={16} />
         case 'Content':
+        case 'Manage Content':
         case 'Kelola Konten':
         case 'Dokumen':
+        case 'Manage Document':
         case 'Documents': return <FileText size={16} />
         case 'Quizzes':
         case 'Quiz':
@@ -87,9 +90,9 @@ const getNavEntries = (role?: string): NavEntry[] => {
             label: 'Knowledge Base',
             icon: 'Tags',
             children: [
-                { label: 'Cari & Tanya AI', href: '/dashboard/knowledge-base' },
-                { label: 'Dokumen', href: '/dashboard/documents' },
-                { label: 'Kelola Konten', href: '/dashboard/content' }
+                { label: 'Kelola Knowledge Base', href: '/dashboard/knowledge-base' },
+                { label: 'Manage Document', href: '/dashboard/documents' },
+                { label: 'Manage Content', href: '/dashboard/content' }
             ]
         },
         {

@@ -128,7 +128,7 @@ export default function DashboardPage() {
                             <FileText size={24} />
                         </div>
                         <div>
-                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Dokumen</p>
+                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Manage Document</p>
                             <p className="text-3xl font-black font-display text-text-900 mt-0.5">
                                 {stats?.totalDocuments ?? 0}
                             </p>
@@ -143,7 +143,7 @@ export default function DashboardPage() {
                             <Tags size={24} />
                         </div>
                         <div>
-                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Konten</p>
+                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Manage Content</p>
                             <p className="text-3xl font-black font-display text-text-900 mt-0.5">
                                 {stats?.totalContents ?? 0}
                             </p>
@@ -226,7 +226,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <Link href="/dashboard/documents" className="p-4 bg-surface-50 border border-surface-200 rounded-xl text-center hover:bg-navy-light hover:border-navy-300 transition">
                         <FileText size={20} className="mx-auto text-navy-600 mb-2" />
-                        <span className="text-sm font-medium text-text-900">Dokumen</span>
+                        <span className="text-sm font-medium text-text-900">Manage Document</span>
                     </Link>
                     <Link href="/dashboard/knowledge-base" className="p-4 bg-surface-50 border border-surface-200 rounded-xl text-center hover:bg-navy-light hover:border-navy-300 transition">
                         <Tags size={20} className="mx-auto text-amber-600 mb-2" />

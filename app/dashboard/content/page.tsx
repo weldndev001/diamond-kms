@@ -72,7 +72,7 @@ export default function ContentListPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-end flex-wrap gap-4">
                 <div>
-                    <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">Content Manager</h1>
+                    <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">Manage Content</h1>
                     <p className="text-sm text-text-500 mt-1">Kelola artikel, SOP, dan konten knowledge base organisasi Anda.</p>
                 </div>
                 <div className="flex items-center gap-3">
