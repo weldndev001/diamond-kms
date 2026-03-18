@@ -219,7 +219,7 @@ export default function CreateQuizPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">Linked Article / Material</label>
+                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">Linked Knowledge Base</label>
                             <select
                                 value={contentId}
                                 onChange={(e) => setContentId(e.target.value)}
@@ -230,7 +230,7 @@ export default function CreateQuizPage() {
                                     <option key={c.id} value={c.id}>[{c.category}] {c.title}</option>
                                 ))}
                             </select>
-                            <p className="text-[11px] text-text-400 font-medium ml-1">Link this quiz to an existing Knowledge Base article.</p>
+                            <p className="text-[11px] text-text-400 font-medium ml-1">Link this quiz to an existing Knowledge Base.</p>
                         </div>
 
                         <div className="space-y-2">

@@ -66,8 +66,8 @@ export default function DashboardPage() {
 
     const getRoleLabel = () => {
         switch (role) {
-            case 'SUPER_ADMIN': return 'HRD Dashboard'
-            case 'GROUP_ADMIN': return 'KaDiv Dashboard'
+            case 'SUPER_ADMIN': return 'Dashboard'
+            case 'GROUP_ADMIN': return 'Divisional Dashboard'
             case 'SUPERVISOR': return 'Supervisor Dashboard'
             case 'STAFF': return 'Staff Dashboard'
             default: return 'Dashboard'

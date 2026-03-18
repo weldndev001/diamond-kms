@@ -83,7 +83,7 @@ export default function DocumentsPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-end">
                 <div>
-                    <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">Manage Document</h1>
+                    <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">Document Management</h1>
                     <p className="text-sm text-text-500 mt-1">Upload, process, and search organizational documents with AI.</p>
                 </div>
                 {['SUPER_ADMIN', 'GROUP_ADMIN', 'SUPERVISOR', 'MAINTAINER'].includes(role || '') && (
