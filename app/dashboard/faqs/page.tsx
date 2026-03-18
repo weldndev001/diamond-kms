@@ -102,11 +102,7 @@ export default function FAQsPage() {
                         </button>
                         {isFull && (
                             <span className="text-[10px] font-black text-amber-300 uppercase tracking-widest animate-pulse">
-<<<<<<< Updated upstream
-                                FAQ Quota Full (Max 10)
-=======
                                 FAQ Limit Full (Max 10)
->>>>>>> Stashed changes
                             </span>
                         )}
                     </div>

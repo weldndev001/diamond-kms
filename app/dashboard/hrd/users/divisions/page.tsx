@@ -41,13 +41,8 @@ export default function DivisionsPage() {
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
-<<<<<<< Updated upstream
-                        <h1 className="text-2xl font-bold font-display text-navy-900">Group Management</h1>
-                        <p className="text-sm text-text-500 mt-1">Manage your organization's groups.</p>
-=======
                         <h1 className="text-2xl font-bold font-display text-navy-900">Division Management</h1>
                         <p className="text-sm text-text-500 mt-1">Manage your organization's divisions.</p>
->>>>>>> Stashed changes
                     </div>
                     <Link
                         href="/dashboard/hrd/users/divisions/new"
