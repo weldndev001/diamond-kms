@@ -28,12 +28,12 @@ const getIconForLabel = (label: string) => {
         case 'Dashboard': return <Home size={16} />
         case 'FAQ':
         case 'FAQs / Help': return <Bot size={16} />
-        case 'AISA':
-        case 'Knowledge Base':
+        case 'Manage Knowledge Base':
+        case 'Kelola Knowledge Base':
         case 'Search & Ask AI':
+        case 'Cari & Tanya AI':
         case 'AI Assistant': return <Sparkles size={16} />
-        case 'Knowledge Management': return <Tags size={16} />
-        case 'Content':
+        case 'Knowledge Base': return <Tags size={16} />
         case 'Manage Content':
         case 'Manage Articles':
         case 'Document':
@@ -41,16 +41,22 @@ const getIconForLabel = (label: string) => {
         case 'Manage Documents': return <FileText size={16} />
         case 'Quiz Management':
         case 'Quiz':
+        case 'Staff Understanding':
+        case 'Pemahaman Pegawai':
         case 'Employee Assessment': return <FileQuestion size={16} />
-        case 'User Management':
+        case 'User':
         case 'Users':
-        case 'User': return <Users size={16} />
+        case 'Members':
+        case 'Anggota': return <Users size={16} />
         case 'Organization Settings':
         case 'Organization': return <Settings size={16} />
         case 'OTP':
         case 'Activation': return <KeyRound size={16} />
-        case 'Remote Access': return <MonitorDot size={16} />
-        case 'Division': return <Network size={16} />
+        case 'Remote Access':
+        case 'Akses Remote': return <MonitorDot size={16} />
+        case 'Divisions':
+        case 'Division':
+        case 'Divisi': return <Network size={16} />
         case 'Leaderboard': return <Award size={16} />
         case 'Group':
         case 'Divisions': return <Network size={16} />
@@ -59,7 +65,9 @@ const getIconForLabel = (label: string) => {
         case 'System Overview': return <Shield size={16} />
         case 'Organizations': return <FolderTree size={16} />
         case 'Logs': return <Activity size={16} />
-        case 'Website': return <Globe size={16} />
+        case 'Appearance':
+        case 'Website':
+        case 'Website & System': return <Globe size={16} />
         default: return <FileText size={16} />
     }
 }
@@ -86,14 +94,14 @@ const getNavEntries = (role?: string): NavEntry[] => {
     const base: NavEntry[] = [
         { label: 'Dashboard', href: '/dashboard' },
         { label: 'FAQ', href: '/dashboard/faqs' },
-        { label: 'AISA', href: '/dashboard/ai-assistant' },
+        { label: 'AI Assistant', href: '/dashboard/ai-assistant' },
         {
             label: 'Knowledge Management',
             icon: 'Tags',
             children: [
-                { label: 'Knowledge Base', href: '/dashboard/knowledge-base' },
-                { label: 'Document', href: '/dashboard/documents' },
-                { label: 'Content', href: '/dashboard/content' }
+                { label: 'Manage Knowledge Base', href: '/dashboard/knowledge-base' },
+                { label: 'Manage Document', href: '/dashboard/documents' },
+                { label: 'Manage Content', href: '/dashboard/content' }
             ]
         },
         {
@@ -113,8 +121,8 @@ const getNavEntries = (role?: string): NavEntry[] => {
                 label: 'User Management',
                 icon: 'Users',
                 children: [
-                    { label: 'User', href: '/dashboard/hrd/users' },
-                    { label: 'Group', href: '/dashboard/hrd/users/divisions' },
+                    { label: 'Members', href: '/dashboard/hrd/users' },
+                    { label: 'Divisions', href: '/dashboard/hrd/users/divisions' },
                 ]
             },
             // Divisions removed as it's now in the User accordion
@@ -126,8 +134,7 @@ const getNavEntries = (role?: string): NavEntry[] => {
                     { label: 'AI Management', href: '/dashboard/hrd/ai' },
                     { label: 'Maintenance', href: '/dashboard/hrd/maintenance' },
                     { label: 'Activation', href: '/dashboard/hrd/otp' },
-                    { label: 'Organization', href: '/dashboard/hrd/settings' },
-                    { label: 'Website', href: '/dashboard/hrd/website' },
+                    { label: 'Appearance', href: '/dashboard/hrd/website' },
                 ],
             },
         ]

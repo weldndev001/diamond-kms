@@ -85,7 +85,11 @@ export function ErrorLogsSection() {
                 ) : logs.length === 0 ? (
                     <div className="p-8 text-center text-text-400 flex flex-col items-center justify-center gap-2">
                         <AlertCircle size={24} className="text-surface-300" />
+<<<<<<< Updated upstream
                         <p>No log entries found.</p>
+=======
+                        <p>No log records found.</p>
+>>>>>>> Stashed changes
                     </div>
                 ) : (
                     logs.map(log => {

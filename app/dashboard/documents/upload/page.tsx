@@ -170,7 +170,7 @@ export default function UploadDocumentPage() {
                 })
 
             if (uploadError) {
-                setError(`Upload gagal: ${uploadError.message}`)
+                setError(`Upload failed: ${uploadError.message}`)
                 setUploading(false)
                 return
             }
@@ -187,7 +187,7 @@ export default function UploadDocumentPage() {
             })
 
             if (!docRes.success) {
-                setError(docRes.error || 'Gagal membuat record dokumen')
+                setError(docRes.error || 'Failed to create document record')
                 setUploading(false)
                 return
             }
@@ -208,7 +208,7 @@ export default function UploadDocumentPage() {
                 id: docRes.data!.id,
                 file_name: file.name,
                 processing_status: 'processing',
-                processing_log: [{ time: new Date().toISOString(), message: 'Memulai proses...', progress: 5 }],
+                processing_log: [{ time: new Date().toISOString(), message: 'Starting process...', progress: 5 }],
                 is_processed: false,
                 processing_error: null,
                 ai_title: null,
@@ -224,7 +224,7 @@ export default function UploadDocumentPage() {
             setUploading(false)
 
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Upload gagal'
+            const message = err instanceof Error ? err.message : 'Upload failed'
             setError(message)
             setUploading(false)
         }
@@ -235,25 +235,25 @@ export default function UploadDocumentPage() {
             case 'processing':
                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                        <Loader2 size={12} className="animate-spin" /> Memproses
+                        <Loader2 size={12} className="animate-spin" /> Processing
                     </span>
                 )
             case 'completed':
                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                        <CheckCircle size={12} /> Selesai
+                        <CheckCircle size={12} /> Completed
                     </span>
                 )
             case 'failed':
                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                        <AlertTriangle size={12} /> Gagal
+                        <AlertTriangle size={12} /> Failed
                     </span>
                 )
             default:
                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-surface-100 text-text-500">
-                        Menunggu
+                        Waiting
                     </span>
                 )
         }
@@ -321,7 +321,7 @@ export default function UploadDocumentPage() {
                                     <p className="font-bold text-navy-900">{file.name}</p>
                                     <p className="text-sm text-text-500 mt-1">{(file.size / 1024).toFixed(1)} KB • {file.type || 'Unknown type'}</p>
                                 </div>
-                                <p className="text-xs text-text-300 mt-2">Klik untuk ganti file</p>
+                                <p className="text-xs text-text-300 mt-2">Click to change file</p>
                             </div>
                         ) : (
                             <div className="flex flex-col items-center gap-3">
@@ -329,7 +329,7 @@ export default function UploadDocumentPage() {
                                     <Upload size={28} />
                                 </div>
                                 <div>
-                                    <p className="font-bold text-navy-900">Drop file di sini atau klik untuk browse</p>
+                                    <p className="font-bold text-navy-900">Drop file here or click to browse</p>
                                     <p className="text-sm text-text-500 mt-1">PDF, Word, Excel, PowerPoint, TXT, Markdown, CSV, SQL</p>
                                 </div>
                             </div>
@@ -338,7 +338,7 @@ export default function UploadDocumentPage() {
 
                     <div className="flex justify-between items-center">
                         <p className="text-xs text-text-400">
-                            💡 Anda bisa meninggalkan halaman ini setelah upload — proses AI akan tetap berjalan di background.
+                            💡 You can leave this page after uploading — the AI process will continue to run in the background.
                         </p>
                         <button
                             onClick={handleUpload}
@@ -346,7 +346,7 @@ export default function UploadDocumentPage() {
                             className="btn btn-primary shadow-md disabled:opacity-50 flex items-center gap-2"
                         >
                             {uploading ? (
-                                <><Loader2 size={16} className="animate-spin" /> Mengunggah...</>
+                                <><Loader2 size={16} className="animate-spin" /> Uploading...</>
                             ) : (
                                 <><Upload size={16} /> Upload & Process</>
                             )}
@@ -360,7 +360,7 @@ export default function UploadDocumentPage() {
                 <div className="p-5 border-b border-surface-200 flex items-center justify-between">
                     <h2 className="text-lg font-bold font-display text-navy-900 flex items-center gap-2">
                         <Bot size={20} className="text-navy-600" />
-                        Proses Upload Terbaru
+                        Recent Upload Processes
                     </h2>
                     <button
                         onClick={loadRecentUploads}
@@ -374,12 +374,12 @@ export default function UploadDocumentPage() {
                 {loadingRecent ? (
                     <div className="p-8 text-center">
                         <Loader2 size={24} className="animate-spin text-navy-400 mx-auto" />
-                        <p className="text-sm text-text-400 mt-2">Memuat...</p>
+                        <p className="text-sm text-text-400 mt-2">Loading...</p>
                     </div>
                 ) : recentDocs.length === 0 ? (
                     <div className="p-8 text-center text-text-400">
                         <FileText size={32} className="mx-auto mb-2 text-surface-300" />
-                        <p className="text-sm">Belum ada upload terbaru</p>
+                        <p className="text-sm">No recent uploads yet</p>
                     </div>
                 ) : (
                     <div className="divide-y divide-surface-100">
@@ -409,7 +409,7 @@ export default function UploadDocumentPage() {
                                         <div className="flex items-center gap-3 mt-1">
                                             {getStatusBadge(doc)}
                                             <span className="text-xs text-text-400">
-                                                {new Date(doc.created_at).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
+                                                {new Date(doc.created_at).toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
                                             </span>
                                         </div>
                                     </div>
@@ -433,7 +433,7 @@ export default function UploadDocumentPage() {
                                                 href={`/dashboard/documents/${doc.id}`}
                                                 className="text-navy-600 hover:text-navy-700 p-1.5 rounded hover:bg-navy-100 transition"
                                                 onClick={(e) => e.stopPropagation()}
-                                                title="Lihat Dokumen"
+                                                title="View Document"
                                             >
                                                 <Eye size={16} />
                                             </Link>
@@ -443,7 +443,7 @@ export default function UploadDocumentPage() {
                                                 <button
                                                     onClick={(e) => e.stopPropagation()}
                                                     className="text-amber-600 hover:text-amber-700 p-1.5 rounded hover:bg-amber-100 transition text-xs font-semibold"
-                                                    title="Debug Proses AI"
+                                                    title="Debug AI Process"
                                                 >
                                                     DEBUG
                                                 </button>
@@ -451,23 +451,23 @@ export default function UploadDocumentPage() {
                                             <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
                                                 <DialogHeader>
                                                     <DialogTitle className="flex flex-col gap-1 text-left">
-                                                        <span>Debug Proses: {doc.ai_title || doc.file_name}</span>
+                                                        <span>Debug Process: {doc.ai_title || doc.file_name}</span>
                                                         <span className="text-xs text-text-400 font-normal">ID: {doc.id}</span>
                                                     </DialogTitle>
                                                 </DialogHeader>
                                                 <div className="space-y-4 pt-4">
                                                     <div>
-                                                        <h4 className="text-sm font-semibold text-navy-900 mb-2">Status Umum</h4>
+                                                        <h4 className="text-sm font-semibold text-navy-900 mb-2">General Status</h4>
                                                         <div className="bg-surface-50 p-3 rounded-md border border-surface-200 text-xs font-mono space-y-1">
                                                             <p>Status: <span className="font-bold text-navy-600">{doc.processing_status}</span></p>
                                                             <p>Progress: <span className="font-bold text-navy-600">{getLatestProgress(doc)}%</span></p>
-                                                            <p>Selesai: {doc.is_processed ? 'Yes' : 'No'}</p>
+                                                            <p>Completed: {doc.is_processed ? 'Yes' : 'No'}</p>
                                                             {doc.processing_error && <p className="text-red-600 mt-2 font-bold whitespace-pre-wrap">Error: {doc.processing_error}</p>}
                                                         </div>
                                                     </div>
 
                                                     <div>
-                                                        <h4 className="text-sm font-semibold text-navy-900 mb-2">Log Backend</h4>
+                                                        <h4 className="text-sm font-semibold text-navy-900 mb-2">Backend Log</h4>
                                                         <div className="bg-slate-900 text-slate-300 p-3 rounded-md text-xs font-mono max-h-64 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-slate-700">
                                                             {doc.processing_log && doc.processing_log.length > 0 ? (
                                                                 doc.processing_log.map((log, i) => (
@@ -480,12 +480,12 @@ export default function UploadDocumentPage() {
                                                                     </div>
                                                                 ))
                                                             ) : (
-                                                                <span className="text-slate-500 italic">Belum ada log terekam</span>
+                                                                <span className="text-slate-500 italic">No logs recorded yet</span>
                                                             )}
                                                             {doc.processing_status === 'processing' && (
                                                                 <div className="flex gap-3 text-slate-500 animate-pulse mt-2 pt-2 border-t border-slate-800">
                                                                     <span>[   ...  ]</span>
-                                                                    <span>Menunggu update dari server...</span>
+                                                                    <span>Waiting for updates from server...</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -550,14 +550,14 @@ export default function UploadDocumentPage() {
                                             <div className="border border-surface-200 rounded-lg bg-surface-50 overflow-hidden">
                                                 <div className="p-3 bg-white border-b border-surface-200">
                                                     <span className="text-xs font-semibold text-navy-900">
-                                                        Detail Aktivitas ({doc.processing_log.length})
+                                                        Activity Details ({doc.processing_log.length})
                                                     </span>
                                                 </div>
                                                 <div className="p-3 max-h-48 overflow-y-auto space-y-2 font-mono text-[11px]">
                                                     {doc.processing_log.map((log, i) => (
                                                         <div key={i} className="flex gap-2 text-text-600">
                                                             <span className="text-text-400 shrink-0">
-                                                                [{new Date(log.time).toLocaleTimeString('id-ID')}]
+                                                                [{new Date(log.time).toLocaleTimeString('en-US')}]
                                                             </span>
                                                             <span className={i === doc.processing_log!.length - 1 ? 'text-navy-700 font-semibold' : ''}>
                                                                 {log.message}
@@ -567,7 +567,7 @@ export default function UploadDocumentPage() {
                                                     {doc.processing_status === 'processing' && (
                                                         <div className="flex gap-2 text-text-400 animate-pulse">
                                                             <span>[...]</span>
-                                                            <span>Menunggu proses selanjutnya...</span>
+                                                            <span>Waiting for the next process...</span>
                                                         </div>
                                                     )}
                                                 </div>

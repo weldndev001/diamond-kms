@@ -165,7 +165,7 @@ export default function ContentDetailPage() {
     }
 
     const handleDeleteComment = async (commentId: string) => {
-        if (!confirm('Hapus komentar ini?')) return
+        if (!confirm('Delete this comment?')) return
         await deleteReviewCommentAction(commentId)
         loadReviewComments()
     }
@@ -319,7 +319,7 @@ export default function ContentDetailPage() {
                     const updated = [...prev]
                     updated[updated.length - 1] = {
                         role: 'assistant',
-                        content: `⚠️ Error: ${err.error || 'Gagal mendapatkan jawaban'}`,
+                        content: `⚠️ Error: ${err.error || 'Failed to get answer'}`,
                     }
                     return updated
                 })
@@ -392,7 +392,7 @@ export default function ContentDetailPage() {
                 const updated = [...prev]
                 updated[updated.length - 1] = {
                     role: 'assistant',
-                    content: '⚠️ Koneksi terputus. Silakan coba lagi.',
+                    content: '⚠️ Connection lost. Please try again.',
                 }
                 return updated
             })
@@ -452,7 +452,7 @@ export default function ContentDetailPage() {
         if (messages.length === 0 || isStreaming || isSummarizing) return
         setIsSummarizing(true)
 
-        const summaryPrompt = 'Buatkan ringkasan dari seluruh percakapan kita di atas dalam bentuk poin-poin utama.'
+        const summaryPrompt = 'Create a summary of our conversation above in bullet points.'
         const userMsg: ChatMessage = { role: 'user', content: summaryPrompt }
         const newMessages = [...messages, userMsg]
         setMessages(newMessages)
@@ -472,7 +472,7 @@ export default function ContentDetailPage() {
             if (!res.ok) {
                 setMessages(prev => {
                     const updated = [...prev]
-                    updated[updated.length - 1] = { role: 'assistant', content: '⚠️ Gagal membuat ringkasan' }
+                    updated[updated.length - 1] = { role: 'assistant', content: '⚠️ Failed to create summary' }
                     return updated
                 })
                 return
@@ -508,7 +508,7 @@ export default function ContentDetailPage() {
         } catch {
             setMessages(prev => {
                 const updated = [...prev]
-                updated[updated.length - 1] = { role: 'assistant', content: '⚠️ Koneksi terputus.' }
+                updated[updated.length - 1] = { role: 'assistant', content: '⚠️ Connection lost.' }
                 return updated
             })
         } finally {
@@ -539,9 +539,9 @@ export default function ContentDetailPage() {
 
     const isPublished = content.status === 'PUBLISHED'
     const suggestedQuestions = [
-        'Apa poin utama dari artikel ini?',
-        'Adakah instruksi atau prosedur di sini?',
-        'Buat ringkasan singkat dalam bahasa Indonesia.',
+        'What are the main points of this article?',
+        'Are there any instructions or procedures here?',
+        'Create a brief summary.',
     ]
 
     return (
@@ -611,7 +611,7 @@ export default function ContentDetailPage() {
                             }`}
                         >
                             <MessageCircle size={18} />
-                            Komentar
+                            Comments
                             <span className="bg-amber-500 text-white text-[11px] font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                                 {reviewComments.filter(c => !c.is_resolved).length}
                             </span>
@@ -634,7 +634,7 @@ export default function ContentDetailPage() {
                                 </div>
                                 <div>
                                     <h2 className="font-bold font-display text-navy-900 text-sm">AI Article Assistant</h2>
-                                    <p className="text-[10px] text-text-400">Tanya seputar isi artikel ini</p>
+                                    <p className="text-[10px] text-text-400">Ask about this article's content</p>
                                 </div>
                             </div>
                             {messages.length > 0 && (
@@ -643,7 +643,7 @@ export default function ContentDetailPage() {
                                         onClick={handleSummary}
                                         disabled={isStreaming || isSummarizing}
                                         className="p-1.5 text-text-400 hover:text-navy-700 hover:bg-navy-50 rounded-md transition disabled:opacity-40"
-                                        title="Ringkas Percakapan"
+                                        title="Summarize Conversation"
                                     >
                                         <ClipboardList size={15} />
                                     </button>
@@ -651,7 +651,7 @@ export default function ContentDetailPage() {
                                         onClick={clearChat}
                                         disabled={isStreaming}
                                         className="p-1.5 text-text-400 hover:text-red-600 hover:bg-red-50 rounded-md transition disabled:opacity-40"
-                                        title="Hapus Chat"
+                                        title="Clear Chat"
                                     >
                                         <Trash2 size={15} />
                                     </button>
@@ -666,16 +666,16 @@ export default function ContentDetailPage() {
                                 <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 text-center space-y-2">
                                     {(content.processing_status === 'processing' || reprocessing) ? (
                                         <div className="flex items-center justify-center gap-2 text-xs font-semibold text-amber-900 bg-amber-200/50 py-1.5 rounded-md px-4 w-fit mx-auto">
-                                            <Loader2 size={12} className="animate-spin text-amber-700" /> AI Membaca Artikel...
+                                            <Loader2 size={12} className="animate-spin text-amber-700" /> AI is reading the article...
                                         </div>
                                     ) : (
                                         <div className="space-y-2">
-                                            <div className="text-xs font-semibold text-amber-900">AI belum memproses artikel ini.</div>
+                                            <div className="text-xs font-semibold text-amber-900">AI has not processed this article yet.</div>
                                             <button
                                                 onClick={handleReprocess}
                                                 className="px-4 py-1.5 bg-amber-600 text-white text-xs font-semibold rounded-md hover:bg-amber-700 transition"
                                             >
-                                                🔄 Proses Ulang AI
+                                                🔄 Reprocess AI
                                             </button>
                                         </div>
                                     )}
@@ -703,9 +703,9 @@ export default function ContentDetailPage() {
                                     <div className="w-16 h-16 rounded-2xl bg-navy-100 flex items-center justify-center mb-4">
                                         <MessageSquare size={28} className="text-navy-600" />
                                     </div>
-                                    <h3 className="font-semibold text-navy-900 text-sm mb-1">Diskusi Artikel</h3>
+                                    <h3 className="font-semibold text-navy-900 text-sm mb-1">Article Discussion</h3>
                                     <p className="text-xs text-text-400 mb-5 max-w-[260px]">
-                                        Tanyakan apa saja. AI saya akan menjawab instan menggunakan informasi dari teks artikel ini.
+                                        Ask anything. My AI will answer instantly using information from this article.
                                     </p>
                                     <div className="space-y-2 w-full max-w-[280px]">
                                         {suggestedQuestions.map((q, i) => (
@@ -729,14 +729,14 @@ export default function ContentDetailPage() {
                                             {msg.role === 'assistant' && (
                                                 <div className="flex items-center gap-1.5 mb-1.5">
                                                     <Bot size={12} className="text-navy-600" />
-                                                    <span className="text-[10px] font-semibold text-navy-600">AI Asisten</span>
+                                                    <span className="text-[10px] font-semibold text-navy-600">AI Assistant</span>
                                                 </div>
                                             )}
                                             <div className={`text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'assistant' ? 'text-text-700' : ''}`}>
                                                 {msg.content || (
                                                     <span className="flex items-center gap-2 text-text-400">
                                                         <Loader2 size={14} className="animate-spin" />
-                                                        Berpikir...
+                                                        Thinking...
                                                     </span>
                                                 )}
                                             </div>
@@ -755,7 +755,7 @@ export default function ContentDetailPage() {
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="Tanya dengan AI..."
+                                    placeholder="Ask with AI..."
                                     rows={1}
                                     className="flex-1 resize-none input-field py-2.5 px-3 text-sm leading-relaxed max-h-24"
                                     disabled={isStreaming}
@@ -840,7 +840,7 @@ export default function ContentDetailPage() {
                                 onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); openCommentForm(); }}
                             >
                                 <MessageCircle size={14} />
-                                <span className="text-xs font-medium whitespace-nowrap">Tambah Komentar</span>
+                                <span className="text-xs font-medium whitespace-nowrap">Add Comment</span>
                             </div>
                         )}
 
@@ -949,7 +949,7 @@ export default function ContentDetailPage() {
                             {showCommentForm && selectedText && (
                                 <div className="p-4 border-b border-amber-200 bg-amber-50/30">
                                     <div className="text-xs font-semibold text-amber-800 mb-2 flex items-center gap-1.5">
-                                        <MessageCircle size={12} /> Komentar Baru
+                                        <MessageCircle size={12} /> New Comment
                                     </div>
                                     <div className="bg-amber-100/70 border border-amber-200 rounded-md p-2 mb-3 text-xs text-amber-900 italic line-clamp-3">
                                         &quot;{selectedText}&quot;
@@ -957,7 +957,7 @@ export default function ContentDetailPage() {
                                     <textarea
                                         value={commentText}
                                         onChange={(e) => setCommentText(e.target.value)}
-                                        placeholder="Tulis komentar atau saran revisi..."
+                                        placeholder="Write a comment or revision suggestion..."
                                         className="w-full border border-surface-200 rounded-md p-2.5 text-sm focus:ring-navy-600 focus:border-navy-600 min-h-[70px] resize-none"
                                         autoFocus
                                     />
@@ -966,7 +966,7 @@ export default function ContentDetailPage() {
                                             onClick={() => { setShowCommentForm(false); setSelectedText('') }}
                                             className="px-3 py-1.5 text-xs text-text-500 hover:bg-surface-100 rounded transition"
                                         >
-                                            Batal
+                                            Cancel
                                         </button>
                                         <button
                                             onClick={handleSubmitComment}
@@ -974,7 +974,7 @@ export default function ContentDetailPage() {
                                             className="px-3 py-1.5 text-xs bg-navy-600 text-white rounded hover:bg-navy-700 transition disabled:opacity-50 flex items-center gap-1.5"
                                         >
                                             {isSubmittingComment ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-                                            Kirim
+                                            Send
                                         </button>
                                     </div>
                                 </div>
@@ -984,8 +984,8 @@ export default function ContentDetailPage() {
                             {reviewComments.length === 0 ? (
                                 <div className="p-6 text-center text-text-400 text-sm">
                                     <MessageCircle size={28} className="mx-auto mb-2 text-text-300" />
-                                    <p>Belum ada komentar.</p>
-                                    <p className="text-xs mt-1">Highlight teks di artikel untuk menambah komentar.</p>
+                                    <p>No comments yet.</p>
+                                    <p className="text-xs mt-1">Highlight text in the article to add a comment.</p>
                                 </div>
                             ) : (
                                 <div className="divide-y divide-surface-100">
@@ -1001,7 +1001,7 @@ export default function ContentDetailPage() {
                                                     <div className="flex items-center gap-1.5 mb-1">
                                                         <span className="font-semibold text-navy-900 text-xs">{rc.author_name}</span>
                                                         <span className="text-[9px] text-text-400">
-                                                            {new Date(rc.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                            {new Date(rc.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                                         </span>
                                                         {rc.is_resolved && (
                                                             <span className="text-[9px] bg-green-100 text-green-700 px-1 py-0.5 rounded font-medium">✓</span>
@@ -1023,7 +1023,7 @@ export default function ContentDetailPage() {
                                                                 onClick={() => handleDeleteComment(rc.id)}
                                                                 className="text-[10px] text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-2 py-0.5 rounded flex items-center gap-1 transition"
                                                             >
-                                                                <Trash2 size={10} /> Hapus
+                                                                <Trash2 size={10} /> Delete
                                                             </button>
                                                         </div>
                                                     )}

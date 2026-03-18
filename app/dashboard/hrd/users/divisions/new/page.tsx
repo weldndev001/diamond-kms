@@ -20,17 +20,17 @@ export default function CreateDivisionPage() {
         e.preventDefault()
         if (!organization?.id) return
 
-        setStatus({ type: 'loading', msg: 'Membuat divisi...' })
+        setStatus({ type: 'loading', msg: 'Creating division...' })
         const res = await createDivisionAction({ name, description, orgId: organization.id })
 
         if (res.success) {
-            setStatus({ type: 'success', msg: 'Divisi berhasil dibuat! Mengalihkan...' })
+            setStatus({ type: 'success', msg: 'Division created successfully! Redirecting...' })
             setTimeout(() => {
                 router.push('/dashboard/hrd/users/divisions')
                 router.refresh()
             }, 1000)
         } else {
-            setStatus({ type: 'error', msg: res.error || 'Gagal membuat divisi' })
+            setStatus({ type: 'error', msg: res.error || 'Failed to create division' })
         }
     }
 
@@ -44,9 +44,9 @@ export default function CreateDivisionPage() {
                     <div>
                         <h1 className="text-2xl font-bold font-display text-navy-900 flex items-center gap-2">
                             <Building2 size={24} className="text-navy-600" />
-                            Buat Divisi Baru
+                            Create New Division
                         </h1>
-                        <p className="text-sm text-text-500 mt-1">Tambahkan divisi atau departemen baru ke dalam organisasi.</p>
+                        <p className="text-sm text-text-500 mt-1">Add a new division or department to the organization.</p>
                     </div>
                 </div>
 
@@ -66,7 +66,7 @@ export default function CreateDivisionPage() {
                     <form onSubmit={handleCreate} className="space-y-6">
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-navy-900">
-                                Nama Divisi <span className="text-danger">*</span>
+                                Division Name <span className="text-danger">*</span>
                             </label>
                             <input
                                 required
@@ -74,18 +74,18 @@ export default function CreateDivisionPage() {
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 className="input-field"
-                                placeholder="Cth: Keuangan, HRD, IT Support"
+                                placeholder="e.g.: Finance, HRD, IT Support"
                             />
                         </div>
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-navy-900">
-                                Deskripsi <span className="text-text-400 font-normal">(Opsional)</span>
+                                Description <span className="text-text-400 font-normal">(Optional)</span>
                             </label>
                             <textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 className="input-field min-h-[120px] resize-y"
-                                placeholder="Jelaskan peran dan tanggung jawab divisi ini secara singkat..."
+                                placeholder="Briefly describe the roles and responsibilities of this division..."
                             />
                         </div>
 
@@ -94,7 +94,7 @@ export default function CreateDivisionPage() {
                                 href="/dashboard/hrd/users/divisions"
                                 className="btn border border-surface-300 bg-white text-text-700 hover:bg-surface-50"
                             >
-                                Batal
+                                Cancel
                             </Link>
                             <button
                                 type="submit"
@@ -106,7 +106,7 @@ export default function CreateDivisionPage() {
                                 ) : (
                                     <Save size={16} />
                                 )}
-                                Simpan Divisi
+                                Save Division
                             </button>
                         </div>
                     </form>

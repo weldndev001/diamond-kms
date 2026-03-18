@@ -129,7 +129,11 @@ export default function MaintenancePage() {
         const file = e.target.files?.[0]
         if (!file) return
 
+<<<<<<< Updated upstream
         if (!confirm('⚠️ Importing data will add/overwrite existing data. Proceed?')) {
+=======
+        if (!confirm('⚠️ Importing data will add to or overwrite existing data. Continue?')) {
+>>>>>>> Stashed changes
             if (fileInputRef.current) fileInputRef.current.value = ''
             return
         }
@@ -270,7 +274,11 @@ export default function MaintenancePage() {
                                 <div className="divide-y divide-surface-100">
                                     {flags.filter(f => f.flag_key !== 'maintenance_mode').length === 0 ? (
                                         <div className="p-8 text-center text-text-500">
+<<<<<<< Updated upstream
                                             No other feature flags. Add one below.
+=======
+                                            No other feature flags found. Add below.
+>>>>>>> Stashed changes
                                         </div>
                                     ) : (
                                         flags.filter(f => f.flag_key !== 'maintenance_mode').map(flag => (
@@ -328,7 +336,11 @@ export default function MaintenancePage() {
                                     <FileDown size={16} className="text-navy-600" /> Export Database
                                 </h3>
                                 <p className="text-sm text-text-500">
+<<<<<<< Updated upstream
                                     Download all database data as a JSON file (including chats, leaderboard, documents, etc).
+=======
+                                    Download all database data as a JSON file (includes chats, leaderboard, documents, etc.).
+>>>>>>> Stashed changes
                                 </p>
                                 <button
                                     onClick={handleBackup}

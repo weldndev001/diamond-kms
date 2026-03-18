@@ -113,7 +113,7 @@ export default function DashboardPage() {
                             />
                         </div>
                         <p className="text-navy-300 text-xs mt-2">
-                            {stats.readingTracker.confirmed} out of {stats.readingTracker.expected} mandatory reads confirmed
+                            {stats.readingTracker.confirmed} of {stats.readingTracker.expected} mandatory reads confirmed
                         </p>
                     </div>
                 </div>
@@ -221,7 +221,7 @@ export default function DashboardPage() {
             <div className="card p-6">
                 <h2 className="font-bold font-display text-navy-900 text-lg mb-4 flex items-center gap-2">
                     <BarChart3 size={18} className="text-navy-600" />
-                    Quick Actions
+                    Quick Access
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <Link href="/dashboard/documents" className="p-4 bg-surface-50 border border-surface-200 rounded-xl text-center hover:bg-navy-light hover:border-navy-300 transition">
@@ -238,7 +238,7 @@ export default function DashboardPage() {
                     </Link>
                     <Link href="/dashboard/leaderboard" className="p-4 bg-surface-50 border border-surface-200 rounded-xl text-center hover:bg-navy-light hover:border-navy-300 transition">
                         <Activity size={20} className="mx-auto text-purple-600 mb-2" />
-                        <span className="text-sm font-medium text-text-900">Employee Assessment</span>
+                        <span className="text-sm font-medium text-text-900">Employee Quizzes</span>
                     </Link>
                 </div>
             </div>

@@ -139,7 +139,7 @@ export default function CreateContentPage() {
                     <ArrowLeft size={20} />
                 </Link>
                 <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold font-display text-navy-900">Buat Artikel Knowledge Base</h1>
+                    <h1 className="text-2xl font-bold font-display text-navy-900">Create Knowledge Base Article</h1>
                 </div>
             </div>
 
@@ -157,14 +157,14 @@ export default function CreateContentPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                         <div className="lg:col-span-8 space-y-6">
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium text-text-700">Judul Artikel <span className="text-danger">*</span></label>
+                                <label className="block text-sm font-medium text-text-700">Article Title <span className="text-danger">*</span></label>
                                 <input
                                     required
                                     type="text"
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                     className="w-full border-surface-200 border rounded-md p-3 focus:ring-navy-600 focus:border-navy-600 text-lg font-medium"
-                                    placeholder="Masukkan judul artikel..."
+                                    placeholder="Enter article title..."
                                 />
                             </div>
 
@@ -194,9 +194,9 @@ export default function CreateContentPage() {
                                         </div>
                                         <div className="text-center">
                                             <p className="text-sm font-bold text-navy-900">
-                                                {uploadingHeader ? 'Sedang mengunggah...' : 'Unggah Header Image'}
+                                                {uploadingHeader ? 'Uploading...' : 'Upload Header Image'}
                                             </p>
-                                            <p className="text-xs text-text-400 mt-0.5">Disarankan rasio 21:9 (Contoh: 1200x500px)</p>
+                                            <p className="text-xs text-text-400 mt-0.5">Suggested ratio 21:9 (Example: 1200x500px)</p>
                                         </div>
                                         {uploadingHeader && <Loader2 size={16} className="animate-spin text-navy-600 mt-1" />}
                                     </div>
@@ -213,7 +213,7 @@ export default function CreateContentPage() {
 
                             <div className="space-y-2 relative">
                                 <label className="flex items-center justify-between text-sm font-medium text-text-700 mb-1">
-                                    <span>Isi Konten <span className="text-danger">*</span></span>
+                                    <span>Content Body <span className="text-danger">*</span></span>
                                 </label>
 
                                 <TiptapEditor
@@ -235,10 +235,10 @@ export default function CreateContentPage() {
 
                         <div className="lg:col-span-4 space-y-6">
                             <div className="bg-surface-50 border border-surface-200 p-5 rounded-lg space-y-6">
-                                <h3 className="font-bold text-navy-900 font-display pb-3 border-b border-surface-200">Metadata / Atribut</h3>
+                                <h3 className="font-bold text-navy-900 font-display pb-3 border-b border-surface-200">Metadata / Attributes</h3>
 
                                 <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-text-700">Divisi / Target Audiens <span className="text-danger">*</span></label>
+                                    <label className="block text-sm font-medium text-text-700">Division / Target Audience <span className="text-danger">*</span></label>
                                     <select
                                         required
                                         value={divisionId}
@@ -246,7 +246,7 @@ export default function CreateContentPage() {
                                         disabled={isDivisionLocked}
                                         className={`w-full border-surface-200 border rounded-md p-2.5 focus:ring-navy-600 focus:border-navy-600 bg-white ${isDivisionLocked ? 'opacity-60 cursor-not-allowed bg-surface-50' : ''}`}
                                     >
-                                        <option value="" disabled>Pilih Divisi...</option>
+                                        <option value="" disabled>Select Division...</option>
                                         {!isDivisionLocked && (
                                             <option value="global" className="font-bold">🌐 Global Organization (All)</option>
                                         )}
@@ -256,13 +256,13 @@ export default function CreateContentPage() {
                                     </select>
                                     {isDivisionLocked && (
                                         <p className="text-xs text-text-400">
-                                            🔒 Konten hanya dapat dibuat untuk divisi Anda sendiri.
+                                            🔒 Content can only be created for your own division.
                                         </p>
                                     )}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-text-700">Kategori / Tipe <span className="text-danger">*</span></label>
+                                    <label className="block text-sm font-medium text-text-700">Category / Type <span className="text-danger">*</span></label>
                                     <select
                                         required
                                         value={category}
@@ -288,9 +288,9 @@ export default function CreateContentPage() {
                                             />
                                         </div>
                                         <div>
-                                            <span className="text-sm font-bold text-navy-900 block">Wajib Baca</span>
+                                            <span className="text-sm font-bold text-navy-900 block">Mandatory Read</span>
                                             <p className="text-xs text-text-500 mt-0.5 leading-snug">
-                                                Mewajibkan karyawan yang dituju untuk mengonfirmasi telah membaca artikel ini.
+                                                Requires target employees to confirm they have read this article.
                                             </p>
                                         </div>
                                     </label>
@@ -304,7 +304,7 @@ export default function CreateContentPage() {
                             href="/dashboard/content"
                             className="px-6 py-2.5 border border-surface-200 text-text-700 rounded-md hover:bg-surface-50 font-medium transition"
                         >
-                            Batal
+                            Cancel
                         </Link>
                         <button
                             type="submit"
@@ -312,7 +312,7 @@ export default function CreateContentPage() {
                             className="btn btn-primary shadow-md hover:-translate-y-0.5"
                         >
                             <Save size={18} />
-                            Simpan sebagai draf
+                            Save as draft
                         </button>
                     </div>
                 </form>
@@ -327,7 +327,7 @@ export default function CreateContentPage() {
                                 <div className="p-2 bg-navy-100 text-navy-700 rounded-lg">
                                     <BookOpen size={20} />
                                 </div>
-                                <h2 className="text-xl font-bold font-display text-navy-900">Tautkan Dokumen Sumber</h2>
+                                <h2 className="text-xl font-bold font-display text-navy-900">Link Source Documents</h2>
                             </div>
                             <button onClick={() => setIsSourceModalOpen(false)} className="text-text-400 hover:text-text-700 bg-surface-100 hover:bg-surface-200 rounded p-1 transition">
                                 <X size={20} />
@@ -339,7 +339,7 @@ export default function CreateContentPage() {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-400" size={18} />
                                 <input
                                     type="text"
-                                    placeholder="Cari dokumen repositori berdasarkan judul atau nama file..."
+                                    placeholder="Search repository documents by title or filename..."
                                     value={docSearch}
                                     onChange={e => setDocSearch(e.target.value)}
                                     className="w-full pl-10 pr-4 py-2.5 bg-surface-50 border border-surface-200 rounded-md focus:ring-navy-600 focus:border-navy-600 focus:bg-white transition"
@@ -349,9 +349,9 @@ export default function CreateContentPage() {
 
                         <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-surface-50/30">
                             {documents.length === 0 ? (
-                                <div className="text-center py-10 text-text-500">Tidak ada dokumen ditemukan di repositori.</div>
+                                <div className="text-center py-10 text-text-500">No documents found in repository.</div>
                             ) : filteredDocs.length === 0 ? (
-                                <div className="text-center py-10 text-text-500">Tidak ada dokumen yang cocok dengan pencarian Anda.</div>
+                                <div className="text-center py-10 text-text-500">No documents matching your search.</div>
                             ) : (
                                 filteredDocs.map((doc) => {
                                     const isSelected = selectedSources.includes(doc.id)
@@ -394,14 +394,14 @@ export default function CreateContentPage() {
 
                         <div className="p-5 border-t bg-white rounded-b-xl flex justify-between items-center">
                             <div className="text-sm text-text-500">
-                                {selectedSources.length} dokumen terpilih
+                                {selectedSources.length} documents selected
                             </div>
                             <button
                                 type="button"
                                 onClick={appendSourceToEditor}
                                 className="btn btn-primary"
                             >
-                                Konfirmasi Pilihan
+                                Confirm Selection
                             </button>
                         </div>
                     </div>

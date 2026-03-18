@@ -41,17 +41,17 @@ export default function CreateUserPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setStatus({ type: 'loading', msg: 'Membuat akun user...' })
+        setStatus({ type: 'loading', msg: 'Creating user account...' })
 
         const res = await inviteUserAction({ email, password, fullName, jobTitle, role, divisionId })
         if (res.success) {
-            setStatus({ type: 'success', msg: 'User berhasil dibuat! Mengalihkan...' })
+            setStatus({ type: 'success', msg: 'User created successfully! Redirecting...' })
             setTimeout(() => {
                 router.push('/dashboard/hrd/users')
                 router.refresh()
             }, 1000)
         } else {
-            setStatus({ type: 'error', msg: res.error || 'Gagal membuat user' })
+            setStatus({ type: 'error', msg: res.error || 'Failed to create user' })
         }
     }
 
@@ -65,9 +65,9 @@ export default function CreateUserPage() {
                     <div>
                         <h1 className="text-2xl font-bold font-display text-navy-900 flex items-center gap-2">
                             <UserPlus size={24} className="text-navy-600" />
-                            Buat User Baru
+                            Create New User
                         </h1>
-                        <p className="text-sm text-text-500 mt-1">Tambahkan anggota baru ke dalam organisasi ini.</p>
+                        <p className="text-sm text-text-500 mt-1">Add a new member to this organization.</p>
                     </div>
                 </div>
 
@@ -88,14 +88,14 @@ export default function CreateUserPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-semibold text-navy-900 mb-1">
-                                    Nama Lengkap <span className="text-danger">*</span>
+                                    Full Name <span className="text-danger">*</span>
                                 </label>
                                 <input
                                     required
                                     type="text"
                                     value={fullName}
                                     onChange={(e) => setFullName(e.target.value)}
-                                    placeholder="contoh: Budi Santoso"
+                                    placeholder="e.g.: John Doe"
                                     className="input-field"
                                 />
                             </div>
@@ -124,7 +124,7 @@ export default function CreateUserPage() {
                                         type={showPassword ? 'text' : 'password'}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="Min. 6 karakter"
+                                        placeholder="Min. 6 characters"
                                         minLength={6}
                                         className="input-field pr-10"
                                     />
@@ -140,20 +140,20 @@ export default function CreateUserPage() {
 
                             <div>
                                 <label className="block text-sm font-semibold text-navy-900 mb-1">
-                                    Jabatan <span className="text-text-400 font-normal">(Opsional)</span>
+                                    Job Title <span className="text-text-400 font-normal">(Optional)</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={jobTitle}
                                     onChange={(e) => setJobTitle(e.target.value)}
-                                    placeholder="contoh: Staff HR"
+                                    placeholder="e.g.: HR Staff"
                                     className="input-field"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-semibold text-navy-900 mb-1">
-                                    Role Akses <span className="text-danger">*</span>
+                                    Access Role <span className="text-danger">*</span>
                                 </label>
                                 <select
                                     value={role}
@@ -162,14 +162,14 @@ export default function CreateUserPage() {
                                 >
                                     <option value="STAFF">Staff</option>
                                     <option value="SUPERVISOR">Supervisor</option>
-                                    <option value="GROUP_ADMIN">Group Admin (KaDiv)</option>
+                                    <option value="GROUP_ADMIN">Group Admin (Div. Head)</option>
                                     <option value="SUPER_ADMIN">Super Admin</option>
                                 </select>
                             </div>
 
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-semibold text-navy-900 mb-1">
-                                    Divisi Penempatan <span className="text-danger">*</span>
+                                    Placement Division <span className="text-danger">*</span>
                                 </label>
                                 <select
                                     required
@@ -179,7 +179,7 @@ export default function CreateUserPage() {
                                     disabled={isLoadingDivisions}
                                 >
                                     <option value="">
-                                        {isLoadingDivisions ? 'Memuat divisi...' : 'Pilih Divisi...'}
+                                        {isLoadingDivisions ? 'Loading divisions...' : 'Select Division...'}
                                     </option>
                                     {divisions.map((d) => (
                                         <option key={d.id} value={d.id}>{d.name}</option>
@@ -193,7 +193,7 @@ export default function CreateUserPage() {
                                 href="/dashboard/hrd/users"
                                 className="btn border border-surface-300 bg-white text-text-700 hover:bg-surface-50"
                             >
-                                Batal
+                                Cancel
                             </Link>
                             <button
                                 type="submit"
@@ -205,7 +205,7 @@ export default function CreateUserPage() {
                                 ) : (
                                     <UserPlus size={16} />
                                 )}
-                                Buat Akun User
+                                Create User Account
                             </button>
                         </div>
                     </form>

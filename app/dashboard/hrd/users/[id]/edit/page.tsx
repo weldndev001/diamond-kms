@@ -45,7 +45,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                         setDivisionId(userObj.user_divisions[0].division_id)
                     }
                 } else {
-                    setSubmitStatus({ type: 'error', msg: 'User tidak ditemukan' })
+                    setSubmitStatus({ type: 'error', msg: 'User not found' })
                 }
             }
             setLoading(false)
@@ -56,35 +56,35 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault()
-        setSubmitStatus({ type: 'loading', msg: 'Memperbarui user...' })
+        setSubmitStatus({ type: 'loading', msg: 'Updating user...' })
 
         // Validate division selection
         if (!divisionId) {
-            setSubmitStatus({ type: 'error', msg: 'Mohon pilih divisi utama.' })
+            setSubmitStatus({ type: 'error', msg: 'Please select a primary division.' })
             return
         }
 
         const res = await updateUserRoleAction(editingUser.id, role, divisionId)
         if (res.success) {
-            setSubmitStatus({ type: 'success', msg: 'User berhasil diperbarui. Mengalihkan...' })
+            setSubmitStatus({ type: 'success', msg: 'User updated successfully. Redirecting...' })
             setTimeout(() => {
                 router.push('/dashboard/hrd/users')
             }, 1000)
         } else {
-            setSubmitStatus({ type: 'error', msg: res.error || 'Gagal memperbarui user' })
+            setSubmitStatus({ type: 'error', msg: res.error || 'Failed to update user' })
         }
     }
 
     const handleDeactivate = async () => {
-        if (!confirm('Apakah Anda yakin ingin menonaktifkan user ini?')) return
-        setSubmitStatus({ type: 'loading', msg: 'Menonaktifkan...' })
+        if (!confirm('Are you sure you want to deactivate this user?')) return
+        setSubmitStatus({ type: 'loading', msg: 'Deactivating...' })
 
         const res = await deactivateUserAction(editingUser.id)
         if (res.success) {
-            setSubmitStatus({ type: 'success', msg: 'User dinonaktifkan. Mengalihkan...' })
+            setSubmitStatus({ type: 'success', msg: 'User deactivated. Redirecting...' })
             setTimeout(() => router.push('/dashboard/hrd/users'), 1000)
         } else {
-            setSubmitStatus({ type: 'error', msg: res.error || 'Gagal menonaktifkan user' })
+            setSubmitStatus({ type: 'error', msg: res.error || 'Failed to deactivate user' })
         }
     }
 
@@ -92,7 +92,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
         return (
             <div className="flex flex-col items-center justify-center py-20">
                 <div className="w-10 h-10 border-4 border-navy-200 border-t-navy-600 rounded-full animate-spin mb-4" />
-                <p className="text-text-500 font-medium">Memuat data user...</p>
+                <p className="text-text-500 font-medium">Loading user data...</p>
             </div>
         )
     }
@@ -101,10 +101,10 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
         return (
             <div className="flex flex-col items-center justify-center py-20">
                 <UserX size={48} className="text-surface-300 mb-4" />
-                <h2 className="text-xl font-bold font-display text-navy-900">User Tidak Ditemukan</h2>
-                <p className="text-text-500 mb-6">Mungkin user sudah dihapus atau ada kesalahan ID.</p>
+                <h2 className="text-xl font-bold font-display text-navy-900">User Not Found</h2>
+                <p className="text-text-500 mb-6">User might have been deleted or there is an ID error.</p>
                 <Link href="/dashboard/hrd/users" className="btn btn-primary">
-                    Kembali ke Daftar User
+                    Back to User List
                 </Link>
             </div>
         )
@@ -122,7 +122,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                     </Link>
                     <div>
                         <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">Edit User</h1>
-                        <p className="text-sm text-text-500 mt-1">Ubah role atau pindah divisi untuk anggota {editingUser.full_name}.</p>
+                        <p className="text-sm text-text-500 mt-1">Change role or move division for member {editingUser.full_name}.</p>
                     </div>
                 </div>
 
@@ -133,7 +133,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                         </div>
                         <div>
                             <h2 className="font-bold text-navy-900 font-display text-lg">{editingUser.full_name}</h2>
-                            <p className="text-text-500 text-sm">{editingUser.job_title || 'Tidak ada posisi jabatan'}</p>
+                            <p className="text-text-500 text-sm">{editingUser.job_title || 'No job title position'}</p>
                         </div>
                     </div>
 
@@ -154,20 +154,20 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-navy-900 flex items-center gap-2">
                                         <Shield size={16} className="text-navy-500" />
-                                        Role Akses (Hak Akses)
+                                        Access Role (Permissions)
                                     </label>
                                     <select
                                         value={role}
                                         onChange={(e) => setRole(e.target.value as Role)}
                                         className="input-field w-full text-sm"
                                     >
-                                        <option value="STAFF">Staff (Akses Default)</option>
+                                        <option value="STAFF">Staff (Default Access)</option>
                                         <option value="SUPERVISOR">Supervisor (Reviewer)</option>
-                                        <option value="GROUP_ADMIN">Group Admin (Kepala Divisi)</option>
-                                        <option value="SUPER_ADMIN">Super Admin (HRD / Global)</option>
+                                        <option value="GROUP_ADMIN">Group Admin (Division Head)</option>
+                                        <option value="SUPER_ADMIN">Super Admin (HR / Global)</option>
                                     </select>
                                     <p className="text-xs text-text-400">
-                                        Menentukan hak ases fitur yang dapat dilihat user ini dalam sistem.
+                                        Determines the feature access rights this user can see in the system.
                                     </p>
                                 </div>
 
@@ -175,7 +175,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-navy-900 flex items-center gap-2">
                                         <Building2 size={16} className="text-navy-500" />
-                                        Divisi Utama
+                                        Primary Division
                                     </label>
                                     <select
                                         required
@@ -183,13 +183,13 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                         onChange={(e) => setDivisionId(e.target.value)}
                                         className="input-field w-full text-sm"
                                     >
-                                        <option value="">Pilih Divisi...</option>
+                                        <option value="">Select Division...</option>
                                         {divisions.map((d) => (
                                             <option key={d.id} value={d.id}>{d.name}</option>
                                         ))}
                                     </select>
                                     <p className="text-xs text-text-400">
-                                        Dokumen & SOP dari divisi akan diberikan otomatis.
+                                        Documents & SOPs from the division will be given automatically.
                                     </p>
                                 </div>
                             </div>
@@ -201,7 +201,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                     className="px-4 py-2.5 text-sm font-medium text-danger hover:bg-danger-bg rounded-lg transition-colors flex items-center gap-2 w-full md:w-auto justify-center"
                                 >
                                     <UserX size={16} />
-                                    Nonaktifkan User
+                                    Deactivate User
                                 </button>
 
                                 <div className="flex gap-3 w-full md:w-auto">
@@ -209,7 +209,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                         href="/dashboard/hrd/users"
                                         className="btn btn-secondary flex-1 md:flex-none justify-center"
                                     >
-                                        Batal
+                                        Cancel
                                     </Link>
                                     <button
                                         type="submit"
@@ -221,7 +221,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                         ) : (
                                             <Save size={16} />
                                         )}
-                                        Simpan Perubahan
+                                        Save Changes
                                     </button>
                                 </div>
                             </div>

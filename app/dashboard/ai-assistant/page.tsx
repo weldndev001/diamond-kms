@@ -48,7 +48,7 @@ export default function AIAssistantPage() {
     const [sessionSummary, setSessionSummary] = useState<string | null>(null)
     const [selectedContext, setSelectedContext] = useState('Global')
     const [isHistoryOpen, setIsHistoryOpen] = useState(true)
-    const contexts = ['Global', 'SOP Karyawan', 'Panduan Teknis', 'Kebijakan Keamanan']
+    const contexts = ['Global', 'Employee SOP', 'Technical Guide', 'Security Policy']
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     const scrollToBottom = useCallback(() => {
@@ -407,7 +407,7 @@ export default function AIAssistantPage() {
                             </div>
                             <h3 className="font-bold font-display text-navy-900 text-xl mb-2">Hello! 👋</h3>
                             <p className="text-sm max-w-md mx-auto">
-                                Ask anything about your company documents. AI will search for answers from the entire available knowledge base.
+                                Ask anything about your company documents. AI will search for answers across all available knowledge bases.
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg mx-auto mt-6">
                                 {[

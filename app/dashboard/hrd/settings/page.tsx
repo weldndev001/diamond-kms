@@ -1,76 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
-import {
-    getFeatureFlagsAction,
-    toggleFeatureFlagAction,
-    createFeatureFlagAction,
-    getOrganizationAction,
-    updateOrganizationAction
-} from '@/lib/actions/admin.actions'
-import { RoleGuard } from '@/components/shared/RoleGuard'
-import { Settings, ToggleLeft, ToggleRight, Plus, Save, Building2, Users, FolderTree, FileText, Shield } from 'lucide-react'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 
-export default function SettingsPage() {
-    const { organization, user, refresh } = useCurrentUser()
-    const [flags, setFlags] = useState<any[]>([])
-    const [org, setOrg] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
-    const [orgName, setOrgName] = useState('')
-    const [crossDiv, setCrossDiv] = useState(false)
-    const [saving, setSaving] = useState(false)
-    const [newFlagKey, setNewFlagKey] = useState('')
-    const [addingFlag, setAddingFlag] = useState(false)
+export default function RedirectSettingsPage() {
+    const router = useRouter()
 
-    const loadData = async () => {
-        if (!organization?.id) return
-        const [flagRes, orgRes] = await Promise.all([
-            getFeatureFlagsAction(organization.id),
-            getOrganizationAction(organization.id)
-        ])
-        if (flagRes.success) setFlags(flagRes.data || [])
-        if (orgRes.success && orgRes.data) {
-            setOrg(orgRes.data)
-            setOrgName(orgRes.data.name)
-            setCrossDiv(orgRes.data.cross_division_query_enabled)
-        }
-        setLoading(false)
-    }
-
-    useEffect(() => { loadData() }, [organization?.id])
-
-    const handleToggleFlag = async (flagId: string, currentVal: boolean) => {
-        const res = await toggleFeatureFlagAction(flagId, !currentVal)
-        if (res.success) {
-            setFlags(prev => prev.map(f => f.id === flagId ? { ...f, is_enabled: !currentVal } : f))
-        }
-    }
-
-    const handleAddFlag = async () => {
-        if (!newFlagKey.trim() || !organization?.id) return
-        setAddingFlag(true)
-        const res = await createFeatureFlagAction(organization.id, newFlagKey.trim())
-        if (res.success) {
-            setNewFlagKey('')
-            loadData()
-        }
-        setAddingFlag(false)
-    }
-
-    const handleSaveOrg = async () => {
-        if (!organization?.id) return
-        setSaving(true)
-        await updateOrganizationAction(organization.id, {
-            name: orgName,
-            crossDivisionQueryEnabled: crossDiv
-        })
-        setSaving(false)
-        // Refresh user context so sidebar picks up org name change instantly
-        await refresh()
-    }
+    useEffect(() => {
+        router.replace('/dashboard/hrd/website')
+    }, [router])
 
     return (
+<<<<<<< Updated upstream
         <RoleGuard allowedRoles={['SUPER_ADMIN']}>
             <div className="space-y-8">
                 <div>
@@ -227,5 +169,11 @@ export default function SettingsPage() {
                 )}
             </div>
         </RoleGuard>
+=======
+        <div className="flex flex-col items-center justify-center py-20 bg-white/50 rounded-2xl border-2 border-dashed border-navy-100">
+            <Loader2 className="w-10 h-10 text-navy-600 animate-spin mb-4" />
+            <p className="text-text-500 font-medium font-display">Redirecting to new settings page...</p>
+        </div>
+>>>>>>> Stashed changes
     )
 }

@@ -54,7 +54,11 @@ export default function ContentListPage() {
     useEffect(() => { loadData() }, [organization?.id, filterDiv, division?.id])
 
     const handleDelete = async (id: string) => {
+<<<<<<< Updated upstream
         if (!confirm('Permanently delete this content?')) return
+=======
+        if (!confirm('Delete this content permanently?')) return
+>>>>>>> Stashed changes
         const res = await deleteContentAction(id)
         if (res.success) loadData()
         else alert(res.error || 'Failed to delete')
@@ -72,7 +76,11 @@ export default function ContentListPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-end flex-wrap gap-4">
                 <div>
+<<<<<<< Updated upstream
                     <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">Content Management</h1>
+=======
+                    <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">Manage Content</h1>
+>>>>>>> Stashed changes
                     <p className="text-sm text-text-500 mt-1">Manage articles, SOPs, and your organization's knowledge base content.</p>
                 </div>
                 <div className="flex items-center gap-3">

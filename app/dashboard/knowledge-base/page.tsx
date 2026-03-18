@@ -53,20 +53,20 @@ const MOCK_KBS: KnowledgeBase[] = [
         name: 'Operational SOP',
         description: 'Collection of SOPs and daily work procedures',
         documents: [
-            { id: 'd1', title: 'SOP Penerimaan Barang', type: 'document', division: 'Warehouse' },
-            { id: 'd2', title: 'Prosedur Quality Check', type: 'document', division: 'QC' },
-            { id: 'c1', title: 'Panduan Keamanan Kerja', type: 'content', division: 'HR' },
+            { id: 'd1', title: 'Goods Receipt SOP', type: 'document', division: 'Warehouse' },
+            { id: 'd2', title: 'Quality Check Procedure', type: 'document', division: 'QC' },
+            { id: 'c1', title: 'Work Safety Guide', type: 'content', division: 'HR' },
         ],
         created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
         messageCount: 24,
     },
     {
         id: 'kb-2',
-        name: 'HR Policies',
-        description: 'Leave rules, payroll, and employee management',
+        name: 'HR Policy',
+        description: 'Leave rules, salary, and employee management',
         documents: [
-            { id: 'd3', title: 'Panduan Cuti Tahunan', type: 'document', division: 'HR' },
-            { id: 'c2', title: 'Kebijakan Remunerasi 2025', type: 'content', division: 'HR' },
+            { id: 'd3', title: 'Annual Leave Guide', type: 'document', division: 'HR' },
+            { id: 'c2', title: 'Remuneration Policy 2025', type: 'content', division: 'HR' },
         ],
         created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
         messageCount: 8,
@@ -76,10 +76,10 @@ const MOCK_KBS: KnowledgeBase[] = [
         name: 'Product & Marketing',
         description: 'Product information, pricing, and marketing strategy',
         documents: [
-            { id: 'd4', title: 'Katalog Produk 2025', type: 'document', division: 'Marketing' },
-            { id: 'c3', title: 'Strategi Digital Marketing', type: 'content', division: 'Marketing' },
-            { id: 'c4', title: 'FAQ Produk Terbaru', type: 'content', division: 'Marketing' },
-            { id: 'd5', title: 'Daftar Harga Resmi', type: 'document', division: 'Sales' },
+            { id: 'd4', title: 'Product Catalog 2025', type: 'document', division: 'Marketing' },
+            { id: 'c3', title: 'Digital Marketing Strategy', type: 'content', division: 'Marketing' },
+            { id: 'c4', title: 'Latest Product FAQ', type: 'content', division: 'Marketing' },
+            { id: 'd5', title: 'Official Price List', type: 'document', division: 'Sales' },
         ],
         created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
         messageCount: 42,
@@ -87,7 +87,7 @@ const MOCK_KBS: KnowledgeBase[] = [
 ]
 
 const MOCK_RESPONSES: Record<string, string> = {
-    default: 'Based on the documents available in this knowledge base, here is the explanation:\n\n1. **Main Information**: The data you asked about is listed in several related documents.\n\n2. **Procedure Details**: The steps to follow are explained in detail in the relevant SOP.\n\n3. **Important Notes**: Make sure to always refer to the latest version of this document for the most accurate information.\n\nIs there anything else specific you would like to know?',
+    default: 'Based on the documents available in this knowledge base, here is the explanation:\n\n1. **Main Information**: The data you asked for is listed in several related documents.\n\n2. **Procedure Details**: The steps that need to be followed have been explained in detail in the relevant SOP.\n\n3. **Important Note**: Make sure to always refer to the latest version of this document for the most accurate information.\n\nIs there anything else specific you would like to know?',
 }
 
 /* ═══════════════════════════════════════════
@@ -285,7 +285,7 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
                     <ArrowLeft size={14} /> Back
                 </button>
                 <h1 className="text-2xl font-bold font-display text-navy-900">Create New Knowledge Base</h1>
-                <p className="text-text-400 text-sm mt-1">Select documents and content for your new knowledge base</p>
+                <p className="text-text-400 text-sm mt-1">Select documents and content for the new knowledge base</p>
             </div>
 
             {/* Steps indicator */}
@@ -313,12 +313,12 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
                     <div>
                         <label className="block text-sm font-semibold text-navy-900 mb-1.5">Description (optional)</label>
                         <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3}
-                            placeholder="Explain what this knowledge base contains..."
+                            placeholder="Explain the contents of this knowledge base..."
                             className="w-full px-4 py-2.5 border rounded-xl focus:ring-navy-600 focus:border-navy-600 text-sm resize-none" />
                     </div>
                     <button onClick={() => setStep(2)} disabled={!name.trim()}
                         className="btn btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50">
-                        Next: Select Sources <ChevronRight size={16} />
+                        Continue to Select Sources <ChevronRight size={16} />
                     </button>
                 </div>
             )}
