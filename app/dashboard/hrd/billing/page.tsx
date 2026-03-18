@@ -65,11 +65,11 @@ export default function BillingPage() {
                                         <div className="grid grid-cols-2 gap-4 mt-6">
                                             <div>
                                                 <p className="text-navy-200 text-xs">Started</p>
-                                                <p className="font-semibold mt-0.5">{new Date(sub.started_at).toLocaleDateString()}</p>
+                                                <p className="font-semibold mt-0.5">{new Date(sub.started_at).toLocaleDateString('en-US')}</p>
                                             </div>
                                             <div>
                                                 <p className="text-navy-200 text-xs">Expires</p>
-                                                <p className="font-semibold mt-0.5">{new Date(sub.expires_at).toLocaleDateString()}</p>
+                                                <p className="font-semibold mt-0.5">{new Date(sub.expires_at).toLocaleDateString('en-US')}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -129,13 +129,13 @@ export default function BillingPage() {
                                 {invoices.map((inv: any) => (
                                     <tr key={inv.id} className="border-b last:border-0 hover:bg-surface-50">
                                         <td className="p-4 text-sm text-navy-900 font-medium">
-                                            {new Date(inv.period_start).toLocaleDateString()} – {new Date(inv.period_end).toLocaleDateString()}
+                                            {new Date(inv.period_start).toLocaleDateString('en-US')} – {new Date(inv.period_end).toLocaleDateString('en-US')}
                                         </td>
                                         <td className="p-4 text-sm font-bold text-navy-900">
-                                            {inv.currency} {Number(inv.amount).toLocaleString()}
+                                            {inv.currency} {Number(inv.amount).toLocaleString('en-US')}
                                         </td>
                                         <td className="p-4 text-sm text-text-500">
-                                            {new Date(inv.created_at).toLocaleDateString()}
+                                            {new Date(inv.created_at).toLocaleDateString('en-US')}
                                         </td>
                                         <td className="p-4 text-right">
                                             {inv.invoice_pdf_path && (

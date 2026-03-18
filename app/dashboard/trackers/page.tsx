@@ -81,7 +81,7 @@ export default function TrackersPage() {
                                         </h3>
 
                                         <p className="text-xs text-text-500 mb-6">
-                                            Published: {new Date(item.published_at).toLocaleDateString()}
+                                            Published: {new Date(item.published_at).toLocaleDateString('en-US')}
                                         </p>
 
                                         <div className="space-y-3">

@@ -6,9 +6,11 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { createQuizAction, getQuizByIdAction, updateQuizFullAction } from '@/lib/actions/quiz.actions'
 import { getDivisionsAction } from '@/lib/actions/user.actions'
 import { getContentsAction } from '@/lib/actions/content.actions'
-import { Save, ArrowLeft, PlusCircle, Trash, Send, HelpCircle, Clock, Sparkles, Image as ImageIcon, X } from 'lucide-react'
+import { Save, ArrowLeft, PlusCircle, Trash, Send, HelpCircle, Clock, Sparkles, Image as ImageIcon, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { TiptapEditor } from '@/components/editor/TiptapEditor'
+import { createClient } from '@/lib/supabase/client'
 
 export default function CreateQuizPage() {
     const router = useRouter()
@@ -21,6 +23,8 @@ export default function CreateQuizPage() {
 
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
+    const [headerImage, setHeaderImage] = useState<string | null>(null)
+    const [isUploadingHeader, setIsUploadingHeader] = useState(false)
     const [timeLimit, setTimeLimit] = useState<number | ''>('')
     const [divisionId, setDivisionId] = useState('')
     const [contentId, setContentId] = useState('')
@@ -48,7 +52,7 @@ export default function CreateQuizPage() {
         if (editId) {
             getQuizByIdAction(editId).then(res => {
                 if (res.success && res.data) {
-                    const q = res.data
+                    const q = res.data as any
                     setTitle(q.title)
                     setDescription(q.description || '')
                     setTimeLimit(q.time_limit_minutes || '')
@@ -109,6 +113,34 @@ export default function CreateQuizPage() {
         setQuestions(newQs)
     }
 
+    const handleHeaderImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file || !organization?.id) return
+
+        setIsUploadingHeader(true)
+        try {
+            const supabase = createClient()
+            const storagePath = `${organization.id}/quiz_headers/${Date.now()}_${file.name}`
+
+            const { data, error } = await supabase.storage
+                .from('documents')
+                .upload(storagePath, file)
+
+            if (error) throw error
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('documents')
+                .getPublicUrl(storagePath)
+
+            setHeaderImage(publicUrl)
+        } catch (error) {
+            console.error('Header image upload failed:', error)
+            setStatus({ type: 'error', msg: 'Failed to upload header image' })
+        } finally {
+            setIsUploadingHeader(false)
+        }
+    }
+
     const handleSubmit = async (e: React.FormEvent, overridePublish?: boolean) => {
         if (e) e.preventDefault()
         if (!user?.id || !organization?.id) return
@@ -116,16 +148,16 @@ export default function CreateQuizPage() {
         // Validation
         for (let i = 0; i < questions.length; i++) {
             if (!questions[i].question_text.trim()) {
-                setStatus({ type: 'error', msg: `Teks pertanyaan ke-${i + 1} tidak boleh kosong.` })
+                setStatus({ type: 'error', msg: `Question text #${i + 1} cannot be empty.` })
                 return
             }
             if (!questions[i].correct_answer) {
-                setStatus({ type: 'error', msg: `Pertanyaan ke-${i + 1} harus memiliki kunci jawaban.` })
+                setStatus({ type: 'error', msg: `Question #${i + 1} must have a correct answer selected.` })
                 return
             }
         }
 
-        setStatus({ type: 'loading', msg: 'Menyimpan kuis...' })
+        setStatus({ type: 'loading', msg: 'Saving quiz...' })
 
         const rawIsPublished = typeof overridePublish === 'boolean' ? overridePublish : isPublished
         const finalIsPublished = isSupervisor ? false : rawIsPublished
@@ -133,6 +165,7 @@ export default function CreateQuizPage() {
         const quizData = {
             title,
             description,
+            header_image: headerImage || undefined,
             time_limit_minutes: timeLimit ? Number(timeLimit) : undefined,
             division_id: divisionId,
             content_id: contentId || undefined,
@@ -150,12 +183,12 @@ export default function CreateQuizPage() {
             : await createQuizAction(quizData)
 
         if (res.success) {
-            setStatus({ type: 'success', msg: editId ? 'Kuis berhasil diperbarui' : 'Kuis berhasil dibuat' })
+            setStatus({ type: 'success', msg: editId ? 'Quiz updated successfully' : 'Quiz created successfully' })
             setTimeout(() => {
                 router.push('/dashboard/quizzes')
             }, 1000)
         } else {
-            setStatus({ type: 'error', msg: res.error || 'Gagal menyimpan kuis' })
+            setStatus({ type: 'error', msg: res.error || 'Failed to save quiz' })
         }
     }
 
@@ -181,26 +214,58 @@ export default function CreateQuizPage() {
                 <form onSubmit={handleSubmit} className="space-y-8">
                     {/* General Settings */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 border rounded-3xl bg-surface-50 dark:bg-slate-800/40 border-surface-200 dark:border-slate-700/50 shadow-inner">
-                        <div className="space-y-2 col-span-full">
-                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">Quiz Title *</label>
-                            <input
-                                required
-                                type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                className="w-full bg-white dark:bg-slate-900 border border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 rounded-2xl p-3.5 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all font-medium"
-                                placeholder="e.g. Employee Security Awareness 2026"
-                            />
-                        </div>
+                        <div className="space-y-4 col-span-full">
+                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">Quiz Information</label>
+                            
+                            <div className="space-y-2">
+                                <label className="block text-[11px] font-bold text-text-400 uppercase tracking-wider ml-1">Quiz Header Image</label>
+                                <div className="relative group">
+                                    <div className={`w-full h-40 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden bg-white dark:bg-slate-900 ${headerImage ? 'border-indigo-200' : 'border-surface-200 dark:border-slate-700 hover:border-indigo-400'}`}>
+                                        {headerImage ? (
+                                            <>
+                                                <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                    <button type="button" onClick={() => document.getElementById('header-upload')?.click()} className="p-2 bg-white text-navy-900 rounded-lg hover:bg-surface-50 transition shadow-lg flex items-center gap-2 text-xs font-bold">
+                                                        <ImageIcon size={14} /> Change Image
+                                                    </button>
+                                                    <button type="button" onClick={() => setHeaderImage(null)} className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-lg flex items-center gap-2 text-xs font-bold">
+                                                        <X size={14} /> Remove
+                                                    </button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <button type="button" onClick={() => document.getElementById('header-upload')?.click()} disabled={isUploadingHeader} className="flex flex-col items-center gap-2 text-text-400 hover:text-indigo-500 transition-colors">
+                                                {isUploadingHeader ? <Loader2 className="animate-spin" size={32} /> : <ImageIcon size={32} />}
+                                                <span className="text-xs font-bold uppercase tracking-widest">{isUploadingHeader ? 'Uploading...' : 'Upload Header Image'}</span>
+                                            </button>
+                                        )}
+                                        <input id="header-upload" type="file" className="hidden" accept="image/*" onChange={handleHeaderImageUpload} />
+                                    </div>
+                                    <p className="text-[10px] text-text-400 mt-1.5 ml-1 italic">Recommended size: 1200x400px</p>
+                                </div>
+                            </div>
 
-                        <div className="space-y-2 col-span-full">
-                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">Description</label>
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                className="w-full bg-white dark:bg-slate-900 border border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 rounded-2xl p-3.5 min-h-[120px] outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all font-medium"
-                                placeholder="Brief summary of the quiz context..."
-                            />
+                            <div className="space-y-2">
+                                <label className="block text-[11px] font-bold text-text-400 uppercase tracking-wider ml-1">Title *</label>
+                                <input
+                                    required
+                                    type="text"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    className="w-full bg-white dark:bg-slate-900 border border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 rounded-2xl p-3.5 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all font-medium"
+                                    placeholder="e.g. Employee Security Awareness 2026"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-[11px] font-bold text-text-400 uppercase tracking-wider ml-1">Rich Description (supports media)</label>
+                                <TiptapEditor 
+                                    content={description} 
+                                    onChange={setDescription} 
+                                    orgId={organization?.id} 
+                                />
+                                <p className="text-[11px] text-text-400 mt-1.5 ml-1">Add context, instructions, or images to help participants understand the quiz.</p>
+                            </div>
                         </div>
 
                         <div className="space-y-2">
@@ -265,7 +330,7 @@ export default function CreateQuizPage() {
                      {/* Question Builder */}
                     <div className="space-y-8 pt-4">
                         <div className="flex justify-between items-center border-b border-surface-200 dark:border-slate-700 pb-5">
-                            <h2 className="text-2xl font-black font-display text-navy-900 dark:text-slate-100 tracking-tight">Quiz Builder (Penyusunan Soal)</h2>
+                            <h2 className="text-2xl font-black font-display text-navy-900 dark:text-slate-100 tracking-tight">Quiz Questions</h2>
                         </div>
 
                         {questions.map((q: any, qIndex: number) => (
@@ -284,7 +349,7 @@ export default function CreateQuizPage() {
 
                                 <div className="space-y-6">
                                     <div className="flex items-center gap-3">
-                                        <span className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-black uppercase tracking-widest border border-indigo-100 dark:border-indigo-500/20">Soal {qIndex + 1}</span>
+                                        <span className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-black uppercase tracking-widest border border-indigo-100 dark:border-indigo-500/20">Question {qIndex + 1}</span>
                                         
                                         {/* TOMBOL ADD IMAGE */}
                                         <button 
@@ -293,7 +358,7 @@ export default function CreateQuizPage() {
                                             className="flex items-center gap-2 px-3 py-1.5 bg-surface-100 dark:bg-slate-700 hover:bg-surface-200 dark:hover:bg-slate-600 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 rounded-lg transition-all border border-indigo-100 dark:border-indigo-500/10"
                                         >
                                             <ImageIcon size={14} />
-                                            {q.image ? 'Ganti Gambar' : 'Add Image'}
+                                            {q.image ? 'Change Image' : 'Add Image'}
                                         </button>
 
                                         {/* Input File Tersembunyi */}
@@ -314,14 +379,14 @@ export default function CreateQuizPage() {
                                         <div className="relative w-fit group/img">
                                             <img 
                                                 src={q.image} 
-                                                alt="Preview Soal" 
+                                                alt="Question Preview" 
                                                 className="max-h-40 rounded-xl object-cover border-2 border-surface-100 dark:border-slate-600 shadow-md"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => handleQuestionChange(qIndex, 'image', null)}
                                                 className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 hover:scale-110 transition-all border-2 border-white dark:border-slate-800"
-                                                title="Hapus Gambar"
+                                                title="Remove Image"
                                             >
                                                 <X size={12} />
                                             </button>
@@ -334,7 +399,7 @@ export default function CreateQuizPage() {
                                         value={q.question_text}
                                         onChange={(e) => handleQuestionChange(qIndex, 'question_text', e.target.value)}
                                         className="w-full bg-transparent border-b-2 border-surface-200 dark:border-slate-700 py-3 outline-none focus:border-indigo-500 dark:focus:border-indigo-400 font-bold text-lg dark:text-slate-100 transition-colors"
-                                        placeholder="Tuliskan pertanyaan kuis di sini..."
+                                        placeholder="Write your question here..."
                                     />
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
@@ -366,14 +431,14 @@ export default function CreateQuizPage() {
                                                                 ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-700 dark:text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.1)]' 
                                                                 : 'bg-white dark:bg-slate-900 border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/5'
                                                         }`}
-                                                        placeholder={`Pilihan Jawaban ${optIndex + 1}`}
+                                                        placeholder={`Answer Option ${optIndex + 1}`}
                                                     />
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                     <p className="text-[11px] text-text-400 font-medium flex items-center gap-2 px-1">
-                                        <Sparkles size={14} className="text-indigo-500" /> Isi semua pilihan dan tandai "radio button" untuk jawaban yang benar.
+                                        <Sparkles size={14} className="text-indigo-500" /> Fill in all options and mark the radio button for the correct answer.
                                     </p>
                                 </div>
                             </div>

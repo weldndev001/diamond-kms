@@ -153,7 +153,7 @@ export default function SettingsPage() {
                                                 <div>
                                                     <p className="font-medium text-navy-900 font-mono text-sm">{flag.flag_key}</p>
                                                     <p className="text-xs text-text-300 mt-0.5">
-                                                        Created: {new Date(flag.created_at).toLocaleDateString()}
+                                                        Created: {new Date(flag.created_at).toLocaleDateString('en-US')}
                                                     </p>
                                                 </div>
                                                 <button

@@ -53,7 +53,7 @@ export default function DashboardPage() {
         return (
             <div className="flex flex-col items-center justify-center py-20">
                 <div className="w-10 h-10 border-4 border-navy-200 border-t-navy-600 rounded-full animate-spin mb-4" />
-                <p className="text-text-500 font-medium">Memuat dashboard...</p>
+                <p className="text-text-500 font-medium">Loading dashboard...</p>
             </div>
         )
     }
@@ -67,7 +67,7 @@ export default function DashboardPage() {
     const getRoleLabel = () => {
         switch (role) {
             case 'SUPER_ADMIN': return 'HRD Dashboard'
-            case 'GROUP_ADMIN': return 'KaDiv Dashboard'
+            case 'GROUP_ADMIN': return 'Divisional Dashboard'
             case 'SUPERVISOR': return 'Supervisor Dashboard'
             case 'STAFF': return 'Staff Dashboard'
             default: return 'Dashboard'
@@ -82,8 +82,8 @@ export default function DashboardPage() {
                     {getRoleLabel()}
                 </h1>
                 <p className="text-sm text-text-500 mt-1">
-                    Selamat datang, <span className="font-semibold text-navy-700">{user.full_name}</span>
-                    {organization?.name && <> di <span className="font-semibold">{organization.name}</span></>}
+                    Welcome, <span className="font-semibold text-navy-700">{user.full_name}</span>
+                    {organization?.name && <> at <span className="font-semibold">{organization.name}</span></>}
                 </p>
             </div>
 
@@ -103,7 +103,7 @@ export default function DashboardPage() {
                                 {stats.readingTracker.rate}%
                             </div>
                             <div className="text-navy-200 mb-1.5 text-sm">
-                                tingkat pemahaman
+                                understanding rate
                             </div>
                         </div>
                         <div className="mt-4 w-full bg-white/20 rounded-full h-2.5">
@@ -113,7 +113,7 @@ export default function DashboardPage() {
                             />
                         </div>
                         <p className="text-navy-300 text-xs mt-2">
-                            {stats.readingTracker.confirmed} dari {stats.readingTracker.expected} wajib baca terkonfirmasi
+                            {stats.readingTracker.confirmed} out of {stats.readingTracker.expected} mandatory reads confirmed
                         </p>
                     </div>
                 </div>
@@ -128,7 +128,7 @@ export default function DashboardPage() {
                             <FileText size={24} />
                         </div>
                         <div>
-                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Manage Document</p>
+                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Documents</p>
                             <p className="text-3xl font-black font-display text-text-900 mt-0.5">
                                 {stats?.totalDocuments ?? 0}
                             </p>
@@ -143,7 +143,7 @@ export default function DashboardPage() {
                             <Tags size={24} />
                         </div>
                         <div>
-                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Manage Content</p>
+                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Articles</p>
                             <p className="text-3xl font-black font-display text-text-900 mt-0.5">
                                 {stats?.totalContents ?? 0}
                             </p>
@@ -159,7 +159,7 @@ export default function DashboardPage() {
                                 <Network size={24} />
                             </div>
                             <div>
-                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Divisi</p>
+                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Divisions</p>
                                 <p className="text-3xl font-black font-display text-text-900 mt-0.5">
                                     {stats?.totalDivisions ?? 0}
                                 </p>
@@ -176,7 +176,7 @@ export default function DashboardPage() {
                                 <Users size={24} />
                             </div>
                             <div>
-                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Anggota</p>
+                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Members</p>
                                 <p className="text-3xl font-black font-display text-text-900 mt-0.5">
                                     {stats?.totalMembers ?? 0}
                                 </p>
@@ -197,7 +197,7 @@ export default function DashboardPage() {
                             <div key={item.id} className="card p-5">
                                 <h3 className="font-bold font-display text-text-900 text-sm mb-3 line-clamp-1">{item.title}</h3>
                                 <div className="flex justify-between items-end mb-2">
-                                    <span className="text-xs text-text-500">{item.readCount}/{item.totalTarget} Pembaca</span>
+                                    <span className="text-xs text-text-500">{item.readCount}/{item.totalTarget} Readers</span>
                                     <span className="text-lg font-black text-navy-600">{item.percent}%</span>
                                 </div>
                                 <div className="w-full bg-surface-100 rounded-full h-1.5 overflow-hidden">
@@ -211,7 +211,7 @@ export default function DashboardPage() {
                     </div>
                     {trackerStats.length > 3 && (
                         <Link href="/dashboard/trackers" className="text-sm font-medium text-navy-600 hover:text-navy-700 block text-right mt-2">
-                            Lihat semua →
+                            View all →
                         </Link>
                     )}
                 </div>
@@ -221,7 +221,7 @@ export default function DashboardPage() {
             <div className="card p-6">
                 <h2 className="font-bold font-display text-navy-900 text-lg mb-4 flex items-center gap-2">
                     <BarChart3 size={18} className="text-navy-600" />
-                    Akses Cepat
+                    Quick Actions
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <Link href="/dashboard/documents" className="p-4 bg-surface-50 border border-surface-200 rounded-xl text-center hover:bg-navy-light hover:border-navy-300 transition">
@@ -238,7 +238,7 @@ export default function DashboardPage() {
                     </Link>
                     <Link href="/dashboard/leaderboard" className="p-4 bg-surface-50 border border-surface-200 rounded-xl text-center hover:bg-navy-light hover:border-navy-300 transition">
                         <Activity size={20} className="mx-auto text-purple-600 mb-2" />
-                        <span className="text-sm font-medium text-text-900">Pemahaman Pegawai</span>
+                        <span className="text-sm font-medium text-text-900">Employee Assessment</span>
                     </Link>
                 </div>
             </div>

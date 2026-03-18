@@ -64,28 +64,28 @@ export function ErrorLogsSection() {
                         onChange={(e) => setFilterLevel(e.target.value as any)}
                         className="bg-surface-50 border border-surface-200 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-navy-500"
                     >
-                        <option value="ALL">Semua Level</option>
-                        <option value="ERROR">Errors Saja</option>
-                        <option value="WARN">Warnings Saja</option>
-                        <option value="INFO">Info Saja</option>
+                        <option value="ALL">All Levels</option>
+                        <option value="ERROR">Errors Only</option>
+                        <option value="WARN">Warnings Only</option>
+                        <option value="INFO">Info Only</option>
                     </select>
                     <button
                         onClick={fetchLogs}
                         className="btn btn-secondary text-xs px-3 py-1 ml-2"
                         disabled={loading}
                     >
-                        {loading ? 'Memuat...' : 'Refresh'}
+                        {loading ? 'Loading...' : 'Refresh'}
                     </button>
                 </div>
             </div>
 
             <div className="divide-y divide-surface-100 max-h-[500px] overflow-y-auto">
                 {loading && logs.length === 0 ? (
-                    <div className="p-8 text-center text-text-400 text-sm">Memuat log sistem...</div>
+                    <div className="p-8 text-center text-text-400 text-sm">Loading system logs...</div>
                 ) : logs.length === 0 ? (
                     <div className="p-8 text-center text-text-400 flex flex-col items-center justify-center gap-2">
                         <AlertCircle size={24} className="text-surface-300" />
-                        <p>Tidak ada catatan log ditemukan.</p>
+                        <p>No log entries found.</p>
                     </div>
                 ) : (
                     logs.map(log => {
@@ -104,7 +104,7 @@ export function ErrorLogsSection() {
                                             {getLevelBadge(log.level)}
                                             <span className="text-xs font-mono text-text-400 truncate max-w-[200px]">{log.source}</span>
                                             <span className="text-xs text-text-300 ml-auto whitespace-nowrap">
-                                                {new Date(log.created_at).toLocaleString('id-ID')}
+                                                {new Date(log.created_at).toLocaleString('en-US')}
                                             </span>
                                         </div>
                                         <p className="font-medium text-sm text-navy-900 line-clamp-2 md:line-clamp-1 break-words">

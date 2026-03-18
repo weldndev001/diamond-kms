@@ -149,7 +149,7 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
                     <label className="block text-sm font-semibold text-navy-900">Provider Strategy</label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
-                            { id: 'managed', label: 'Managed by WELDN_AI', desc: 'AI service dikelola oleh tim WELDN_AI' },
+                            { id: 'managed', label: 'Managed by WELDN_AI', desc: 'AI service managed by the WELDN_AI team' },
                             { id: 'byok', label: 'Bring Your Own Key', desc: 'Auto-detects Gemini or OpenAI APIs' },
                             { id: 'self_hosted', label: 'Local Server AI', desc: 'Connect to a local or custom endpoint' }
                         ].map((p) => (
@@ -189,7 +189,7 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
                                 placeholder="https://api.weldn.ai/v1"
                                 className="input-field font-mono text-sm"
                             />
-                            <p className="text-xs text-text-400">URL endpoint layanan WELDN_AI yang ditentukan oleh tim.</p>
+                            <p className="text-xs text-text-400">The WELDN_AI service endpoint URL specified by the team.</p>
                         </div>
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-medium text-navy-900">
@@ -199,10 +199,10 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
                                 type="password"
                                 value={apiKey}
                                 onChange={(e) => setApiKey(e.target.value)}
-                                placeholder="Masukkan API Key dari WELDN_AI..."
+                                placeholder="Enter API Key from WELDN_AI..."
                                 className="input-field font-mono text-sm"
                             />
-                            <p className="text-xs text-text-400">API key disediakan oleh tim WELDN_AI saat aktivasi layanan.</p>
+                            <p className="text-xs text-text-400">API key provided by the WELDN_AI team during service activation.</p>
                         </div>
                     </div>
                 )}
@@ -309,7 +309,7 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
                     <label className="flex items-center justify-between cursor-pointer">
                         <div>
                             <div className="text-sm font-medium text-navy-900">Auto-generate Chat Summary</div>
-                            <div className="text-xs text-text-400 mt-0.5">Otomatis membuat ringkasan setiap percakapan setelah sesi berakhir.</div>
+                            <div className="text-xs text-text-400 mt-0.5">Automatically create a summary of each conversation after the session ends.</div>
                         </div>
                         <div className="relative">
                             <input
@@ -421,7 +421,7 @@ function AIUsageTab({ organization }: { organization: any }) {
                                 })}
                             </div>
                         ) : (
-                            <p className="text-sm text-text-500 italic block">Tidak ada rincian penggunaan aksi untuk saat ini.</p>
+                            <p className="text-sm text-text-500 italic block">No usage details for this action type yet.</p>
                         )}
                     </div>
                 </div>

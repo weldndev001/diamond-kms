@@ -37,13 +37,13 @@ export default function UsersPage() {
                 <div className="flex justify-between items-center">
                     <div>
                         <h1 className="text-2xl font-bold font-display text-navy-900">User Management</h1>
-                        <p className="text-sm text-text-500 mt-1">Kelola anggota tim dan divisi organisasi Anda.</p>
+                        <p className="text-sm text-text-500 mt-1">Manage team members and your organization's divisions.</p>
                     </div>
                     <Link
                         href="/dashboard/hrd/users/new"
                         className="btn btn-primary flex flex-row items-center gap-2"
                     >
-                        <UserPlus size={18} /> Buat User
+                        <UserPlus size={18} /> Create User
                     </Link>
                 </div>
 

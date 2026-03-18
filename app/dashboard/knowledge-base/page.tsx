@@ -50,8 +50,8 @@ interface ChatSession {
 const MOCK_KBS: KnowledgeBase[] = [
     {
         id: 'kb-1',
-        name: 'SOP Operasional',
-        description: 'Kumpulan SOP dan prosedur kerja harian',
+        name: 'Operational SOP',
+        description: 'Collection of SOPs and daily work procedures',
         documents: [
             { id: 'd1', title: 'SOP Penerimaan Barang', type: 'document', division: 'Warehouse' },
             { id: 'd2', title: 'Prosedur Quality Check', type: 'document', division: 'QC' },
@@ -62,8 +62,8 @@ const MOCK_KBS: KnowledgeBase[] = [
     },
     {
         id: 'kb-2',
-        name: 'Kebijakan SDM',
-        description: 'Aturan cuti, gaji, dan manajemen karyawan',
+        name: 'HR Policies',
+        description: 'Leave rules, payroll, and employee management',
         documents: [
             { id: 'd3', title: 'Panduan Cuti Tahunan', type: 'document', division: 'HR' },
             { id: 'c2', title: 'Kebijakan Remunerasi 2025', type: 'content', division: 'HR' },
@@ -73,8 +73,8 @@ const MOCK_KBS: KnowledgeBase[] = [
     },
     {
         id: 'kb-3',
-        name: 'Produk & Marketing',
-        description: 'Informasi produk, pricing, dan strategi marketing',
+        name: 'Product & Marketing',
+        description: 'Product information, pricing, and marketing strategy',
         documents: [
             { id: 'd4', title: 'Katalog Produk 2025', type: 'document', division: 'Marketing' },
             { id: 'c3', title: 'Strategi Digital Marketing', type: 'content', division: 'Marketing' },
@@ -87,7 +87,7 @@ const MOCK_KBS: KnowledgeBase[] = [
 ]
 
 const MOCK_RESPONSES: Record<string, string> = {
-    default: 'Berdasarkan dokumen yang tersedia di knowledge base ini, berikut penjelasannya:\n\n1. **Informasi Utama**: Data yang Anda tanyakan tercantum dalam beberapa dokumen terkait.\n\n2. **Detail Prosedur**: Langkah-langkah yang perlu diikuti sudah dijelaskan secara detail dalam SOP yang relevan.\n\n3. **Catatan Penting**: Pastikan untuk selalu merujuk ke versi terbaru dari dokumen ini untuk informasi yang paling akurat.\n\nApakah ada hal spesifik lainnya yang ingin Anda ketahui?',
+    default: 'Based on the documents available in this knowledge base, here is the explanation:\n\n1. **Main Information**: The data you asked about is listed in several related documents.\n\n2. **Procedure Details**: The steps to follow are explained in detail in the relevant SOP.\n\n3. **Important Notes**: Make sure to always refer to the latest version of this document for the most accurate information.\n\nIs there anything else specific you would like to know?',
 }
 
 /* ═══════════════════════════════════════════
@@ -113,11 +113,11 @@ function KBListView({ knowledgeBases, onSelect, onCreate }: {
                         <Tags size={22} className="text-navy-600" />
                         Knowledge Base Management
                     </h1>
-                    <p className="text-text-400 text-sm mt-1">Buat, edit, dan kelola semua knowledge base organisasi</p>
+                    <p className="text-text-400 text-sm mt-1">Create, edit, and manage all organizational knowledge bases</p>
                 </div>
                 <button onClick={onCreate}
                     className="btn btn-primary flex items-center gap-2">
-                    <Plus size={16} /> Buat Knowledge Base
+                    <Plus size={16} /> Create Knowledge Base
                 </button>
             </div>
 
@@ -125,19 +125,19 @@ function KBListView({ knowledgeBases, onSelect, onCreate }: {
             <div className="flex items-center justify-between gap-4">
                 <div className="relative w-full max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-300" size={16} />
-                    <input type="text" placeholder="Cari knowledge base..."
+                    <input type="text" placeholder="Search knowledge base..."
                         value={search} onChange={e => setSearch(e.target.value)}
                         className="pl-10 pr-4 py-2.5 border rounded-xl w-full focus:ring-navy-600 focus:border-navy-600 text-sm" />
                 </div>
                 <div className="flex items-center bg-surface-100 rounded-lg p-0.5 border border-surface-200 shrink-0">
                     <button onClick={() => setViewMode('grid')}
                         className={`p-2 rounded-md transition ${viewMode === 'grid' ? 'bg-white shadow-sm text-navy-600' : 'text-text-400 hover:text-text-600'}`}
-                        title="Tampilan Grid">
+                        title="Grid View">
                         <LayoutGrid size={16} />
                     </button>
                     <button onClick={() => setViewMode('list')}
                         className={`p-2 rounded-md transition ${viewMode === 'list' ? 'bg-white shadow-sm text-navy-600' : 'text-text-400 hover:text-text-600'}`}
-                        title="Tampilan List">
+                        title="List View">
                         <List size={16} />
                     </button>
                 </div>
@@ -149,11 +149,11 @@ function KBListView({ knowledgeBases, onSelect, onCreate }: {
                     <div className="w-20 h-20 bg-surface-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <FolderOpen size={36} className="text-text-300" />
                     </div>
-                    <h3 className="font-bold text-navy-900 text-lg mb-1">Belum ada Knowledge Base</h3>
-                    <p className="text-text-400 text-sm mb-4">Buat knowledge base pertama dari dokumen atau konten Anda</p>
+                    <h3 className="font-bold text-navy-900 text-lg mb-1">No Knowledge Base yet</h3>
+                    <p className="text-text-400 text-sm mb-4">Create your first knowledge base from your documents or content</p>
                     <button onClick={onCreate}
                         className="btn btn-primary inline-flex items-center gap-2">
-                        <Plus size={16} /> Buat Knowledge Base
+                        <Plus size={16} /> Create Knowledge Base
                     </button>
                 </div>
             ) : viewMode === 'grid' ? (
@@ -171,13 +171,13 @@ function KBListView({ knowledgeBases, onSelect, onCreate }: {
                             <p className="text-text-400 text-xs mb-3 line-clamp-2">{kb.description}</p>
                             <div className="flex items-center gap-3 text-[11px] text-text-400">
                                 <span className="flex items-center gap-1">
-                                    <FileText size={11} /> {kb.documents.length} sumber
+                                    <FileText size={11} /> {kb.documents.length} sources
                                 </span>
                                 <span className="flex items-center gap-1">
-                                    <MessageSquare size={11} /> {kb.messageCount} pesan
+                                    <MessageSquare size={11} /> {kb.messageCount} messages
                                 </span>
                                 <span className="flex items-center gap-1">
-                                    <Clock size={11} /> {new Date(kb.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                                    <Clock size={11} /> {new Date(kb.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                                 </span>
                             </div>
                             {/* Doc type badges */}
@@ -209,13 +209,13 @@ function KBListView({ knowledgeBases, onSelect, onCreate }: {
                             </div>
                             <div className="flex items-center gap-4 text-[11px] text-text-400 shrink-0">
                                 <span className="flex items-center gap-1 whitespace-nowrap">
-                                    <FileText size={11} /> {kb.documents.length} sumber
+                                    <FileText size={11} /> {kb.documents.length} sources
                                 </span>
                                 <span className="flex items-center gap-1 whitespace-nowrap">
-                                    <MessageSquare size={11} /> {kb.messageCount} pesan
+                                    <MessageSquare size={11} /> {kb.messageCount} messages
                                 </span>
                                 <span className="flex items-center gap-1 whitespace-nowrap">
-                                    <Clock size={11} /> {new Date(kb.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                                    <Clock size={11} /> {new Date(kb.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                                 </span>
                             </div>
                             <div className="hidden md:flex flex-wrap gap-1 shrink-0 max-w-[200px]">
@@ -267,8 +267,8 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
         const docs = allDocs.filter(d => selected.has(d.id))
         const kb: KnowledgeBase = {
             id: `kb-${Date.now()}`,
-            name: name || 'Knowledge Base Baru',
-            description: desc || 'Tanpa deskripsi',
+            name: name || 'New Knowledge Base',
+            description: desc || 'No description',
             documents: docs,
             created_at: new Date().toISOString(),
             messageCount: 0,
@@ -282,22 +282,22 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
             <div>
                 <button onClick={onBack}
                     className="flex items-center gap-1.5 text-text-400 hover:text-navy-600 text-sm font-medium transition mb-3">
-                    <ArrowLeft size={14} /> Kembali
+                    <ArrowLeft size={14} /> Back
                 </button>
-                <h1 className="text-2xl font-bold font-display text-navy-900">Buat Knowledge Base Baru</h1>
-                <p className="text-text-400 text-sm mt-1">Pilih dokumen dan konten untuk knowledge base baru</p>
+                <h1 className="text-2xl font-bold font-display text-navy-900">Create New Knowledge Base</h1>
+                <p className="text-text-400 text-sm mt-1">Select documents and content for your new knowledge base</p>
             </div>
 
             {/* Steps indicator */}
             <div className="flex items-center gap-3">
                 <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-semibold transition ${step === 1 ? 'bg-navy-600 text-white border-navy-600' : 'bg-surface-50 text-text-500 border-surface-200'}`}>
                     <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">1</span>
-                    Detail
+                    Details
                 </div>
                 <div className="w-8 h-px bg-surface-200" />
                 <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-semibold transition ${step === 2 ? 'bg-navy-600 text-white border-navy-600' : 'bg-surface-50 text-text-500 border-surface-200'}`}>
                     <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">2</span>
-                    Pilih Sumber
+                    Select Sources
                 </div>
             </div>
 
@@ -305,20 +305,20 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
             {step === 1 && (
                 <div className="card p-6 max-w-xl space-y-4">
                     <div>
-                        <label className="block text-sm font-semibold text-navy-900 mb-1.5">Nama Knowledge Base</label>
+                        <label className="block text-sm font-semibold text-navy-900 mb-1.5">Knowledge Base Name</label>
                         <input type="text" value={name} onChange={e => setName(e.target.value)}
-                            placeholder="Contoh: SOP Operasional"
+                            placeholder="Example: Operational SOP"
                             className="w-full px-4 py-2.5 border rounded-xl focus:ring-navy-600 focus:border-navy-600 text-sm" />
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold text-navy-900 mb-1.5">Deskripsi (opsional)</label>
+                        <label className="block text-sm font-semibold text-navy-900 mb-1.5">Description (optional)</label>
                         <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3}
-                            placeholder="Jelaskan isi knowledge base ini..."
+                            placeholder="Explain what this knowledge base contains..."
                             className="w-full px-4 py-2.5 border rounded-xl focus:ring-navy-600 focus:border-navy-600 text-sm resize-none" />
                     </div>
                     <button onClick={() => setStep(2)} disabled={!name.trim()}
                         className="btn btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50">
-                        Lanjut Pilih Sumber <ChevronRight size={16} />
+                        Next: Select Sources <ChevronRight size={16} />
                     </button>
                 </div>
             )}
@@ -329,19 +329,19 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
                     <div className="flex items-center justify-between">
                         <div className="relative w-80">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-300" size={16} />
-                            <input type="text" placeholder="Cari dokumen atau konten..."
+                            <input type="text" placeholder="Search documents or content..."
                                 value={search} onChange={e => setSearch(e.target.value)}
                                 className="pl-10 pr-4 py-2.5 border rounded-xl w-full focus:ring-navy-600 focus:border-navy-600 text-sm" />
                         </div>
                         <span className="text-sm text-text-500 font-medium">
-                            {selected.size} dipilih
+                            {selected.size} selected
                         </span>
                     </div>
 
                     {/* Docs list */}
                     <div className="card divide-y max-h-[400px] overflow-y-auto">
                         {filteredDocs.length === 0 ? (
-                            <div className="p-8 text-center text-text-400 text-sm">Tidak ada dokumen ditemukan</div>
+                            <div className="p-8 text-center text-text-400 text-sm">No documents found</div>
                         ) : filteredDocs.map(doc => (
                             <button key={doc.id} onClick={() => toggleDoc(doc.id)}
                                 className={`w-full flex items-center gap-3 p-4 text-left transition hover:bg-surface-50 ${selected.has(doc.id) ? 'bg-navy-50' : ''}`}>
@@ -355,7 +355,7 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
                                     <div className="font-medium text-navy-900 text-sm truncate">{doc.title}</div>
                                     <div className="text-[11px] text-text-400 mt-0.5 flex items-center gap-2">
                                         <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${doc.type === 'document' ? 'bg-navy-100 text-navy-700' : 'bg-amber-100 text-amber-700'}`}>
-                                            {doc.type === 'document' ? 'Dokumen' : 'Konten'}
+                                            {doc.type === 'document' ? 'Document' : 'Content'}
                                         </span>
                                         {doc.division && <span>{doc.division}</span>}
                                     </div>
@@ -368,11 +368,11 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
                     <div className="flex items-center gap-3">
                         <button onClick={() => setStep(1)}
                             className="px-4 py-2.5 border border-surface-200 rounded-xl text-sm font-medium text-text-600 hover:bg-surface-50 transition">
-                            ← Kembali
+                            ← Back
                         </button>
                         <button onClick={handleCreate} disabled={selected.size === 0}
                             className="btn btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50">
-                            <Sparkles size={16} /> Buat Knowledge Base ({selected.size} sumber)
+                            <Sparkles size={16} /> Create Knowledge Base ({selected.size} sources)
                         </button>
                     </div>
                 </div>
@@ -423,7 +423,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
         // Simulate AI response
         await new Promise(r => setTimeout(r, 1500 + Math.random() * 1500))
 
-        const response = `Berdasarkan **${kb.documents.length} sumber** di knowledge base "${kb.name}":\n\n${q.toLowerCase().includes('sop') ? 'SOP yang dimaksud sudah diatur dalam dokumen terkait. Berikut ringkasannya:\n\n1. **Langkah awal**: Pastikan semua persiapan telah dilakukan sesuai prosedur.\n2. **Pelaksanaan**: Ikuti setiap langkah yang tertulis secara berurutan.\n3. **Dokumentasi**: Catat setiap hasil pekerjaan di formulir yang tersedia.' : 'Informasi yang Anda tanyakan dapat ditemukan di dokumen berikut:\n\n• **' + kb.documents[0]?.title + '** — Menjelaskan dasar-dasar kebijakan.\n' + (kb.documents[1] ? '• **' + kb.documents[1].title + '** — Memberikan detail prosedur pelaksanaan.\n' : '') + '\nPerlu informasi lebih detail dari dokumen tertentu?'}`
+        const response = `Based on **${kb.documents.length} sources** in the knowledge base "${kb.name}":\n\n${q.toLowerCase().includes('sop') ? 'The SOP you referred to is already defined in the relevant documents. Here is the summary:\n\n1. **Initial Step**: Ensure all preparations are done according to procedure.\n2. **Execution**: Follow each written step sequentially.\n3. **Documentation**: Record every work result in the available forms.' : 'The information you asked for can be found in the following documents:\n\n• **' + kb.documents[0]?.title + '** — Explains the core policies.\n' + (kb.documents[1] ? '• **' + kb.documents[1].title + '** — Provides detailed implementation procedures.\n' : '') + '\nNeed more details from a specific document?'}`
 
         setMessages(prev => [...prev, { role: 'assistant', content: response }])
         setIsTyping(false)
@@ -445,22 +445,22 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                         </div>
                         <div className="min-w-0">
                             <h3 className="font-bold text-navy-900 text-sm truncate">{kb.name}</h3>
-                            <p className="text-[11px] text-text-400">{kb.documents.length} sumber · Powered by AI</p>
+                            <p className="text-[11px] text-text-400">{kb.documents.length} sources · Powered by AI</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-1 bg-surface-100 p-1 rounded-xl">
                         <button onClick={() => { setShowSidebar(true); setSidebarTab('docs') }}
                             className={`px-3 py-1.5 rounded-lg transition text-sm font-medium flex items-center gap-1.5 ${showSidebar && sidebarTab === 'docs' ? 'bg-white shadow-sm text-navy-600' : 'text-text-400 hover:text-text-600'}`}>
-                            <FileText size={14} /> Sumber
+                            <FileText size={14} /> Sources
                         </button>
                         <button onClick={() => setShowNewSessionModal(true)}
                             className="p-1.5 rounded-lg transition text-text-400 hover:text-navy-600 hover:bg-white"
-                            title="Sesi Baru">
+                            title="New Session">
                             <Plus size={16} />
                         </button>
                         <button onClick={() => { setShowSidebar(true); setSidebarTab('history') }}
                             className={`px-3 py-1.5 rounded-lg transition text-sm font-medium flex items-center gap-1.5 ${showSidebar && sidebarTab === 'history' ? 'bg-white shadow-sm text-navy-600' : 'text-text-400 hover:text-text-600'}`}>
-                            <MessageSquare size={14} /> Riwayat Chat
+                            <MessageSquare size={14} /> Chat History
                         </button>
                     </div>
                 </div>
@@ -472,16 +472,16 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                             <div className="w-20 h-20 bg-navy-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Sparkles size={36} className="text-navy-400" />
                             </div>
-                            <h3 className="font-bold font-display text-navy-900 text-xl mb-2">Chat dengan {kb.name}</h3>
+                            <h3 className="font-bold font-display text-navy-900 text-xl mb-2">Chat with {kb.name}</h3>
                             <p className="text-sm max-w-md mx-auto">
-                                Tanyakan apapun dan AI akan menjawab berdasarkan {kb.documents.length} dokumen yang tersedia.
+                                Ask anything and AI will answer based on the {kb.documents.length} available documents.
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg mx-auto mt-6">
                                 {[
-                                    `Rangkum isi ${kb.documents[0]?.title || 'dokumen'}`,
-                                    'Apa poin-poin penting dari sumber ini?',
-                                    'Jelaskan prosedur yang disebutkan',
-                                    'Bandingkan informasi antar dokumen'
+                                    `Summarize ${kb.documents[0]?.title || 'document'}`,
+                                    'What are the key points from this source?',
+                                    'Explain the procedures mentioned',
+                                    'Compare information between documents'
                                 ].map((suggestion, i) => (
                                     <button key={i} onClick={() => setInput(suggestion)}
                                         className="text-left text-xs bg-surface-50 border border-surface-200 hover:border-navy-300 hover:bg-navy-50 p-3 rounded-lg transition text-text-600">
@@ -521,7 +521,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                                     <span className="w-2 h-2 bg-navy-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                                     <span className="w-2 h-2 bg-navy-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                 </div>
-                                <span className="text-sm text-text-500">Mencari jawaban...</span>
+                                <span className="text-sm text-text-500">Searching for answers...</span>
                             </div>
                         </div>
                     )}
@@ -533,7 +533,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                     <div className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-surface-200 focus-within:border-navy-400 focus-within:ring-2 focus-within:ring-navy-100 transition shadow-sm">
                         <input value={input} onChange={e => setInput(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                            disabled={isTyping} placeholder={`Tanya tentang ${kb.name}...`}
+                            disabled={isTyping} placeholder={`Ask about ${kb.name}...`}
                             className="flex-1 bg-transparent outline-none text-sm placeholder:text-text-300" />
                         <button onClick={sendMessage} disabled={!input.trim() || isTyping}
                             className="bg-navy-600 hover:bg-navy-700 disabled:bg-surface-200 disabled:text-text-300 text-white rounded-lg p-2.5 transition">
@@ -550,9 +550,9 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                         <>
                             <div className="p-4 border-b border-surface-200">
                                 <h3 className="font-bold text-navy-900 text-sm flex items-center gap-2">
-                                    <FileText size={14} className="text-navy-500" /> Sumber Dokumen
+                                    <FileText size={14} className="text-navy-500" /> Document Sources
                                 </h3>
-                                <p className="text-[11px] text-text-400 mt-1">{kb.documents.length} dokumen & konten</p>
+                                <p className="text-[11px] text-text-400 mt-1">{kb.documents.length} documents & content</p>
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
@@ -572,7 +572,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                                         </div>
                                         <button onClick={() => onRemoveDoc(doc.id)}
                                             className="opacity-0 group-hover:opacity-100 p-1 text-text-300 hover:text-danger flex-shrink-0 transition"
-                                            title="Hapus dari KB">
+                                            title="Remove from KB">
                                             <X size={12} />
                                         </button>
                                     </div>
@@ -582,7 +582,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                             <div className="p-3 border-t border-surface-200">
                                 <button onClick={onAddDoc}
                                     className="w-full py-2.5 px-4 border-2 border-dashed border-surface-300 hover:border-navy-400 text-text-500 hover:text-navy-600 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition">
-                                    <Plus size={14} /> Tambah Sumber
+                                    <Plus size={14} /> Add Source
                                 </button>
                             </div>
                         </>
@@ -591,7 +591,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                             <div className="p-4 border-b border-surface-200 space-y-3">
                                 <div className="flex justify-between items-center">
                                     <h3 className="font-bold text-navy-900 text-sm flex items-center gap-2">
-                                        <MessageSquare size={14} className="text-navy-500" /> Riwayat Chat
+                                        <MessageSquare size={14} className="text-navy-500" /> Chat History
                                     </h3>
                                     <button onClick={() => setShowNewSessionModal(true)} className="text-navy-600 hover:bg-navy-50 p-1.5 rounded-lg transition flex items-center gap-1 px-2" title="New Chat">
                                         <Plus size={14} /> <span className="text-xs font-semibold">New</span>
@@ -608,13 +608,13 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                                 {chatSessions.length === 0 ? (
                                     <div className="text-center flex flex-col items-center gap-2 text-xs text-text-400 py-8">
                                         <MessageSquare size={24} className="text-surface-300" />
-                                        Belum ada riwayat chat
+                                        No chat history yet
                                     </div>
                                 ) : chatSessions.map(session => (
                                     <button key={session.id} onClick={() => onLoadSession(session.id)}
                                         className="w-full flex items-start flex-col gap-1 p-3 rounded-lg hover:bg-white border border-transparent hover:border-surface-200 transition text-left">
                                         <div className="text-[13px] font-medium text-navy-900 line-clamp-1">{session.title}</div>
-                                        <div className="text-[10px] text-text-400">{new Date(session.updatedAt).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</div>
+                                        <div className="text-[10px] text-text-400">{new Date(session.updatedAt).toLocaleDateString('en-US', {day: 'numeric', month: 'short'})}</div>
                                     </button>
                                 ))}
                             </div>
@@ -631,19 +631,19 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                             <div className="w-12 h-12 bg-navy-100 rounded-xl flex items-center justify-center mb-4 mx-auto text-navy-600">
                                 <Plus size={24} />
                             </div>
-                            <h2 className="text-lg font-bold text-navy-900 text-center mb-2">Mulai Sesi Baru?</h2>
+                            <h2 className="text-lg font-bold text-navy-900 text-center mb-2">Start New Session?</h2>
                             <p className="text-text-500 text-sm text-center">
-                                Anda akan memulai sesi chat baru. Riwayat chat saat ini akan disimpan dalam Riwayat Chat.
+                                You will start a new chat session. The current chat history will be saved in Chat History.
                             </p>
                         </div>
                         <div className="bg-surface-50 p-4 border-t border-surface-200 flex gap-3">
                             <button onClick={() => setShowNewSessionModal(false)}
                                 className="flex-1 py-2 px-4 border border-surface-200 text-text-600 font-medium rounded-xl hover:bg-white transition text-sm">
-                                Batal
+                                Cancel
                             </button>
                             <button onClick={handleConfirmNewSession}
                                 className="flex-1 py-2 px-4 bg-navy-600 text-white font-medium rounded-xl hover:bg-navy-700 transition shadow-sm text-sm">
-                                Ya, Mulai Sesi Baru
+                                Yes, Start New Session
                             </button>
                         </div>
                     </div>
@@ -670,7 +670,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc }: {
             <div>
                 <button onClick={onBack}
                     className="flex items-center gap-1.5 text-text-400 hover:text-navy-600 text-sm font-medium transition mb-4">
-                    <ArrowLeft size={14} /> Kembali ke Daftar
+                    <ArrowLeft size={14} /> Back to List
                 </button>
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
@@ -680,7 +680,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc }: {
                     <button onClick={onChat}
                         className="btn btn-primary px-8 py-3 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition duration-300 flex items-center gap-3">
                         <Sparkles size={20} />
-                        <span className="text-lg">Chat dengan AISA</span>
+                        <span className="text-lg">Chat with AISA</span>
                     </button>
                 </div>
             </div>
@@ -692,7 +692,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc }: {
                         <FileText size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Total Dokumen</p>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Total Documents</p>
                         <p className="text-xl font-bold text-navy-900">{kb.documents.filter(d => d.type === 'document').length}</p>
                     </div>
                 </div>
@@ -701,7 +701,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc }: {
                         <BookOpen size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Jumlah Sumber</p>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Number of Sources</p>
                         <p className="text-xl font-bold text-navy-900">{kb.documents.length}</p>
                     </div>
                 </div>
@@ -710,8 +710,8 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc }: {
                         <Clock size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Terakhir Update</p>
-                        <p className="text-sm font-bold text-navy-900">{new Date(kb.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</p>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Last Updated</p>
+                        <p className="text-sm font-bold text-navy-900">{new Date(kb.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</p>
                     </div>
                 </div>
                 <div className="card p-4 bg-indigo-50/50 border-indigo-100 flex items-center gap-4">
@@ -731,14 +731,14 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc }: {
                     <div className="flex items-center justify-between">
                         <h3 className="font-bold text-navy-900 text-lg flex items-center gap-2">
                             <FolderOpen size={20} className="text-navy-500" />
-                            Dokumen dalam Knowledge Base
+                            Documents in Knowledge Base
                         </h3>
                         <div className="flex gap-2">
                             <button onClick={onUpload} className="btn bg-white border border-surface-200 text-text-600 px-4 py-2 text-sm hover:bg-surface-50">
-                                <FileText size={16} /> Hubungkan Dokumen
+                                <FileText size={16} /> Connect Document
                             </button>
                             <button onClick={onAddDoc} className="btn btn-primary px-4 py-2 text-sm">
-                                <Plus size={16} /> Hubungkan Konten
+                                <Plus size={16} /> Connect Content
                             </button>
                         </div>
                     </div>
@@ -747,7 +747,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc }: {
                         {kb.documents.length === 0 ? (
                             <div className="p-12 text-center text-text-400">
                                 <FolderOpen size={48} className="mx-auto mb-3 opacity-20" />
-                                <p>Belum ada dokumen yang terhubung ke KB ini.</p>
+                                <p>No documents connected to this KB yet.</p>
                             </div>
                         ) : kb.documents.map((doc, idx) => (
                             <div key={doc.id} className="flex items-center gap-4 p-4 hover:bg-surface-50 transition group">
@@ -757,7 +757,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc }: {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="font-bold text-navy-900 text-sm truncate">{doc.title}</p>
-                                    <p className="text-[11px] text-text-400 mt-0.5">{doc.division || 'Umum'} · {doc.type === 'document' ? 'PDF/Doc' : 'Artikel'}</p>
+                                    <p className="text-[11px] text-text-400 mt-0.5">{doc.division || 'General'} · {doc.type === 'document' ? 'PDF/Doc' : 'Article'}</p>
                                 </div>
                                 <button onClick={() => onRemoveDoc(doc.id)}
                                     className="opacity-0 group-hover:opacity-100 p-2 text-text-300 hover:text-danger hover:bg-danger-bg rounded-lg transition">

@@ -19,6 +19,7 @@ export async function getQuizzesAction(orgId: string, divisionId?: string) {
                 description: true,
                 is_published: true,
                 time_limit_minutes: true,
+                header_image: true,
                 division_id: true,
                 created_by: true,
                 notes: true,
@@ -56,6 +57,7 @@ export async function getQuizByIdAction(id: string) {
 export async function createQuizAction(data: {
     title: string
     description?: string
+    header_image?: string
     time_limit_minutes?: number
     division_id: string
     content_id?: string
@@ -83,6 +85,7 @@ export async function createQuizAction(data: {
             data: {
                 title: data.title,
                 description: data.description,
+                header_image: data.header_image,
                 time_limit_minutes: data.time_limit_minutes,
                 division_id: data.division_id,
                 content_id: data.content_id || undefined,
@@ -171,6 +174,7 @@ export async function deleteQuizAction(id: string) {
 export async function updateQuizFullAction(id: string, data: {
     title: string
     description?: string
+    header_image?: string
     time_limit_minutes?: number
     division_id: string
     content_id?: string
@@ -209,6 +213,7 @@ export async function updateQuizFullAction(id: string, data: {
                 data: {
                     title: data.title,
                     description: data.description,
+                    header_image: data.header_image,
                     time_limit_minutes: data.time_limit_minutes,
                     division_id: data.division_id,
                     content_id: data.content_id || null,

@@ -23,43 +23,43 @@ interface FeaturePackage {
 const INITIAL_PACKAGES: FeaturePackage[] = [
     {
         id: 'pkg-documents',
-        name: 'Manajemen Dokumen',
-        description: 'Upload, analisis, dan pencarian dokumen dengan AI',
+        name: 'Document Management',
+        description: 'Upload, analyze, and search documents with AI',
         icon: <FileText size={20} />,
         unlocked: false,
     },
     {
         id: 'pkg-knowledge',
         name: 'Knowledge Base',
-        description: 'Buat dan kelola knowledge base dari dokumen & konten',
+        description: 'Create and manage knowledge bases from documents & content',
         icon: <Package size={20} />,
         unlocked: false,
     },
     {
         id: 'pkg-ai-assistant',
         name: 'AI Assistant',
-        description: 'Chat AI dengan RAG untuk tanya jawab dokumen',
+        description: 'AI Chat with RAG for document Q&A',
         icon: <Bot size={20} />,
         unlocked: false,
     },
     {
         id: 'pkg-quiz',
         name: 'Quiz & Leaderboard',
-        description: 'Pembuatan quiz otomatis dan tracking pemahaman pegawai',
+        description: 'Automatic quiz creation and employee comprehension tracking',
         icon: <BarChart3 size={20} />,
         unlocked: false,
     },
     {
         id: 'pkg-hr',
         name: 'HR Management',
-        description: 'Manajemen user, divisi, dan approval workflow',
+        description: 'User, division, and approval workflow management',
         icon: <Users size={20} />,
         unlocked: false,
     },
     {
         id: 'pkg-advanced-ai',
         name: 'Advanced AI Features',
-        description: 'Multi-model support, BYOK, auto-summary, dan analytics',
+        description: 'Multi-model support, BYOK, auto-summary, and analytics',
         icon: <Sparkles size={20} />,
         unlocked: false,
     },
@@ -102,7 +102,7 @@ export default function OTPPage() {
         const unlockPkgIds = VALID_OTPS[code]
         if (!unlockPkgIds) {
             setStatus('error')
-            setStatusMessage('Kode OTP tidak valid atau sudah expired. Silakan hubungi tim WELDN_AI.')
+            setStatusMessage('Invalid or expired OTP code. Please contact the WELDN_AI team.')
             setTimeout(() => setStatus('idle'), 4000)
             return
         }
@@ -111,19 +111,19 @@ export default function OTPPage() {
         const newUnlocks = unlockPkgIds.filter(id => !packages.find(p => p.id === id)?.unlocked)
         if (newUnlocks.length === 0) {
             setStatus('error')
-            setStatusMessage('Semua fitur dalam paket ini sudah terbuka.')
+            setStatusMessage('All features in this package are already unlocked.')
             setTimeout(() => setStatus('idle'), 3000)
             return
         }
 
         setPackages(prev => prev.map(p =>
             unlockPkgIds.includes(p.id)
-                ? { ...p, unlocked: true, unlockedAt: new Date().toLocaleString('id-ID') }
+                ? { ...p, unlocked: true, unlockedAt: new Date().toLocaleString('en-US') }
                 : p
         ))
         setRecentlyUnlocked(newUnlocks)
         setStatus('success')
-        setStatusMessage(`${newUnlocks.length} fitur berhasil dibuka!`)
+        setStatusMessage(`${newUnlocks.length} features successfully unlocked!`)
         setOtpInput('')
         setTimeout(() => { setStatus('idle'); setRecentlyUnlocked([]) }, 5000)
     }
@@ -135,10 +135,10 @@ export default function OTPPage() {
                 <div>
                     <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight flex items-center gap-2">
                         <KeyRound className="text-amber-500" size={28} />
-                        Aktivasi Fitur (OTP)
+                        Feature Activation (OTP)
                     </h1>
                     <p className="text-sm text-text-500 mt-1">
-                        Masukkan kode OTP dari tim WELDN_AI untuk membuka fitur sesuai paket yang Anda miliki.
+                        Enter the OTP code from the WELDN_AI team to unlock features according to your package.
                     </p>
                 </div>
 
@@ -152,8 +152,8 @@ export default function OTPPage() {
                                     <Lock size={18} className="text-amber-600" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-navy-900 text-sm">Masukkan Kode OTP</h3>
-                                    <p className="text-[11px] text-text-400">One-time password dari WELDN_AI</p>
+                                    <h3 className="font-bold text-navy-900 text-sm">Enter OTP Code</h3>
+                                    <p className="text-[11px] text-text-400">One-time password from WELDN_AI</p>
                                 </div>
                             </div>
 
@@ -163,7 +163,7 @@ export default function OTPPage() {
                                     value={otpInput}
                                     onChange={e => setOtpInput(e.target.value.toUpperCase())}
                                     onKeyDown={e => { if (e.key === 'Enter') handleSubmitOTP() }}
-                                    placeholder="Contoh: OTP-DOC-2025"
+                                    placeholder="Example: OTP-DOC-2025"
                                     className="w-full px-4 py-3 border-2 rounded-xl text-center text-lg font-mono font-bold tracking-widest focus:ring-amber-500 focus:border-amber-500 uppercase"
                                     disabled={status === 'verifying'}
                                 />
@@ -177,12 +177,12 @@ export default function OTPPage() {
                                 {status === 'verifying' ? (
                                     <>
                                         <Loader2 size={16} className="animate-spin" />
-                                        Memverifikasi...
+                                        Verifying...
                                     </>
                                 ) : (
                                     <>
                                         <ShieldCheck size={16} />
-                                        Verifikasi & Aktifkan
+                                        Verify & Activate
                                     </>
                                 )}
                             </button>
@@ -204,9 +204,9 @@ export default function OTPPage() {
 
                         {/* Progress */}
                         <div className="card p-5 text-center space-y-3">
-                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Fitur Terbuka</p>
+                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Unlocked Features</p>
                             <p className="text-4xl font-black font-display text-navy-900">{unlockedCount}</p>
-                            <p className="text-xs text-text-400">dari {packages.length} total fitur</p>
+                            <p className="text-xs text-text-400">out of {packages.length} total features</p>
                             <div className="w-full bg-surface-100 rounded-full h-2 overflow-hidden">
                                 <div
                                     className="h-2 bg-gradient-to-r from-amber-400 to-amber-600 rounded-full transition-all duration-700"
@@ -218,13 +218,13 @@ export default function OTPPage() {
                         {/* Info */}
                         <div className="card p-5 bg-navy-50 border-navy-200 space-y-2">
                             <h4 className="font-bold text-navy-900 text-sm flex items-center gap-2">
-                                <ShieldCheck size={14} className="text-navy-500" /> Informasi
+                                <ShieldCheck size={14} className="text-navy-500" /> Information
                             </h4>
                             <ul className="text-xs text-text-500 space-y-1.5">
-                                <li>• Kode OTP hanya bisa digunakan satu kali</li>
-                                <li>• Hubungi tim WELDN_AI untuk mendapatkan kode</li>
-                                <li>• Fitur yang sudah terbuka bersifat permanen</li>
-                                <li>• Paket lengkap: gunakan kode <code className="bg-white px-1.5 py-0.5 rounded font-mono font-bold text-navy-700">OTP-ALL-2025</code></li>
+                                <li>• OTP codes can only be used once</li>
+                                <li>• Contact the WELDN_AI team to obtain a code</li>
+                                <li>• Unlocked features are permanent</li>
+                                <li>• Full package: use code <code className="bg-white px-1.5 py-0.5 rounded font-mono font-bold text-navy-700">OTP-ALL-2025</code></li>
                             </ul>
                         </div>
                     </div>
@@ -233,7 +233,7 @@ export default function OTPPage() {
                     <div className="lg:col-span-2">
                         <h2 className="font-bold text-navy-900 text-lg mb-4 flex items-center gap-2">
                             <Package size={18} className="text-navy-500" />
-                            Daftar Paket Fitur
+                            Feature Package List
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {packages.map(pkg => {
@@ -263,9 +263,9 @@ export default function OTPPage() {
                                                     : 'bg-surface-100 text-text-400'
                                             }`}>
                                                 {pkg.unlocked ? (
-                                                    <><Unlock size={10} /> Aktif</>
+                                                    <><Unlock size={10} /> Active</>
                                                 ) : (
-                                                    <><Lock size={10} /> Terkunci</>
+                                                    <><Lock size={10} /> Locked</>
                                                 )}
                                             </div>
                                         </div>
@@ -275,7 +275,7 @@ export default function OTPPage() {
                                         <p className="text-xs text-text-400 mb-2">{pkg.description}</p>
                                         {pkg.unlockedAt && (
                                             <p className="text-[10px] text-green-600 font-medium">
-                                                ✓ Dibuka pada {pkg.unlockedAt}
+                                                ✓ Unlocked at {pkg.unlockedAt}
                                             </p>
                                         )}
                                     </div>

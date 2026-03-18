@@ -21,7 +21,7 @@ export default function MaintenancePage() {
     const [flags, setFlags] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [maintenanceMode, setMaintenanceMode] = useState(false)
-    const [maintenanceMsg, setMaintenanceMsg] = useState('Sistem sedang dalam pemeliharaan. Silakan coba lagi nanti.')
+    const [maintenanceMsg, setMaintenanceMsg] = useState('System is under maintenance. Please try again later.')
     const [newFlagKey, setNewFlagKey] = useState('')
     const [addingFlag, setAddingFlag] = useState(false)
 
@@ -129,7 +129,7 @@ export default function MaintenancePage() {
         const file = e.target.files?.[0]
         if (!file) return
 
-        if (!confirm('⚠️ Import data akan menambah/menimpa data yang ada. Lanjutkan?')) {
+        if (!confirm('⚠️ Importing data will add/overwrite existing data. Proceed?')) {
             if (fileInputRef.current) fileInputRef.current.value = ''
             return
         }
@@ -156,12 +156,12 @@ export default function MaintenancePage() {
                 setTimeout(() => setRestoreStatus('idle'), 10000)
             } else {
                 setRestoreStatus('error')
-                alert(`Import gagal: ${data.error || 'Unknown error'}`)
+                alert(`Import failed: ${data.error || 'Unknown error'}`)
                 setTimeout(() => setRestoreStatus('idle'), 3000)
             }
         } catch (err: any) {
             setRestoreStatus('error')
-            alert(`File tidak valid: ${err.message}`)
+            alert(`Invalid file: ${err.message}`)
             setTimeout(() => setRestoreStatus('idle'), 3000)
         }
 
@@ -177,7 +177,7 @@ export default function MaintenancePage() {
                         Maintenance Dashboard
                     </h1>
                     <p className="text-sm text-text-500 mt-1">
-                        Kelola mode pemeliharaan, feature flags, dan backup database.
+                        Manage maintenance mode, feature flags, and database backups.
                     </p>
                 </div>
 
@@ -197,14 +197,14 @@ export default function MaintenancePage() {
                                             <AlertTriangle size={24} />
                                         </div>
                                         <div>
-                                            <h2 className="font-bold font-display text-navy-900 text-lg">Mode Pemeliharaan</h2>
+                                            <h2 className="font-bold font-display text-navy-900 text-lg">Maintenance Mode</h2>
                                             <p className="text-sm text-text-500 mt-1 max-w-md">
-                                                Saat aktif, pengguna akan melihat halaman maintenance dan tidak dapat mengakses fitur utama.
+                                                When active, users will see a maintenance page and cannot access main features.
                                             </p>
                                             {maintenanceMode && (
                                                 <div className="mt-3 flex items-center gap-2 text-sm text-warning font-semibold">
                                                     <Clock size={14} />
-                                                    Mode Pemeliharaan AKTIF
+                                                    Maintenance Mode ACTIVE
                                                 </div>
                                             )}
                                         </div>
@@ -225,7 +225,7 @@ export default function MaintenancePage() {
                                     <div className="mt-4 pt-4 border-t border-warning/20">
                                         <label className="block text-sm font-medium text-text-700 mb-2">
                                             <Bell size={14} className="inline mr-1.5" />
-                                            Pesan untuk Pengguna
+                                            Message for Users
                                         </label>
                                         <textarea
                                             value={maintenanceMsg}
@@ -244,16 +244,16 @@ export default function MaintenancePage() {
                                         <MonitorDot size={24} />
                                     </div>
                                     <div className="flex-1">
-                                        <h2 className="font-bold font-display text-navy-900 text-lg">Akses Remote Maintenance</h2>
+                                        <h2 className="font-bold font-display text-navy-900 text-lg">Remote Maintenance Access</h2>
                                         <p className="text-sm text-text-500 mt-1 max-w-md">
-                                            Akses fitur generate kode OTP untuk remote maintenance teknis WELDN_AI.
+                                            Access the OTP code generation feature for WELDN_AI technical remote maintenance.
                                         </p>
                                         <Link 
                                             href="/dashboard/hrd/remote-access"
                                             className="btn btn-primary mt-4 inline-flex items-center gap-2"
                                         >
                                             <KeyRound size={16} />
-                                            Buka Halaman Akses Remote
+                                            Open Remote Access Page
                                         </Link>
                                     </div>
                                 </div>
@@ -270,7 +270,7 @@ export default function MaintenancePage() {
                                 <div className="divide-y divide-surface-100">
                                     {flags.filter(f => f.flag_key !== 'maintenance_mode').length === 0 ? (
                                         <div className="p-8 text-center text-text-500">
-                                            Tidak ada feature flag lain. Tambahkan di bawah.
+                                            No other feature flags. Add one below.
                                         </div>
                                     ) : (
                                         flags.filter(f => f.flag_key !== 'maintenance_mode').map(flag => (
@@ -278,7 +278,7 @@ export default function MaintenancePage() {
                                                 <div>
                                                     <p className="font-medium text-navy-900 font-mono text-sm">{flag.flag_key}</p>
                                                     <p className="text-xs text-text-300 mt-0.5">
-                                                        Created: {new Date(flag.created_at).toLocaleDateString()}
+                                                        Created: {new Date(flag.created_at).toLocaleDateString('en-US')}
                                                     </p>
                                                 </div>
                                                 <button
@@ -328,7 +328,7 @@ export default function MaintenancePage() {
                                     <FileDown size={16} className="text-navy-600" /> Export Database
                                 </h3>
                                 <p className="text-sm text-text-500">
-                                    Download seluruh data database sebagai file JSON (termasuk chat, leaderboard, dokumen, dll).
+                                    Download all database data as a JSON file (including chats, leaderboard, documents, etc).
                                 </p>
                                 <button
                                     onClick={handleBackup}
@@ -338,15 +338,15 @@ export default function MaintenancePage() {
                                     {backupStatus === 'running' ? (
                                         <>
                                             <Loader2 size={16} className="animate-spin" />
-                                            Mengunduh...
+                                            Downloading...
                                         </>
                                     ) : backupStatus === 'done' ? (
                                         <>
                                             <CheckCircle size={16} />
-                                            Download Selesai!
+                                            Download Complete!
                                         </>
                                     ) : backupStatus === 'error' ? (
-                                        'Export Gagal'
+                                        'Export Failed'
                                     ) : (
                                         <>
                                             <Download size={16} />
@@ -362,7 +362,7 @@ export default function MaintenancePage() {
                                     <FileUp size={16} className="text-navy-600" /> Import Database
                                 </h3>
                                 <p className="text-sm text-text-500">
-                                    Upload file backup JSON untuk merestore data. Data yang sudah ada akan di-update.
+                                    Upload a JSON backup file to restore data. Existing data will be updated.
                                 </p>
                                 <input
                                     ref={fileInputRef}
@@ -384,10 +384,10 @@ export default function MaintenancePage() {
                                     ) : restoreStatus === 'done' ? (
                                         <>
                                             <CheckCircle size={16} />
-                                            Import Selesai!
+                                            Import Complete!
                                         </>
                                     ) : restoreStatus === 'error' ? (
-                                        'Import Gagal'
+                                        'Import Failed'
                                     ) : (
                                         <>
                                             <Upload size={16} />
@@ -399,7 +399,7 @@ export default function MaintenancePage() {
                                 {/* Import Results */}
                                 {restoreResult && restoreStatus === 'done' && (
                                     <div className="bg-success-bg border border-green-200 rounded-lg p-3 space-y-1">
-                                        <p className="text-xs font-semibold text-green-800">Hasil Import:</p>
+                                        <p className="text-xs font-semibold text-green-800">Import Results:</p>
                                         <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-green-700">
                                             {Object.entries(restoreResult).map(([key, val]) => (
                                                 <div key={key} className="flex justify-between">
@@ -423,13 +423,13 @@ export default function MaintenancePage() {
                                             onClick={loadDbStats}
                                             className="text-xs font-semibold text-navy-600 hover:text-navy-700 bg-navy-50 hover:bg-navy-100 px-2.5 py-1 rounded transition"
                                         >
-                                            Muat Data
+                                            Load Data
                                         </button>
                                     )}
                                 </h3>
 
                                 {!dbStats ? (
-                                    <p className="text-xs text-text-400">Klik "Muat Data" untuk melihat statistik database saat ini.</p>
+                                    <p className="text-xs text-text-400">Click "Load Data" to see current database statistics.</p>
                                 ) : dbStats?.loading ? (
                                     <div className="flex items-center justify-center p-4">
                                         <Loader2 size={24} className="text-navy-400 animate-spin" />
@@ -456,13 +456,13 @@ export default function MaintenancePage() {
                                 <p className="text-3xl font-black font-display text-navy-900 mt-2">
                                     {flags.filter(f => f.is_enabled).length}
                                 </p>
-                                <p className="text-xs text-text-300 mt-1">dari {flags.length} total</p>
+                                <p className="text-xs text-text-300 mt-1">out of {flags.length} total</p>
                             </div>
 
                             <div className="card p-5 text-center">
-                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Status Sistem</p>
+                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">System Status</p>
                                 <p className={`text-lg font-bold mt-2 ${maintenanceMode ? 'text-warning' : 'text-success'}`}>
-                                    {maintenanceMode ? '🔧 Maintenance' : '✅ Operasional'}
+                                    {maintenanceMode ? '🔧 Maintenance' : '✅ Operational'}
                                 </p>
                             </div>
                         </div>

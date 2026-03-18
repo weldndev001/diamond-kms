@@ -251,7 +251,7 @@ export default function AIAssistantPage() {
             }
         } catch (err) {
             const errorMessage =
-                err instanceof Error ? err.message : 'Gagal mendapat respons'
+                err instanceof Error ? err.message : 'Failed to get response'
             setMessages((prev) => [
                 ...prev,
                 {
@@ -382,7 +382,7 @@ export default function AIAssistantPage() {
                 {/* Summary Banner */}
                 {sessionSummary && (
                     <div className="px-6 py-3 bg-amber-50 border-b border-amber-200 text-sm text-amber-800">
-                        <span className="font-bold">📋 Ringkasan:</span> {sessionSummary}
+                        <span className="font-bold">📋 Summary:</span> {sessionSummary}
                     </div>
                 )}
 
@@ -405,16 +405,16 @@ export default function AIAssistantPage() {
                             <div className="w-20 h-20 bg-navy-light rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Bot size={40} className="text-navy-600" />
                             </div>
-                            <h3 className="font-bold font-display text-navy-900 text-xl mb-2">Halo! 👋</h3>
+                            <h3 className="font-bold font-display text-navy-900 text-xl mb-2">Hello! 👋</h3>
                             <p className="text-sm max-w-md mx-auto">
-                                Tanyakan apapun tentang dokumen perusahaan Anda. AI akan mencari jawaban dari seluruh knowledge base yang tersedia.
+                                Ask anything about your company documents. AI will search for answers from the entire available knowledge base.
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg mx-auto mt-6">
                                 {[
-                                    'Apa isi utama dokumen terbaru?',
-                                    'Jelaskan prosedur yang ada di SOP',
-                                    'Rangkum kebijakan perusahaan',
-                                    'Bandingkan dua dokumen terakhir'
+                                    'What is the main content of the latest document?',
+                                    'Explain the procedures in the SOP',
+                                    'Summarize company policies',
+                                    'Compare the last two documents'
                                 ].map((suggestion, i) => (
                                     <button
                                         key={i}
@@ -467,7 +467,7 @@ export default function AIAssistantPage() {
                                     <span className="w-2 h-2 bg-navy-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                                     <span className="w-2 h-2 bg-navy-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                 </div>
-                                <span className="text-sm text-text-500">Sedang berpikir...</span>
+                                <span className="text-sm text-text-500">Thinking...</span>
                             </div>
                         </div>
                     )}
@@ -489,7 +489,7 @@ export default function AIAssistantPage() {
                     {citations.length > 0 && !isStreaming && (
                         <div className="space-y-2 ml-11">
                             <p className="text-xs font-semibold text-text-400 uppercase tracking-wider">
-                                Sumber Referensi
+                                Reference Sources
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {citations.slice(0, 6).map((c, i) => {
@@ -541,7 +541,7 @@ export default function AIAssistantPage() {
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 disabled={isStreaming}
-                                placeholder="Tanyakan apapun ke AISA Inteligensi..."
+                                placeholder="Ask anything to AISA Intelligence..."
                                 className="flex-1 bg-transparent translate-y-[1px] outline-none text-[15px] font-medium placeholder:text-text-300"
                             />
                             <button

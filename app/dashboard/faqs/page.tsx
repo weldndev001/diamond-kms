@@ -40,7 +40,7 @@ export default function FAQsPage() {
         e.preventDefault()
         if (!user || !organization) return
         if (isFull) {
-            alert("Kuota FAQ Penuh (Maks 10)")
+            alert("FAQ Quota Full (Max 10)")
             return
         }
         setSaving(true)
@@ -63,7 +63,7 @@ export default function FAQsPage() {
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Hapus FAQ ini?')) return
+        if (!confirm('Delete this FAQ?')) return
         const res = await deleteFAQAction(id)
         if (res.success) {
             loadData()
@@ -87,7 +87,7 @@ export default function FAQsPage() {
                     <h1 className="text-3xl font-black font-display flex items-center gap-3 mb-2 text-white">
                         <HelpCircle size={32} /> Help Center & FAQs
                     </h1>
-                    <p className="text-white/80 font-medium max-w-lg leading-relaxed">Jawaban cepat untuk pertanyaan yang sering diajukan. Temukan informasi yang Anda butuhkan secara instan.</p>
+                    <p className="text-white/80 font-medium max-w-lg leading-relaxed">Quick answers to frequently asked questions. Find the information you need instantly.</p>
                 </div>
                 {['SUPER_ADMIN', 'GROUP_ADMIN', 'MAINTAINER'].includes(role || '') && (
                     <div className="flex flex-col items-end gap-2">
@@ -102,7 +102,7 @@ export default function FAQsPage() {
                         </button>
                         {isFull && (
                             <span className="text-[10px] font-black text-amber-300 uppercase tracking-widest animate-pulse">
-                                Kuota FAQ Penuh (Maks 10)
+                                FAQ Quota Full (Max 10)
                             </span>
                         )}
                     </div>
@@ -117,7 +117,7 @@ export default function FAQsPage() {
             ) : filteredFaqs.length === 0 ? (
                 <div className="text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[32px] py-16 text-slate-400">
                     <HelpCircle size={48} className="mx-auto text-slate-200 dark:text-slate-800 mb-4" />
-                    <p className="font-bold">Tidak ada FAQ yang ditemukan.</p>
+                    <p className="font-bold">No FAQs found.</p>
                 </div>
             ) : (
                 <div className="space-y-4">
@@ -148,7 +148,7 @@ export default function FAQsPage() {
                                             <button
                                                 onClick={() => handleDelete(faq.id)}
                                                 className="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                                                title="Hapus FAQ"
+                                                title="Delete FAQ"
                                             >
                                                 <Trash2 size={18} />
                                             </button>
@@ -180,7 +180,7 @@ export default function FAQsPage() {
                                 <div className="w-10 h-10 rounded-xl bg-navy-50 dark:bg-indigo-900/30 flex items-center justify-center text-navy-600 dark:text-indigo-400">
                                     <Plus size={20} />
                                 </div>
-                                Tambah FAQ Baru
+                                Add New FAQ
                             </h2>
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
                                 {faqs.length} / 10
@@ -188,7 +188,7 @@ export default function FAQsPage() {
                         </div>
                         <form onSubmit={handleCreate} className="p-8 space-y-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-black text-slate-500 uppercase tracking-[0.15em] ml-1">Pertanyaan</label>
+                                <label className="text-xs font-black text-slate-500 uppercase tracking-[0.15em] ml-1">Question</label>
                                 <input
                                     required
                                     autoFocus
@@ -196,29 +196,29 @@ export default function FAQsPage() {
                                     value={formData.question}
                                     onChange={e => setFormData({ ...formData, question: e.target.value })}
                                     className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 focus:ring-2 focus:ring-navy-500 dark:text-white font-bold"
-                                    placeholder="Apa yang ingin ditanyakan?"
+                                    placeholder="What do you want to ask?"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-black text-slate-500 uppercase tracking-[0.15em] ml-1">Jawaban</label>
+                                <label className="text-xs font-black text-slate-500 uppercase tracking-[0.15em] ml-1">Answer</label>
                                 <textarea
                                     required
                                     value={formData.answer}
                                     onChange={e => setFormData({ ...formData, answer: e.target.value })}
                                     className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 min-h-[140px] focus:ring-2 focus:ring-navy-500 dark:text-white font-medium text-sm leading-relaxed"
-                                    placeholder="Berikan jawaban yang jelas dan ringkas..."
+                                    placeholder="Provide a clear and concise answer..."
                                 />
                             </div>
 
                             <div className="flex justify-end gap-3 mt-4 pt-6 border-t border-slate-100 dark:border-slate-800">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 text-slate-500 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 rounded-2xl transition-all">Batal</button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 text-slate-500 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 rounded-2xl transition-all">Cancel</button>
                                 <button 
                                     type="submit" 
                                     disabled={saving || isFull} 
                                     className="px-8 py-3 bg-navy-600 hover:bg-navy-700 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-navy-600/20 active:scale-95 transition-all disabled:opacity-50"
                                 >
-                                    {saving ? 'Menyimpan...' : 'Simpan FAQ'}
+                                    {saving ? 'Saving...' : 'Save FAQ'}
                                 </button>
                             </div>
                         </form>

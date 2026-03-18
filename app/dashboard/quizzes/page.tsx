@@ -26,7 +26,7 @@ export default function QuizzesPage() {
     const [noteValue, setNoteValue] = useState("");
     const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
     const [isSubmittingNote, setIsSubmittingNote] = useState(false);
-    const activeTab = view === 'leaderboard' ? 'Leaderboard' : 'Kuis'
+    const activeTab = view === 'leaderboard' ? 'Leaderboard' : 'Quizzes'
 
     const userRole = role?.toUpperCase() || ''
     const isStaff = userRole === 'STAFF'
@@ -51,13 +51,13 @@ export default function QuizzesPage() {
             if (quizRes.success) {
                 setQuizzes(quizRes.data || [])
             } else {
-                setError(quizRes.error || 'Gagal memuat kuis')
+                setError(quizRes.error || 'Failed to load quizzes')
             }
 
             if (leaderRes.success) setLeaders(leaderRes.data || [])
             if (divRes.success) setDivisions(divRes.data || [])
         } catch (err: any) {
-            setError(err.message || 'Terjadi kesalahan sistem')
+            setError(err.message || 'A system error occurred')
         } finally {
             setLoading(false)
         }
@@ -68,12 +68,12 @@ export default function QuizzesPage() {
     }, [organization?.id, selectedDivision, selectedQuiz])
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus kuis ini?')) return
+        if (!confirm('Are you sure you want to delete this quiz?')) return
         const res = await deleteQuizAction(id)
         if (res.success) {
             loadData()
         } else {
-            alert(res.error || 'Gagal menghapus kuis')
+            alert(res.error || 'Failed to delete quiz')
         }
     }
 
@@ -86,7 +86,7 @@ export default function QuizzesPage() {
     })
 
     const handleApprove = async (id: string) => {
-        if (!confirm('Approve kuis ini untuk dipublikasikan?')) return
+        if (!confirm('Approve this quiz for publication?')) return
         const res = await updateQuizAction(id, { is_published: true, created_by: user?.id })
         if (res.success) loadData()
     }
@@ -115,7 +115,7 @@ export default function QuizzesPage() {
     };
 
     const handleUpdateQuickNote = async (id: string, newNote: string) => {
-        if (!confirm('Lanjutkan tindakan ini?')) return;
+        if (!confirm('Continue with this action?')) return;
         const res = await updateQuizNoteAction(id, newNote);
         if (res.success) {
             loadData();
@@ -138,10 +138,10 @@ export default function QuizzesPage() {
             <div className="flex justify-between items-end">
                 <div>
                     <h1 className="text-[32px] font-black font-display text-text-900 leading-tight tracking-tight">
-                        {activeTab === 'Leaderboard' ? 'Leaderboard' : 'Semua Kuis'}
+                        {activeTab === 'Leaderboard' ? 'Leaderboard' : 'All Quizzes'}
                     </h1>
                     <p className="text-sm text-text-500 mt-1.5 font-medium">
-                        {activeTab === 'Leaderboard' ? 'Pantau peringkat dan pencapaian Anda.' : 'Uji pemahaman Anda melalui modul pelatihan interaktif.'}
+                        {activeTab === 'Leaderboard' ? 'Monitor rankings and achievements.' : 'Test your understanding through interactive learning modules.'}
                     </p>
                 </div>
                 {['SUPER_ADMIN', 'GROUP_ADMIN', 'MAINTAINER', 'SUPERVISOR'].includes(role || '') && (
@@ -158,14 +158,14 @@ export default function QuizzesPage() {
                 <div className="p-4 bg-danger-bg border border-red-200 dark:border-red-900/30 text-danger rounded-2xl flex items-center gap-3">
                     <AlertCircle size={20} />
                     <div className="flex-1">
-                        <p className="font-bold text-sm">Error Memuat Data</p>
+                        <p className="font-bold text-sm">Error Loading Data</p>
                         <p className="text-xs opacity-80">{error}</p>
                     </div>
-                    <button onClick={() => loadData()} className="btn btn-primary py-1.5 px-4 text-xs rounded-lg">Coba Lagi</button>
+                    <button onClick={() => loadData()} className="btn btn-primary py-1.5 px-4 text-xs rounded-lg">Try Again</button>
                 </div>
             )}
 
-            {activeTab === 'Kuis' ? (
+            {activeTab === 'Quizzes' ? (
                 <div className="space-y-8">
                     {/* 1. PENYEDERHANAAN AREA PENCARIAN & TOGGLE */}
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -174,7 +174,7 @@ export default function QuizzesPage() {
                                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-text-400 group-focus-within:text-navy-500 transition-colors" size={18} />
                                 <input
                                     type="text"
-                                    placeholder="Cari kuis cerdas..."
+                                    placeholder="Search quizzes..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="w-full bg-white dark:bg-slate-800 border border-surface-200 dark:border-slate-700 py-3.5 pl-12 pr-4 rounded-2xl outline-none focus:ring-4 focus:ring-navy-600/5 focus:border-navy-500 transition-all shadow-sm text-sm font-medium"
@@ -192,7 +192,7 @@ export default function QuizzesPage() {
                                     className="w-full bg-white dark:bg-slate-800 border border-surface-200 dark:border-slate-700 py-3.5 pl-12 lg:pl-20 pr-10 rounded-2xl outline-none focus:ring-4 focus:ring-navy-600/5 focus:border-navy-500 dark:focus:border-indigo-500/30 hover:border-navy-400 dark:hover:border-indigo-500/50 transition-all shadow-sm text-sm font-bold text-text-700 dark:text-slate-300 cursor-pointer appearance-none"
                                     disabled={isStaff}
                                 >
-                                    <option value="ALL">Semua Divisi</option>
+                                    <option value="ALL">All Divisions</option>
                                     {divisions.map(d => (
                                         <option key={d.id} value={d.id}>{d.name}</option>
                                     ))}
@@ -228,11 +228,11 @@ export default function QuizzesPage() {
                                 <div className="w-24 h-24 bg-surface-100 dark:bg-slate-800 text-text-300 dark:text-slate-600 rounded-[40px] flex items-center justify-center mb-8 shadow-inner rotate-12">
                                     <FileQuestion size={48} />
                                 </div>
-                                <h3 className="font-display text-2xl font-black text-text-900 mb-3 tracking-tight">Belum ada modul kuis</h3>
+                                <h3 className="font-display text-2xl font-black text-text-900 mb-3 tracking-tight">No quiz modules found</h3>
                                 <p className="text-text-500 max-w-sm text-sm leading-relaxed">
                                     {searchTerm
-                                        ? `Modul dengan kata kunci "${searchTerm}" tidak ditemukan.`
-                                        : "Kuis yang dipublikasikan oleh tim pengajar akan muncul di sini secara otomatis."}
+                                        ? `Modules matching "${searchTerm}" were not found.`
+                                        : "Quizzes published by the training team will automatically appear here."}
                                 </p>
                             </div>
                         ) : (
@@ -240,6 +240,16 @@ export default function QuizzesPage() {
                                 {filteredQuizzes.map((q) => (
                                     viewMode === 'grid' ? (
                                         <div key={q.id} className="group relative flex flex-col bg-white dark:bg-slate-800 rounded-[32px] border border-surface-200 dark:border-slate-700/50 shadow-xl shadow-navy-900/5 dark:shadow-slate-950/30 overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-navy-600/10 dark:hover:shadow-indigo-500/10">
+                                            {/* Header Image for Grid */}
+                                            {q.header_image && (
+                                                <div className="h-32 w-full overflow-hidden border-b border-surface-100 dark:border-slate-700">
+                                                    <img 
+                                                        src={q.header_image} 
+                                                        alt={q.title} 
+                                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                                                    />
+                                                </div>
+                                            )}
                                             <div className="p-6 flex-1">
                                                 <div className="flex justify-between items-start mb-5">
                                                     <div className="w-14 h-14 rounded-2xl bg-navy-50 dark:bg-indigo-950/50 flex items-center justify-center text-navy-600 dark:text-indigo-400 border border-navy-100 dark:border-indigo-500/20 group-hover:scale-110 transition-transform duration-500 shadow-sm">
@@ -259,7 +269,7 @@ export default function QuizzesPage() {
                                                         </div>
                                                         <div className="flex-1 pr-4">
                                                             <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.1em] mb-1">
-                                                                Catatan Revisi Admin
+                                                                Admin Revision Note
                                                             </p>
                                                             <p className="text-xs text-amber-900 dark:text-amber-200/90 font-medium leading-relaxed italic">
                                                                 {q.notes}
@@ -271,7 +281,7 @@ export default function QuizzesPage() {
                                                                     onClick={() => handleUpdateQuickNote(q.id, "[DONE] " + q.notes)}
                                                                     className="mt-3 py-1.5 px-3 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider shadow-lg shadow-green-500/20"
                                                                 >
-                                                                    <Check size={12} /> Tandai Selesai
+                                                                    <Check size={12} /> Mark as Done
                                                                 </button>
                                                             )}
                                                         </div>
@@ -285,12 +295,12 @@ export default function QuizzesPage() {
                                                 </h3>
                                                 
                                                 <p className="text-sm text-text-500 dark:text-slate-400 line-clamp-2 mb-6 leading-relaxed font-medium">
-                                                    {q.description || 'Pelajari materi ini dan uji pengetahuan Anda untuk mendapatkan poin prestasi.'}
+                                                    {q.description || 'Study this material and test your knowledge to earn achievement points.'}
                                                 </p>
 
                                                 <div className="flex flex-wrap gap-2.5">
                                                     <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 rounded-xl text-[11px] font-bold border border-slate-100 dark:border-slate-700/50">
-                                                        <HelpCircle size={14} className="text-navy-500" /> {q._count?.questions || 0} Soal
+                                                        <HelpCircle size={14} className="text-navy-500" /> {q._count?.questions || 0} Questions
                                                     </div>
                                                     {q.time_limit_minutes && (
                                                         <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 rounded-xl text-[11px] font-bold border border-slate-100 dark:border-slate-700/50">
@@ -316,16 +326,16 @@ export default function QuizzesPage() {
                                                                     <button
                                                                         onClick={() => handleAddNote(q.id, q.notes)}
                                                                         className="w-12 h-12 flex items-center justify-center bg-amber-500/20 hover:bg-amber-500/30 text-amber-600 dark:text-amber-400 rounded-2xl border border-amber-500/30 transition-all shrink-0"
-                                                                        title="Beri Catatan Revisi"
+                                                                        title="Give Revision Note"
                                                                     >
                                                                         <MessageSquare size={18} />
                                                                     </button>
-                                                                    {/* Tombol Hapus Catatan (Hanya Admin) */}
+                                                                    {/* Delete Note Button (Admin Only) */}
                                                                     {q.notes && (
                                                                         <button
                                                                             onClick={() => handleUpdateQuickNote(q.id, "")}
                                                                             className="w-12 h-12 flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl border border-red-500/20 transition-all shrink-0"
-                                                                            title="Hapus Catatan"
+                                                                            title="Delete Note"
                                                                         >
                                                                             <Trash2 size={18} />
                                                                         </button>
@@ -339,14 +349,14 @@ export default function QuizzesPage() {
                                                                     <Link
                                                                         href={`/dashboard/quizzes/create?edit=${q.id}`}
                                                                         className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:scale-110"
-                                                                        title="Edit Modul"
+                                                                        title="Edit Module"
                                                                     >
                                                                         <Pencil size={18} />
                                                                     </Link>
                                                                     <button
                                                                         onClick={() => handleDelete(q.id)}
                                                                         className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:scale-110"
-                                                                        title="Hapus"
+                                                                        title="Delete"
                                                                     >
                                                                         <Trash2 size={18} />
                                                                     </button>
@@ -364,7 +374,7 @@ export default function QuizzesPage() {
                                                                 : 'bg-surface-200 dark:bg-slate-900 text-text-300 dark:text-slate-600 cursor-not-allowed opacity-50'
                                                                 }`}
                                                         >
-                                                            {q.is_published ? '🚀 Mulai Kuis' : 'Segera Hadir'}
+                                                            {q.is_published ? '🚀 Start Quiz' : 'Coming Soon'}
                                                         </Link>
                                                     )}
                                                 </div>
@@ -384,7 +394,7 @@ export default function QuizzesPage() {
                                                     </h3>
                                                     <div className="flex items-center gap-4">
                                                         <div className="flex items-center gap-1.5 text-[11px] font-bold text-text-400">
-                                                            <HelpCircle size={14} className="text-navy-400" /> {q._count?.questions || 0} Soal
+                                                            <HelpCircle size={14} className="text-navy-400" /> {q._count?.questions || 0} Questions
                                                         </div>
                                                         {q.time_limit_minutes && (
                                                             <div className="flex items-center gap-1.5 text-[11px] font-bold text-text-400">
@@ -399,7 +409,7 @@ export default function QuizzesPage() {
                                                     {q.notes && (
                                                         <div className="mt-2 flex flex-wrap items-center gap-3">
                                                             <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-2">
-                                                                <AlertCircle size={12} /> Catatan Revisi: <span className="italic">{q.notes}</span>
+                                                                <AlertCircle size={12} /> Revision Note: <span className="italic">{q.notes}</span>
                                                             </div>
                                                             {/* Tombol Tandai Selesai (Hanya untuk Owner) */}
                                                             {user?.id === q.created_by && !q.notes.startsWith("[DONE]") && (
@@ -407,7 +417,7 @@ export default function QuizzesPage() {
                                                                     onClick={() => handleUpdateQuickNote(q.id, "[DONE] " + q.notes)}
                                                                     className="py-1 px-2 bg-green-500/10 hover:bg-green-500 text-green-600 dark:text-green-400 hover:text-white rounded-lg transition-all text-[8px] font-black uppercase tracking-wider border border-green-500/20"
                                                                 >
-                                                                    Tandai Selesai
+                                                                    Mark as Done
                                                                 </button>
                                                             )}
                                                         </div>
@@ -431,7 +441,7 @@ export default function QuizzesPage() {
                                                                         <button
                                                                             onClick={() => handleAddNote(q.id, q.notes)}
                                                                             className="w-9 h-9 flex items-center justify-center text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 rounded-lg transition-all"
-                                                                            title="Beri Catatan Revisi"
+                                                                            title="Give Revision Note"
                                                                         >
                                                                             <MessageSquare size={16} />
                                                                         </button>
@@ -440,7 +450,7 @@ export default function QuizzesPage() {
                                                                             <button
                                                                                 onClick={() => handleUpdateQuickNote(q.id, "")}
                                                                                 className="w-9 h-9 flex items-center justify-center text-red-500 hover:bg-red-500/20 rounded-lg transition-all"
-                                                                                title="Hapus Catatan"
+                                                                                title="Delete Note"
                                                                             >
                                                                                 <X size={16} />
                                                                             </button>
@@ -458,14 +468,14 @@ export default function QuizzesPage() {
                                                             <Link
                                                                 href={`/dashboard/quizzes/create?edit=${q.id}`}
                                                                 className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
-                                                                title="Edit Modul"
+                                                                title="Edit Module"
                                                             >
                                                                 <Pencil size={18} />
                                                             </Link>
                                                             <button
                                                                 onClick={() => handleDelete(q.id)}
                                                                 className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
-                                                                title="Hapus"
+                                                                title="Delete"
                                                             >
                                                                 <Trash2 size={18} />
                                                             </button>
@@ -498,28 +508,28 @@ export default function QuizzesPage() {
                                 <div className="p-2 bg-navy-50 dark:bg-indigo-950/50 rounded-xl">
                                     <Award size={24} className="text-navy-600 dark:text-indigo-400" />
                                 </div> 
-                                Bagaimana Poin Didapat?
+                                How Points are Earned?
                             </h3>
                             <div className="flex-1 p-6 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-inner">
                                 <ul className="text-xs text-text-500 space-y-5 font-bold">
                                     <li className="flex justify-between items-center border-b border-white/50 dark:border-slate-800/50 pb-3">
                                         <div className="flex items-center gap-2">
                                             <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                            <span>Skor Sempurna (&gt; 90)</span>
+                                            <span>Perfect Score (&gt; 90)</span>
                                         </div>
                                         <span className="text-green-600 dark:text-green-400 font-black text-sm">+200 PTS</span>
                                     </li>
                                     <li className="flex justify-between items-center border-b border-white/50 dark:border-slate-800/50 pb-3">
                                         <div className="flex items-center gap-2">
                                             <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                                            <span>Skor Standar (60-90)</span>
+                                            <span>Standard Score (60-90)</span>
                                         </div>
                                         <span className="text-amber-600 dark:text-amber-400 font-black text-sm">+100 PTS</span>
                                     </li>
                                     <li className="flex justify-between items-center">
                                         <div className="flex items-center gap-2">
                                             <div className="w-1.5 h-1.5 rounded-full bg-navy-500" />
-                                            <span>Membaca Materi</span>
+                                            <span>Read Material</span>
                                         </div>
                                         <span className="text-navy-600 dark:text-indigo-400 font-black text-sm">+20 PTS</span>
                                     </li>
@@ -561,14 +571,14 @@ export default function QuizzesPage() {
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-[40px] border border-surface-200 dark:border-slate-700 shadow-xl shadow-navy-900/5">
                         <div className="flex flex-col lg:flex-row items-end gap-8">
                             <div className="flex flex-col gap-3 w-full lg:w-72">
-                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-text-400 ml-2">Radar Filter: Divisi</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-text-400 ml-2">Radar Filter: Division</label>
                                 <select
                                     value={selectedDivision}
                                     onChange={(e) => setSelectedDivision(e.target.value)}
                                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 py-3.5 px-5 text-xs font-bold text-text-700 dark:text-slate-300 rounded-2xl outline-none focus:ring-4 focus:ring-navy-600/5 focus:border-navy-500 transition-all cursor-pointer appearance-none"
                                     disabled={isStaff}
                                 >
-                                    <option value="ALL">Semua Divisi Aktif</option>
+                                    <option value="ALL">All Active Divisions</option>
                                     {divisions.map(d => (
                                         <option key={d.id} value={d.id}>{d.name}</option>
                                     ))}
@@ -576,13 +586,13 @@ export default function QuizzesPage() {
                             </div>
                             
                             <div className="flex flex-col gap-3 w-full lg:w-72">
-                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-text-400 ml-2">Radar Filter: Modul</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-text-400 ml-2">Radar Filter: Module</label>
                                 <select
                                     value={selectedQuiz}
                                     onChange={(e) => setSelectedQuiz(e.target.value)}
                                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 py-3.5 px-5 text-xs font-bold text-text-700 dark:text-slate-300 rounded-2xl outline-none focus:ring-4 focus:ring-navy-600/5 focus:border-navy-500 transition-all cursor-pointer appearance-none"
                                 >
-                                    <option value="ALL">Semua Modul Pembelajaran</option>
+                                    <option value="ALL">All Learning Modules</option>
                                     {quizzes.map(q => (
                                         <option key={q.id} value={q.id}>{q.title}</option>
                                     ))}
@@ -624,7 +634,7 @@ export default function QuizzesPage() {
                                         <th className="p-8 w-24 text-center">RANK</th>
                                         <th className="p-8">PERFORMER</th>
                                         <th className="p-8">DOMAIN</th>
-                                        <th className="p-8">TARGET MODUL</th>
+                                        <th className="p-8">TARGET MODULE</th>
                                         <th className="p-8 text-right">POINTS</th>
                                     </tr>
                                 </thead>
@@ -707,8 +717,8 @@ export default function QuizzesPage() {
                                     <MessageSquare size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-black text-text-900 dark:text-white tracking-tight">Catatan Revisi</h3>
-                                    <p className="text-xs text-text-400 font-bold uppercase tracking-widest">Berikan feedback untuk kuis ini</p>
+                                    <h3 className="text-xl font-black text-text-900 dark:text-white tracking-tight">Revision Notes</h3>
+                                    <p className="text-xs text-text-400 font-bold uppercase tracking-widest">Provide feedback for this quiz</p>
                                 </div>
                             </div>
 
@@ -716,7 +726,7 @@ export default function QuizzesPage() {
                             <textarea
                                 value={noteValue}
                                 onChange={(e) => setNoteValue(e.target.value)}
-                                placeholder="Tuliskan alasan revisi atau instruksi tambahan di sini..."
+                                placeholder="Writer revision reasons or additional instructions here..."
                                 className="w-full h-40 bg-surface-50 dark:bg-slate-950/50 border border-surface-200 dark:border-slate-800 rounded-2xl p-5 text-sm text-text-900 dark:text-slate-100 placeholder:text-text-300 dark:placeholder:text-slate-600 outline-none focus:border-amber-500/50 focus:ring-4 focus:ring-amber-500/5 transition-all resize-none font-medium"
                                 autoFocus
                             />
@@ -728,7 +738,7 @@ export default function QuizzesPage() {
                                     disabled={isSubmittingNote}
                                     className="py-4 px-6 rounded-2xl border border-surface-200 dark:border-slate-800 text-text-500 dark:text-slate-400 font-black text-[12px] uppercase tracking-widest hover:bg-surface-50 dark:hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50"
                                 >
-                                    Batal
+                                    Cancel
                                 </button>
                                 <button
                                     onClick={handleSaveNote}
@@ -739,7 +749,7 @@ export default function QuizzesPage() {
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     ) : (
                                         <>
-                                            <CheckCircle size={16} /> Simpan Catatan
+                                            <CheckCircle size={16} /> Save Note
                                         </>
                                     )}
                                 </button>

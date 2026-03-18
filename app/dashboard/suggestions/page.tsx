@@ -97,7 +97,7 @@ export default function SuggestionsPage() {
                                             </div>
 
                                             <div className="mt-4 text-xs font-medium text-text-300">
-                                                Submitted on: {new Date(s.created_at).toLocaleString()}
+                                                Submitted on: {new Date(s.created_at).toLocaleString('en-US')}
                                                 {s.content?.division?.name ? ` • Division: ${s.content.division.name}` : ''}
                                             </div>
                                         </div>

@@ -31,7 +31,7 @@ export default function TakeQuizPage() {
                         setTimeLeft(res.data.time_limit_minutes * 60)
                     }
                 } else {
-                    setError(res.error || 'Failed to load kuis')
+                    setError(res.error || 'Failed to load quiz')
                 }
                 setLoading(false)
             })
@@ -106,7 +106,7 @@ export default function TakeQuizPage() {
     if (loading) return (
         <div className="flex flex-col items-center justify-center py-32">
             <div className="w-14 h-14 border-4 border-navy-100 border-t-navy-600 rounded-full animate-spin mb-6"></div>
-            <p className="text-text-400 font-black uppercase tracking-[0.2em] text-[11px]">Memuat Kuis...</p>
+            <p className="text-text-400 font-black uppercase tracking-[0.2em] text-[11px]">Loading Quiz...</p>
         </div>
     )
     if (error || !quiz) return (
@@ -114,29 +114,50 @@ export default function TakeQuizPage() {
             <div className="w-20 h-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Send size={32} className="rotate-45" />
             </div>
-            <h2 className="text-2xl font-black text-text-900 dark:text-white mb-2">Kuis Tidak Ditemukan</h2>
+            <h2 className="text-2xl font-black text-text-900 dark:text-white mb-2">Quiz Not Found</h2>
             <p className="text-text-500 dark:text-slate-400 mb-8 max-w-sm mx-auto">
-                {error || 'Kuis yang Anda cari tidak tersedia atau terjadi kesalahan teknis.'}
+                {error || 'The quiz you are looking for is not available or a technical error occurred.'}
             </p>
             <Link href="/dashboard/quizzes" className="btn btn-primary px-8 py-3 rounded-2xl">
-                Kembali ke Daftar Kuis
+                Back to Quizzes
             </Link>
         </div>
     )
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
+            {/* Header Image */}
+            {quiz.header_image && (
+                <div className="w-full h-64 rounded-[40px] overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800 relative group mb-8">
+                    <img 
+                        src={quiz.header_image} 
+                        alt={quiz.title} 
+                        className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-110" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-6 left-8">
+                        <span className="bg-indigo-500 text-white text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest shadow-lg mb-2 inline-block">Training Module</span>
+                        <h2 className="text-white text-3xl font-black font-display tracking-tight drop-shadow-md">{quiz.title}</h2>
+                    </div>
+                </div>
+            )}
+
             <div className="flex items-center gap-4 border-b pb-4">
-                <Link href="/dashboard/quizzes" className="p-2 text-text-500 hover:text-navy-900 hover:bg-surface-100 rounded-full transition">
+                <Link href="/dashboard/quizzes" className="p-2 text-text-500 hover:text-navy-900 dark:hover:text-white hover:bg-surface-100 dark:hover:bg-slate-800 rounded-full transition">
                     <ArrowLeft size={20} />
                 </Link>
                 <div className="flex-1">
-                    <h1 className="text-2xl font-bold font-display text-navy-900">{quiz.title}</h1>
-                    {quiz.description && <p className="text-text-500 text-sm mt-1">{quiz.description}</p>}
+                    {!quiz.header_image && <h1 className="text-2xl font-bold font-display text-navy-900 dark:text-white">{quiz.title}</h1>}
+                    {quiz.description && (
+                        <div 
+                            className="text-text-500 dark:text-slate-400 text-sm mt-3 prose dark:prose-invert max-w-none"
+                            dangerouslySetInnerHTML={{ __html: quiz.description }}
+                        />
+                    )}
                 </div>
 
                 {timeLeft !== null && !result && (
-                    <div className={`flex items-center gap-2 px-4 py-2 font-bold font-display rounded-lg ${timeLeft < 60 ? 'bg-danger-bg text-red-700 animate-pulse' : 'bg-surface-100 text-text-700'}`}>
+                    <div className={`flex items-center gap-2 px-4 py-2 font-bold font-display rounded-lg ${timeLeft < 60 ? 'bg-danger-bg text-red-700 animate-pulse' : 'bg-surface-100 dark:bg-slate-800 text-text-700 dark:text-slate-300'}`}>
                         <Clock size={18} />
                         {formatTime(timeLeft)}
                     </div>
@@ -178,7 +199,7 @@ export default function TakeQuizPage() {
                             
                             <h3 className="font-bold text-xl text-navy-900 dark:text-white mb-6 tracking-tight leading-relaxed">
                                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-navy-50 dark:bg-navy-900/50 text-navy-600 dark:text-navy-400 text-sm font-black mr-3 border border-navy-100 dark:border-navy-500/20">{i + 1}</span>
-                                {q.question_text || "Lihat Gambar di Bawah:"}
+                                {q.question_text || "See Image Below:"}
                             </h3>
 
                             {q.image && (
@@ -187,7 +208,7 @@ export default function TakeQuizPage() {
                                         <div className="absolute -inset-1 bg-gradient-to-r from-navy-500 to-indigo-500 rounded-2xl blur opacity-20 group-hover/img-container:opacity-30 transition duration-1000"></div>
                                         <img 
                                             src={q.image} 
-                                            alt={`Soal ${i + 1}`} 
+                                            alt={`Question ${i + 1}`} 
                                             className="relative max-h-80 w-auto rounded-xl shadow-2xl border border-white dark:border-slate-700 object-contain bg-white dark:bg-slate-900 p-1"
                                         />
                                     </div>

@@ -132,7 +132,7 @@ export default function ApprovalsPage() {
                                             {q.submitter_name}
                                         </td>
                                         <td className="p-4 text-sm text-text-500">
-                                            {new Date(q.submitted_at).toLocaleDateString()}
+                                            {new Date(q.submitted_at).toLocaleDateString('en-US')}
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex justify-end gap-2">

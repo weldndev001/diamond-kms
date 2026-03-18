@@ -65,11 +65,11 @@ export default function RemoteAccessPage() {
                 <div>
                     <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight flex items-center gap-3">
                         <MonitorDot className="text-amber-500" size={32} />
-                        Akses Remote Maintenance
+                        Remote Maintenance Access
                     </h1>
                     <p className="text-sm text-text-500 mt-2 max-w-2xl">
-                        Gunakan halaman ini untuk memberikan akses masuk sementara kepada tim teknis WELDN_AI. 
-                        OTP ini memungkinkan teknisi melakukan pemeliharaan sistem secara remote dengan aman.
+                        Use this page to provide temporary login access to the WELDN_AI technical team. 
+                        This OTP allows technicians to perform remote system maintenance securely.
                     </p>
                 </div>
 
@@ -82,8 +82,8 @@ export default function RemoteAccessPage() {
                                     <KeyRound size={24} />
                                 </div>
                                 <div>
-                                    <h2 className="font-bold text-navy-900 text-lg">Generate OTP Maintenance</h2>
-                                    <p className="text-sm text-text-400">Kode akses sekali pakai dengan durasi terbatas</p>
+                                    <h2 className="font-bold text-navy-900 text-lg">Generate Maintenance OTP</h2>
+                                    <p className="text-sm text-text-400">One-time access code with limited duration</p>
                                 </div>
                             </div>
 
@@ -93,7 +93,7 @@ export default function RemoteAccessPage() {
                                         <div className="flex flex-col items-center">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <div className={`w-2 h-2 rounded-full animate-pulse ${otpExpiry > 300 ? 'bg-green-500' : 'bg-red-500'}`} />
-                                                <span className="text-xs font-bold text-text-400 uppercase tracking-widest">OTP AKtif Sekarang</span>
+                                                <span className="text-xs font-bold text-text-400 uppercase tracking-widest">OTP Active Now</span>
                                             </div>
                                             
                                             <div className="flex items-center gap-4 group">
@@ -109,7 +109,7 @@ export default function RemoteAccessPage() {
                                                             ? 'bg-green-100 border-green-400 text-green-600' 
                                                             : 'bg-white border-surface-200 text-text-400 hover:border-amber-400 hover:text-amber-500'
                                                     }`}
-                                                    title="Salin Kode"
+                                                    title="Copy Code"
                                                 >
                                                     {otpCopied ? <CheckCircle size={28} /> : <Copy size={28} />}
                                                 </button>
@@ -118,7 +118,7 @@ export default function RemoteAccessPage() {
 
                                         <div className="max-w-md mx-auto space-y-3">
                                             <div className="flex items-center justify-between text-xs font-bold px-1">
-                                                <span className="text-text-400">WAKTU TERSISA</span>
+                                                <span className="text-text-400">TIME REMAINING</span>
                                                 <span className={otpExpiry > 300 ? 'text-green-600' : 'text-red-500'}>
                                                     {formatTime(otpExpiry)}
                                                 </span>
@@ -140,14 +140,14 @@ export default function RemoteAccessPage() {
                                                 className="px-4 py-2 text-sm font-bold text-navy-600 bg-navy-50 hover:bg-navy-100 rounded-xl transition flex items-center gap-2"
                                             >
                                                 <RefreshCw size={14} className={isGenerating ? 'animate-spin' : ''} />
-                                                Generate Ulang
+                                                Regenerate
                                             </button>
                                             <button
                                                 onClick={() => { setRemoteOtp(null); setOtpExpiry(0) }}
                                                 className="px-4 py-2 text-sm font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition flex items-center gap-2"
                                             >
                                                 <XCircle size={14} />
-                                                Batalkan Sesi
+                                                Cancel Session
                                             </button>
                                         </div>
                                     </div>
@@ -157,9 +157,9 @@ export default function RemoteAccessPage() {
                                             <ShieldCheck size={40} className="text-amber-500" />
                                         </div>
                                         <div className="space-y-2">
-                                            <h3 className="font-bold text-navy-900">Belum ada OTP yang dibuat</h3>
+                                            <h3 className="font-bold text-navy-900">No OTP generated yet</h3>
                                             <p className="text-sm text-text-400 max-w-xs mx-auto">
-                                                Klik tombol di bawah untuk membuat kode akses remote maintenance baru.
+                                                Click the button below to generate a new remote maintenance access code.
                                             </p>
                                         </div>
                                         <button
@@ -172,7 +172,7 @@ export default function RemoteAccessPage() {
                                             ) : (
                                                 <KeyRound size={24} />
                                             )}
-                                            Generate OTP Sekarang
+                                            Generate OTP Now
                                         </button>
                                     </div>
                                 )}
@@ -181,11 +181,11 @@ export default function RemoteAccessPage() {
                             <div className="mt-8 flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-2xl">
                                 <AlertTriangle size={20} className="text-amber-600 shrink-0 mt-0.5" />
                                 <div className="text-xs text-amber-800 leading-relaxed font-medium">
-                                    <strong className="block mb-1">PERINGATAN KEAMANAN:</strong>
-                                    Kode OTP ini memberikan hak akses administratif penuh ke sistem secara remote. 
-                                    Berikan kode ini <strong>hanya</strong> kepada personil resmi WELDN_AI yang Anda kenal 
-                                    melalui saluran komunikasi resmi. Kode akan hangus dan tidak dapat digunakan lagi 
-                                    setelah melewati batas waktu 30 menit.
+                                    <strong className="block mb-1">SECURITY WARNING:</strong>
+                                    This OTP code provides full administrative access to the system remotely. 
+                                    Give this code <strong>only</strong> to official WELDN_AI personnel you know 
+                                    through official communication channels. The code will expire and cannot be used again 
+                                    after the 30-minute time limit.
                                 </div>
                             </div>
                         </div>
@@ -195,19 +195,19 @@ export default function RemoteAccessPage() {
                     <div className="space-y-6">
                         <div className="card p-6 space-y-4">
                             <h3 className="font-bold text-navy-900 flex items-center gap-2 text-sm">
-                                <Clock size={16} className="text-navy-500" /> Histori & Sesi
+                                <Clock size={16} className="text-navy-500" /> History & Sessions
                             </h3>
                             <div className="text-xs text-text-500 space-y-3">
                                 <div className="flex items-center justify-between py-2 border-b border-surface-100">
-                                    <span>Status Terakhir</span>
-                                    <span className="font-bold text-green-600">Cleanup Selesai</span>
+                                    <span>Last Status</span>
+                                    <span className="font-bold text-green-600">Cleanup Complete</span>
                                 </div>
                                 <div className="flex items-center justify-between py-2 border-b border-surface-100">
-                                    <span>User Pengaju</span>
+                                    <span>Requesting User</span>
                                     <span className="font-bold text-navy-700">{user?.full_name?.split(' ')[0]}</span>
                                 </div>
                                 <div className="flex items-center justify-between py-2">
-                                    <span>Metode</span>
+                                    <span>Method</span>
                                     <span className="font-bold text-navy-700">Remote Protocol v2.4</span>
                                 </div>
                             </div>
@@ -215,24 +215,24 @@ export default function RemoteAccessPage() {
 
                         <div className="card p-6 bg-navy-900 text-white space-y-4">
                             <h3 className="font-bold flex items-center gap-2 text-sm text-amber-400">
-                                <ShieldCheck size={16} /> Cara Penggunaan
+                                <ShieldCheck size={16} /> How to Use
                             </h3>
                             <ul className="text-[11px] text-navy-200 space-y-3">
                                 <li className="flex gap-3">
                                     <span className="w-5 h-5 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold text-amber-500 shrink-0">1</span>
-                                    <span>Klik tombol generate untuk membuat kode 6 digit.</span>
+                                    <span>Click the generate button to create a 6-digit code.</span>
                                 </li>
                                 <li className="flex gap-3">
                                     <span className="w-5 h-5 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold text-amber-500 shrink-0">2</span>
-                                    <span>Salin kodenya dan kirimkan ke tim bantuan teknis.</span>
+                                    <span>Copy the code and send it to the technical support team.</span>
                                 </li>
                                 <li className="flex gap-3">
                                     <span className="w-5 h-5 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold text-amber-500 shrink-0">3</span>
-                                    <span>Biarkan halaman ini terbuka selama sesi maintenance berlangsung.</span>
+                                    <span>Keep this page open while the maintenance session is in progress.</span>
                                 </li>
                                 <li className="flex gap-3">
                                     <span className="w-5 h-5 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold text-amber-500 shrink-0">4</span>
-                                    <span>Sesi akan otomatis berakhir saat waktu habis atau jika Anda membatalkannya.</span>
+                                    <span>The session will automatically end when the time expires or if you cancel it.</span>
                                 </li>
                             </ul>
                         </div>

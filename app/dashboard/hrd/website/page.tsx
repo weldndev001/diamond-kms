@@ -20,7 +20,7 @@ export default function WebsiteSettingsPage() {
         // Dummy delay
         setTimeout(() => {
             setIsSaving(false)
-            setSuccess('Konfigurasi website berhasil disimpan!')
+            setSuccess('Website configuration saved successfully!')
         }, 1000)
     }
 
@@ -29,7 +29,7 @@ export default function WebsiteSettingsPage() {
             <div className="space-y-6 max-w-4xl mx-auto">
                 <div>
                     <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">Website Settings</h1>
-                    <p className="text-sm text-text-500 mt-1">Sesuaikan identitas visual dan branding aplikasi Anda.</p>
+                    <p className="text-sm text-text-500 mt-1">Customize the visual identity and branding of your application.</p>
                 </div>
 
                 {success && (
@@ -57,7 +57,7 @@ export default function WebsiteSettingsPage() {
                                         value={orgName}
                                         onChange={(e) => setOrgName(e.target.value)}
                                         className="input-field"
-                                        placeholder="Contoh: WELDN_AI"
+                                        placeholder="Example: WELDN_AI"
                                     />
                                     <p className="text-[11px] text-text-400 font-mono">ID: internal-org-001</p>
                                 </div>
@@ -70,7 +70,7 @@ export default function WebsiteSettingsPage() {
                                         value={appName}
                                         onChange={(e) => setAppName(e.target.value)}
                                         className="input-field border-navy-200 focus:border-navy-600"
-                                        placeholder="Contoh: DIAMOND KMS"
+                                        placeholder="Example: DIAMOND KMS"
                                     />
                                 </div>
                             </div>
@@ -84,7 +84,7 @@ export default function WebsiteSettingsPage() {
                                     value={slogan}
                                     onChange={(e) => setSlogan(e.target.value)}
                                     className="input-field"
-                                    placeholder="Kalimat deskripsi singkat aplikasi..."
+                                    placeholder="Brief description of the application..."
                                 />
                             </div>
                         </div>
@@ -109,9 +109,9 @@ export default function WebsiteSettingsPage() {
                                             </div>
                                             <div className="flex-1">
                                                 <button type="button" className="btn bg-white border border-surface-300 text-text-600 w-full text-sm hover:bg-surface-50">
-                                                    Ganti Logo
+                                                    Change Logo
                                                 </button>
-                                                <p className="text-[10px] text-text-400 mt-2">Format: PNG, SVG, atau WEBP. Rekomendasi 512x512px.</p>
+                                                <p className="text-[10px] text-text-400 mt-2">Format: PNG, SVG, or WEBP. Recommended 512x512px.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -142,7 +142,7 @@ export default function WebsiteSettingsPage() {
                             ) : (
                                 <Save size={18} />
                             )}
-                            Simpan Perubahan
+                            Save Changes
                         </button>
                     </div>
                 </form>

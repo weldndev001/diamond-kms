@@ -29,28 +29,27 @@ const getIconForLabel = (label: string) => {
         case 'FAQ':
         case 'FAQs / Help': return <Bot size={16} />
         case 'AISA':
-        case 'Kelola Knowledge Base':
-        case 'Cari & Tanya AI':
+        case 'Manage Knowledge Base':
+        case 'Search & Ask AI':
         case 'AI Assistant': return <Sparkles size={16} />
         case 'Knowledge Base': return <Tags size={16} />
         case 'Content':
         case 'Manage Content':
-        case 'Kelola Konten':
-        case 'Dokumen':
-        case 'Manage Document':
-        case 'Documents': return <FileText size={16} />
+        case 'Manage Articles':
+        case 'Documents':
+        case 'Manage Documents': return <FileText size={16} />
         case 'Quizzes':
         case 'Quiz':
-        case 'Pemahaman Pegawai': return <FileQuestion size={16} />
+        case 'Employee Assessment': return <FileQuestion size={16} />
         case 'User':
         case 'Users':
-        case 'Anggota': return <Users size={16} />
+        case 'Members': return <Users size={16} />
         case 'Organization Settings':
         case 'Organization': return <Settings size={16} />
         case 'OTP':
         case 'Activation': return <KeyRound size={16} />
-        case 'Akses Remote': return <MonitorDot size={16} />
-        case 'Divisi': return <Network size={16} />
+        case 'Remote Access': return <MonitorDot size={16} />
+        case 'Division': return <Network size={16} />
         case 'Leaderboard': return <Award size={16} />
         case 'Divisions': return <Network size={16} />
         case 'Billing': return <CreditCard size={16} />
@@ -90,9 +89,9 @@ const getNavEntries = (role?: string): NavEntry[] => {
             label: 'Knowledge Base',
             icon: 'Tags',
             children: [
-                { label: 'Kelola Knowledge Base', href: '/dashboard/knowledge-base' },
-                { label: 'Manage Document', href: '/dashboard/documents' },
-                { label: 'Manage Content', href: '/dashboard/content' }
+                { label: 'Manage Knowledge Base', href: '/dashboard/knowledge-base' },
+                { label: 'Manage Documents', href: '/dashboard/documents' },
+                { label: 'Manage Articles', href: '/dashboard/content' }
             ]
         },
         {
@@ -112,8 +111,8 @@ const getNavEntries = (role?: string): NavEntry[] => {
                 label: 'User',
                 icon: 'Users',
                 children: [
-                    { label: 'Anggota', href: '/dashboard/hrd/users' },
-                    { label: 'Divisi', href: '/dashboard/hrd/users/divisions' },
+                    { label: 'Members', href: '/dashboard/hrd/users' },
+                    { label: 'Divisions', href: '/dashboard/hrd/users/divisions' },
                 ]
             },
             // Divisions removed as it's now in the User accordion
@@ -139,8 +138,8 @@ const getNavEntries = (role?: string): NavEntry[] => {
                 label: 'User',
                 icon: 'Users',
                 children: [
-                    { label: 'Anggota', href: '/dashboard/hrd/users' },
-                    { label: 'Divisi', href: '/dashboard/hrd/users/divisions' },
+                    { label: 'Members', href: '/dashboard/hrd/users' },
+                    { label: 'Divisions', href: '/dashboard/hrd/users/divisions' },
                 ]
             },
         ]
@@ -341,7 +340,7 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                             className="p-2 text-text-400 hover:text-navy-600 hover:bg-surface-50 rounded-lg transition-all active:scale-95 border border-transparent hover:border-surface-200"
-                            title={isSidebarOpen ? "Sembunyikan Menu" : "Tampilkan Menu"}
+                            title={isSidebarOpen ? "Hide Menu" : "Show Menu"}
                         >
                             {isSidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
                         </button>

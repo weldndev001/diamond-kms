@@ -54,10 +54,10 @@ export default function ContentListPage() {
     useEffect(() => { loadData() }, [organization?.id, filterDiv, division?.id])
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Hapus konten ini secara permanen?')) return
+        if (!confirm('Permanently delete this content?')) return
         const res = await deleteContentAction(id)
         if (res.success) loadData()
-        else alert(res.error || 'Gagal menghapus')
+        else alert(res.error || 'Failed to delete')
     }
 
     const pendingCount = contents.filter(c => c.status === 'PENDING_APPROVAL').length
@@ -73,7 +73,7 @@ export default function ContentListPage() {
             <div className="flex justify-between items-end flex-wrap gap-4">
                 <div>
                     <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">Manage Content</h1>
-                    <p className="text-sm text-text-500 mt-1">Kelola artikel, SOP, dan konten knowledge base organisasi Anda.</p>
+                    <p className="text-sm text-text-500 mt-1">Manage articles, SOPs, and your organization's knowledge base content.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {canApprove && pendingCount > 0 && (
@@ -88,7 +88,7 @@ export default function ContentListPage() {
                         </Link>
                     )}
                     <Link href="/dashboard/knowledge-base/create" className="btn btn-primary">
-                        <Plus size={16} /> Buat Konten
+                        <Plus size={16} /> Create Content
                     </Link>
                 </div>
             </div>
@@ -99,7 +99,7 @@ export default function ContentListPage() {
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-300" size={16} />
                         <input
                             type="text"
-                            placeholder="Cari konten berdasarkan judul, kategori, atau penulis..."
+                            placeholder="Search content by title, category, or author..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="input-field pl-10"
@@ -114,7 +114,7 @@ export default function ContentListPage() {
                                     onChange={(e) => setFilterDiv(e.target.value)}
                                     className="border border-surface-200 rounded-md p-2 text-sm bg-white focus:ring-navy-600 focus:border-navy-600"
                                 >
-                                    <option value="">Semua Divisi</option>
+                                    <option value="">All Divisions</option>
                                     {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                 </select>
                             </div>
@@ -143,20 +143,20 @@ export default function ContentListPage() {
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20">
                             <div className="w-10 h-10 border-4 border-navy-200 border-t-navy-600 rounded-full animate-spin mb-4" />
-                            <p className="text-text-500 font-medium">Memuat konten...</p>
+                            <p className="text-text-500 font-medium">Loading content...</p>
                         </div>
                     ) : filteredContents.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-center">
                             <div className="w-16 h-16 bg-surface-200 text-text-300 rounded-full flex items-center justify-center mb-4">
                                 <BookOpen size={32} />
                             </div>
-                            <h3 className="font-display text-lg font-bold text-navy-900 mb-2">Belum ada konten</h3>
+                            <h3 className="font-display text-lg font-bold text-navy-900 mb-2">No content yet</h3>
                             <p className="text-text-500 max-w-sm">
-                                {searchTerm ? `Tidak ada konten yang cocok dengan "${searchTerm}"` : 'Buat konten pertama Anda untuk memulai.'}
+                                {searchTerm ? `No content matches "${searchTerm}"` : 'Create your first content to get started.'}
                             </p>
                             {!searchTerm && (
                                 <Link href="/dashboard/knowledge-base/create" className="btn btn-primary mt-4 inline-flex items-center gap-2">
-                                    <Plus size={16} /> Buat Konten
+                                    <Plus size={16} /> Create Content
                                 </Link>
                             )}
                         </div>
@@ -175,12 +175,12 @@ export default function ContentListPage() {
                                         <h3 className="font-bold font-display text-navy-900 text-[15px] leading-tight mb-1 line-clamp-2" title={content.title}>
                                             {content.title}
                                         </h3>
-                                        <p className="text-[12px] text-text-400 mb-3">oleh {content.author_name}</p>
+                                        <p className="text-[12px] text-text-400 mb-3">by {content.author_name}</p>
 
                                         <div className="flex flex-wrap gap-1.5 mb-3">
                                             <span className="text-[11px] font-medium bg-navy-50 text-navy-700 px-2 py-0.5 rounded-full">{content.category}</span>
                                             {content.is_mandatory_read && (
-                                                <span className="text-[11px] font-medium bg-red-50 text-red-700 px-2 py-0.5 rounded-full">Wajib Baca</span>
+                                                <span className="text-[11px] font-medium bg-red-50 text-red-700 px-2 py-0.5 rounded-full">Mandatory Read</span>
                                             )}
                                         </div>
 
@@ -189,20 +189,20 @@ export default function ContentListPage() {
                                                 {content.division?.name || 'Global'}
                                             </span>
                                             <span className="chip bg-surface-100 text-text-700">
-                                                <Clock size={11} /> {new Date(content.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                <Clock size={11} /> {new Date(content.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                                             </span>
                                         </div>
                                     </div>
 
                                     <div className="border-t border-surface-200 bg-surface-50 p-4 flex justify-between items-center gap-2">
                                         <Link href={`/dashboard/knowledge-base/${content.id}`} className="btn btn-primary flex-1 justify-center text-sm">
-                                            <Eye size={14} /> Lihat
+                                            <Eye size={14} /> View
                                         </Link>
                                         {['SUPER_ADMIN', 'GROUP_ADMIN'].includes(role || '') && (
                                             <button
                                                 onClick={() => handleDelete(content.id)}
                                                 className="w-10 h-10 flex items-center justify-center text-danger bg-danger-bg hover:opacity-80 rounded-lg transition shrink-0"
-                                                title="Hapus"
+                                                title="Delete"
                                             >
                                                 <Trash2 size={16} />
                                             </button>
@@ -222,13 +222,13 @@ export default function ContentListPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h3 className="font-bold text-navy-900 text-sm group-hover:text-navy-700 truncate">{content.title}</h3>
-                                        <p className="text-text-400 text-xs mt-0.5 truncate">oleh {content.author_name} · {content.category}</p>
+                                        <p className="text-text-400 text-xs mt-0.5 truncate">by {content.author_name} · {content.category}</p>
                                     </div>
                                     <div className="flex items-center gap-3 text-[11px] text-text-400 shrink-0">
                                         <span className="whitespace-nowrap">{content.division?.name || 'Global'}</span>
                                         {getStatusBadge(content.status)}
                                         <span className="whitespace-nowrap">
-                                            {new Date(content.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                                            {new Date(content.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                                         </span>
                                     </div>
                                     <ChevronRight size={16} className="text-text-300 group-hover:text-navy-600 transition shrink-0" />

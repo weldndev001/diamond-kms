@@ -279,6 +279,7 @@ model Quiz {
   created_by         String
   title              String
   description        String?        @db.Text
+  header_image       String?        @db.Text
   time_limit_minutes Int?
   is_published       Boolean        @default(false)
   content_id         String?
