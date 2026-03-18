@@ -45,22 +45,14 @@ const INITIAL_PACKAGES: FeaturePackage[] = [
     {
         id: 'pkg-quiz',
         name: 'Quiz & Leaderboard',
-<<<<<<< Updated upstream
-        description: 'Automatic quiz creation and employee comprehension tracking',
-=======
         description: 'Automated quiz generation and employee understanding tracking',
->>>>>>> Stashed changes
         icon: <BarChart3 size={20} />,
         unlocked: false,
     },
     {
         id: 'pkg-hr',
         name: 'HR Management',
-<<<<<<< Updated upstream
-        description: 'User, division, and approval workflow management',
-=======
         description: 'User management, divisions, and approval workflows',
->>>>>>> Stashed changes
         icon: <Users size={20} />,
         unlocked: false,
     },
@@ -230,11 +222,7 @@ export default function OTPPage() {
                             </h4>
                             <ul className="text-xs text-text-500 space-y-1.5">
                                 <li>• OTP codes can only be used once</li>
-<<<<<<< Updated upstream
-                                <li>• Contact the WELDN_AI team to obtain a code</li>
-=======
                                 <li>• Contact the WELDN_AI team to get a code</li>
->>>>>>> Stashed changes
                                 <li>• Unlocked features are permanent</li>
                                 <li>• Full package: use code <code className="bg-white px-1.5 py-0.5 rounded font-mono font-bold text-navy-700">OTP-ALL-2025</code></li>
                             </ul>

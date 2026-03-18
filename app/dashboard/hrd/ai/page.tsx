@@ -202,11 +202,7 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
                                 placeholder="Enter API Key from WELDN_AI..."
                                 className="input-field font-mono text-sm"
                             />
-<<<<<<< Updated upstream
-                            <p className="text-xs text-text-400">API key provided by the WELDN_AI team during service activation.</p>
-=======
                             <p className="text-xs text-text-400">API key provided by the WELDN_AI team upon service activation.</p>
->>>>>>> Stashed changes
                         </div>
                     </div>
                 )}
@@ -425,11 +421,7 @@ function AIUsageTab({ organization }: { organization: any }) {
                                 })}
                             </div>
                         ) : (
-<<<<<<< Updated upstream
-                            <p className="text-sm text-text-500 italic block">No usage details for this action type yet.</p>
-=======
                             <p className="text-sm text-text-500 italic block">No action usage breakdown available at this time.</p>
->>>>>>> Stashed changes
                         )}
                     </div>
                 </div>
