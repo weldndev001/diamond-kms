@@ -46,8 +46,12 @@ export default function WebsiteSettingsPage() {
         if (flagRes.success) setFlags(flagRes.data || [])
         if (orgRes.success && orgRes.data) {
             setOrg(orgRes.data)
-            setOrgName(orgRes.data.name)
-            setCrossDiv(orgRes.data.cross_division_query_enabled)
+            setOrgName(orgRes.data.name || '')
+            setAppName(orgRes.data.app_name || 'DIAMOND KMS')
+            setSlogan(orgRes.data.slogan || 'AI Powered Knowledge Management System')
+            setLogo(orgRes.data.logo_url || 'logo_movio.png')
+            setSystemLanguage(orgRes.data.system_language || 'en-US')
+            setCrossDiv(orgRes.data.cross_division_query_enabled ?? false)
         }
         setLoading(false)
     }
@@ -82,6 +86,10 @@ export default function WebsiteSettingsPage() {
         try {
             const res = await updateOrganizationAction(organization.id, {
                 name: orgName,
+                appName: appName,
+                slogan: slogan,
+                logoUrl: logo,
+                systemLanguage: systemLanguage,
                 crossDivisionQueryEnabled: crossDiv
             })
 
