@@ -1,25 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import prisma from '@/lib/prisma'
-import { env } from '@/lib/env'
-
-async function getAuthUser() {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-        env.NEXT_PUBLIC_SUPABASE_URL,
-        env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        { cookies: { get: (name: string) => cookieStore.get(name)?.value } }
-    )
-    const { data: { user } } = await supabase.auth.getUser()
-    return user
-}
 
 // GET: Fetch chat history for a specific document or content
 export async function GET(req: NextRequest) {
-    const user = await getAuthUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const sessionAuth = await getServerSession(authOptions)
+    if (!sessionAuth?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const userId = (sessionAuth.user as any).id
     const { searchParams } = new URL(req.url)
     const documentId = searchParams.get('documentId')
     const contentId = searchParams.get('contentId')
@@ -31,7 +20,7 @@ export async function GET(req: NextRequest) {
     try {
         const session = await prisma.chatSession.findFirst({
             where: {
-                user_id: user.id,
+                user_id: userId,
                 ...(documentId ? { document_id: documentId } : {}),
                 ...(contentId ? { content_id: contentId } : {}),
             },
@@ -60,8 +49,10 @@ export async function GET(req: NextRequest) {
 
 // POST: Save or update chat history
 export async function POST(req: NextRequest) {
-    const user = await getAuthUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const sessionAuth = await getServerSession(authOptions)
+    if (!sessionAuth?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const userId = (sessionAuth.user as any).id
 
     try {
         const body = await req.json()
@@ -75,7 +66,7 @@ export async function POST(req: NextRequest) {
         }
 
         const profile = await prisma.userDivision.findFirst({
-            where: { user_id: user.id, is_primary: true },
+            where: { user_id: userId, is_primary: true },
             include: { user: true },
         })
 
@@ -88,7 +79,7 @@ export async function POST(req: NextRequest) {
         // Find existing session or create true
         let session = await prisma.chatSession.findFirst({
             where: {
-                user_id: user.id,
+                user_id: userId,
                 ...(documentId ? { document_id: documentId } : {}),
                 ...(contentId ? { content_id: contentId } : {}),
             }
@@ -97,7 +88,7 @@ export async function POST(req: NextRequest) {
         if (!session) {
             session = await prisma.chatSession.create({
                 data: {
-                    user_id: user.id,
+                    user_id: userId,
                     organization_id: organizationId,
                     title: title || 'Document Q&A',
                     document_id: documentId,
@@ -107,8 +98,6 @@ export async function POST(req: NextRequest) {
         }
 
         // We delete all existing messages to replace with the incoming stream
-        // In a more complex app, we'd just append the new ones. But since the frontend
-        // sends the FULL array every time, replacing them is safest to keep them in sync.
         await prisma.chatMessage.deleteMany({
             where: { session_id: session.id }
         })
@@ -132,9 +121,10 @@ export async function POST(req: NextRequest) {
 
 // DELETE: Clear chat history
 export async function DELETE(req: NextRequest) {
-    const user = await getAuthUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const sessionAuth = await getServerSession(authOptions)
+    if (!sessionAuth?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const userId = (sessionAuth.user as any).id
     const { searchParams } = new URL(req.url)
     const documentId = searchParams.get('documentId')
     const contentId = searchParams.get('contentId')
@@ -146,7 +136,7 @@ export async function DELETE(req: NextRequest) {
     try {
         await prisma.chatSession.deleteMany({
             where: {
-                user_id: user.id,
+                user_id: userId,
                 ...(documentId ? { document_id: documentId } : {}),
                 ...(contentId ? { content_id: contentId } : {}),
             }

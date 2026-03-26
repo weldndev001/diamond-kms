@@ -10,6 +10,9 @@ import { getAIServiceForOrg } from '@/lib/ai/get-ai-service'
 import { extractPDFText, extractPlainText } from '@/lib/ai/pdf-extractor'
 import { chunkDocument } from '@/lib/ai/chunker'
 import { env } from '@/lib/env'
+import { join } from 'path'
+import { existsSync } from 'fs'
+import { readFile } from 'fs/promises'
 
 export const maxDuration = 120 // Allow up to 2 minutes for large PDFs
 
@@ -92,24 +95,20 @@ async function processDocumentInBackground(documentId: string, document: any) {
         let extractedText = ''
 
         try {
-            const { createClient } = await import('@supabase/supabase-js')
-            const supabase = createClient(
-                env.NEXT_PUBLIC_SUPABASE_URL,
-                env.SUPABASE_SERVICE_ROLE_KEY
-            )
-            const { data: fileData, error: dlErr } = await supabase.storage
-                .from('documents')
-                .download(document.file_path)
+            const uploadDir = env.UPLOAD_DIR || './uploads'
+            const safeFilePath = document.file_path.replace(/\.\./g, '')
+            const fullPath = join(process.cwd(), uploadDir, 'documents', safeFilePath)
 
-            if (!dlErr && fileData) {
-                fileBuffer = Buffer.from(await fileData.arrayBuffer())
-                console.log(`✅ [PROCESS] Downloaded file: ${document.file_path} (${fileBuffer.length} bytes)`)
+            if (existsSync(fullPath)) {
+                fileBuffer = await readFile(fullPath)
+                console.log(`✅ [PROCESS] Read file locally: ${fullPath} (${fileBuffer.length} bytes)`)
             } else {
-                console.log(`⚠️ [PROCESS] Download failed or no data: ${dlErr?.message || 'no fileData'}`)
+                console.log(`⚠️ [PROCESS] File not found locally: ${fullPath}`)
+                throw new Error('Local file not found')
             }
         } catch (storageErr: any) {
-            console.error(`❌ [PROCESS] Supabase Storage download FAILED:`, storageErr?.message)
-            logger.warn('Supabase Storage download failed', storageErr)
+            console.error(`❌ [PROCESS] Local file read FAILED:`, storageErr?.message)
+            logger.warn('Local file read failed', storageErr)
         }
 
         // STEP 2: Extract text based on file type

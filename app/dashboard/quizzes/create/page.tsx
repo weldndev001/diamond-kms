@@ -10,7 +10,7 @@ import { Save, ArrowLeft, PlusCircle, Trash, Send, HelpCircle, Clock, Sparkles, 
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { TiptapEditor } from '@/components/editor/TiptapEditor'
-import { createClient } from '@/lib/supabase/client'
+import { uploadFileAction } from '@/lib/actions/storage.actions'
 
 export default function CreateQuizPage() {
     const router = useRouter()
@@ -88,7 +88,7 @@ export default function CreateQuizPage() {
 
     const handleImageUpload = async (index: number, file: File) => {
         // Placeholder simulation for image upload
-        // In real scenario, upload to Supabase Storage and get URL
+        // In real scenario, upload to local storage API and get URL
         const reader = new FileReader();
         reader.onload = (e) => {
             const result = e.target?.result as string;
@@ -119,20 +119,18 @@ export default function CreateQuizPage() {
 
         setIsUploadingHeader(true)
         try {
-            const supabase = createClient()
             const storagePath = `${organization.id}/quiz_headers/${Date.now()}_${file.name}`
+            
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('path', storagePath)
+            formData.append('bucket', 'documents')
 
-            const { data, error } = await supabase.storage
-                .from('documents')
-                .upload(storagePath, file)
+            const res = await uploadFileAction(formData)
 
-            if (error) throw error
+            if (!res.success) throw new Error(res.error)
 
-            const { data: { publicUrl } } = supabase.storage
-                .from('documents')
-                .getPublicUrl(storagePath)
-
-            setHeaderImage(publicUrl)
+            setHeaderImage(res.publicUrl!)
         } catch (error) {
             console.error('Header image upload failed:', error)
             setStatus({ type: 'error', msg: 'Failed to upload header image' })

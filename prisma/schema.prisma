@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider   = "postgresql"
-  extensions = [uuid_ossp(map: "uuid-ossp", schema: "extensions"), vector]
+// extensions = [uuid_ossp(map: "uuid-ossp", schema: "extensions"), vector]
 }
 
 model Organization {
@@ -49,8 +49,10 @@ model FeatureFlag {
 }
 
 model User {
-  id              String   @id // Maps to Supabase auth.users UUID
+  id              String   @id @default(uuid())
   organization_id String
+  email           String?  @unique
+  password_hash   String?
   full_name       String
   job_title       String?
   avatar_url      String?
@@ -65,6 +67,8 @@ model User {
   notifications  Notification[]
   ai_usage_logs  AIUsageLog[]
   chat_sessions  ChatSession[]
+  accounts       Account[]
+  sessions       Session[]
 
   @@map("users")
 }
@@ -139,7 +143,7 @@ model DocumentChunk {
   document_id String
   chunk_index Int
   content     String                      @db.Text
-  embedding   Unsupported("vector(1024)")?
+  // embedding   Unsupported("vector(1024)")?
   token_count Int
   page_number Int?
   page_end    Int?
@@ -477,7 +481,7 @@ model ContentChunk {
   content_id  String
   chunk_index Int
   content     String                      @db.Text
-  embedding   Unsupported("vector(1024)")?
+  // embedding   Unsupported("vector(1024)")?
   token_count Int
   created_at  DateTime                    @default(now())
 
@@ -642,4 +646,42 @@ enum NotificationType {
   AI_QUOTA_LOW
   BILLING_REMINDER
   REVISION_SUGGESTION
+}
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
 }

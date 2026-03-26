@@ -11,7 +11,7 @@ import {
     List, ListOrdered, Heading1, Heading2, Heading3,
     Quote, Code, Undo, Redo, Link as LinkIcon, BookOpen, Image as ImageIcon, Loader2
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { uploadFileAction } from '@/lib/actions/storage.actions'
 import { useRef, useState } from 'react'
 
 interface TiptapEditorProps {
@@ -58,20 +58,18 @@ export function TiptapEditor({ content, onChange, onOpenSources, orgId }: Tiptap
 
         setUploading(true)
         try {
-            const supabase = createClient()
             const storagePath = `${orgId}/content_images/${Date.now()}_${file.name}`
+            
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('path', storagePath)
+            formData.append('bucket', 'documents')
 
-            const { data, error } = await supabase.storage
-                .from('documents')
-                .upload(storagePath, file)
+            const res = await uploadFileAction(formData)
 
-            if (error) throw error
+            if (!res.success) throw new Error(res.error)
 
-            const { data: { publicUrl } } = supabase.storage
-                .from('documents')
-                .getPublicUrl(storagePath)
-
-            editor.chain().focus().setImage({ src: publicUrl }).run()
+            editor.chain().focus().setImage({ src: res.publicUrl! }).run()
         } catch (error) {
             console.error('Image upload failed:', error)
             alert('Failed to upload image')

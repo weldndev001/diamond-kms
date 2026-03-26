@@ -9,6 +9,7 @@ import {
     ArrowLeft, Upload, FileText, CheckCircle, Loader2, Bot,
     Sparkles, ChevronDown, ChevronUp, AlertTriangle, RefreshCcw, Eye
 } from 'lucide-react'
+import { uploadFileAction } from '@/lib/actions/storage.actions'
 import Link from 'next/link'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
@@ -157,20 +158,18 @@ export default function UploadDocumentPage() {
         setUploading(true)
 
         try {
-            // Step 1: Upload file to Supabase Storage
-            const { createClient } = await import('@/lib/supabase/client')
-            const supabase = createClient()
+            // Step 1: Upload file to Cloud Storage via Server Action
             const storagePath = `${organization.id}/${Date.now()}_${file.name}`
+            
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('path', storagePath)
+            formData.append('bucket', 'documents')
 
-            const { error: uploadError } = await supabase.storage
-                .from('documents')
-                .upload(storagePath, file, {
-                    cacheControl: '3600',
-                    upsert: false,
-                })
+            const res = await uploadFileAction(formData)
 
-            if (uploadError) {
-                setError(`Upload failed: ${uploadError.message}`)
+            if (!res.success) {
+                setError(`Upload failed: ${res.error}`)
                 setUploading(false)
                 return
             }

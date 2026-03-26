@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import { env } from '@/lib/env'
 
@@ -8,25 +8,18 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
     try {
-        const cookieStore = await cookies()
-        const supabase = createServerClient(
-            env.NEXT_PUBLIC_SUPABASE_URL,
-            env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-            {
-                cookies: {
-                    get: (name: string) => cookieStore.get(name)?.value,
-                },
-            }
-        )
+        const session = await getServerSession(authOptions)
+        const user = session?.user
 
-        const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        const userId = (user as any).id
+
         // Get user profile with division and role
         const userRecord = await prisma.user.findUnique({
-            where: { id: user.id },
+            where: { id: userId },
             select: { organization_id: true },
         })
         if (!userRecord) {
@@ -34,7 +27,7 @@ export async function GET(req: NextRequest) {
         }
 
         const userDiv = await prisma.userDivision.findFirst({
-            where: { user_id: user.id, is_primary: true },
+            where: { user_id: userId, is_primary: true },
         })
 
         const orgId = userRecord.organization_id

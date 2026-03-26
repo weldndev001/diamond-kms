@@ -34,7 +34,9 @@ Our application is built using the latest web technologies to ensure scalability
 - **Framework:** [Next.js 14](https://nextjs.org/) (App Router format)
 - **Language:** TypeScript
 - **Database ORM:** [Prisma](https://www.prisma.io/)
-- **Database & Auth Provider:** [Supabase](https://supabase.com/) (PostgreSQL)
+- **Database:** PostgreSQL (Self-hosted on `db01.weldn.ai`)
+- **Authentication:** [NextAuth.js](https://next-auth.js.org/)
+- **Storage Provider:** Cloud Storage (S3-Compatible REST API)
 - **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
 - **UI Components:** [Radix UI](https://www.radix-ui.com/) & [shadcn/ui](https://ui.shadcn.com/)
 - **State Management:** [Zustand](https://zustand-demo.pmnd.rs/)
@@ -49,7 +51,7 @@ Our application is built using the latest web technologies to ensure scalability
 
 - Node.js (v18 or higher recommended)
 - npm, yarn, pnpm, or bun
-- A PostgeSQL Database (preferably hosted on Supabase)
+- A PostgreSQL Database (Local or Hosted)
 
 ### Setup Instructions
 
@@ -67,7 +69,7 @@ Our application is built using the latest web technologies to ensure scalability
 3. **Configure Environment Variables:**
    Create a `.env` file at the root of your project based on `.env.example`. You will need variables for:
    - Database connection (`DATABASE_URL`, `DIRECT_URL`)
-   - Supabase project credentials
+   - Storage directory (`UPLOAD_DIR`)
    - Applicable AI API Keys (OpenAI, Gemini)
 
 4. **Initialize Database:**
@@ -99,7 +101,7 @@ Our application is built using the latest web technologies to ensure scalability
 
 ## 🔒 Security & Access
 
-Authentication is securely managed through Supabase Auth, combined with robust role-based routing natively integrated into the Next.js App Router (Middleware checks).
+Authentication is securely managed through **NextAuth.js** using Credentials Provider with bcrypt encryption, combined with robust role-based routing natively integrated into the Next.js App Router (Middleware checks).
 
 ### Defined System Roles:
 - **SUPER_ADMIN**: Full system access, configuration, and HR/Billing management.

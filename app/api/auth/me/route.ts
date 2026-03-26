@@ -1,23 +1,23 @@
 import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
-import { createClient } from '@/lib/supabase/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 
 export async function GET() {
-    console.log('[API auth/me] Starting request');
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    console.log('[API auth/me] Supabase User:', user?.id);
+    const session = await getServerSession(authOptions)
 
-    if (!user) {
+    if (!session?.user) {
         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
+
+    const userId = (session.user as any).id
 
     try {
         console.log('[API auth/me] Fetching Prisma User Profile...');
         const userProfile = await prisma.user.findUnique({
-            where: { id: user.id },
+            where: { id: userId },
             include: {
                 organization: {
                     include: {

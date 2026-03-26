@@ -1,5 +1,5 @@
 -- Sprint 2: AI Integration — Database Migration
--- Jalankan di Supabase Dashboard → SQL Editor
+-- Jalankan di Database Management Client / SQL Editor
 -- PENTING: Jalankan SEBELUM prisma generate
 
 -- 1. Ubah dimensi embedding dari 1536 ke 768

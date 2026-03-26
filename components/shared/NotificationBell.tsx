@@ -17,7 +17,7 @@ export function NotificationBell({ userId }: { userId: string }) {
         }
         loadNotifs()
 
-        // Simple polling every 30s for demo purposes (ideally use websockets/supabase realtime)
+        // Simple polling every 30s (consider using websockets/SSE in the future)
         const interval = setInterval(loadNotifs, 30000)
         return () => clearInterval(interval)
     }, [userId])

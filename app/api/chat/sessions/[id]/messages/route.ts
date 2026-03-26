@@ -1,36 +1,23 @@
-// app/api/chat/sessions/[id]/messages/route.ts
-// POST: Save messages to a session (called after streaming completes)
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import prisma from '@/lib/prisma'
-import { env } from '@/lib/env'
-
-async function getAuthUser() {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-        env.NEXT_PUBLIC_SUPABASE_URL,
-        env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        { cookies: { get: (name: string) => cookieStore.get(name)?.value } }
-    )
-    const { data: { user } } = await supabase.auth.getUser()
-    return user
-}
 
 export async function POST(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const user = await getAuthUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const sessionAuth = await getServerSession(authOptions)
+    if (!sessionAuth?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const userId = (sessionAuth.user as any).id
     const { id: sessionId } = await params
 
     // Verify ownership
-    const session = await prisma.chatSession.findFirst({
-        where: { id: sessionId, user_id: user.id },
+    const sessionDoc = await prisma.chatSession.findFirst({
+        where: { id: sessionId, user_id: userId },
     })
-    if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
+    if (!sessionDoc) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
 
     const body = await req.json()
     const { userMessage, assistantMessage, citations } = body
@@ -64,14 +51,14 @@ export async function POST(
 
     // Check if auto-summary is enabled (stored in ai_provider_config JSON)
     const org = await prisma.organization.findUnique({
-        where: { id: session.organization_id },
+        where: { id: sessionDoc.organization_id },
         select: { ai_provider_config: true },
     })
     const aiConfig = org?.ai_provider_config as any
 
     if (aiConfig?.autoSummaryChat) {
         // Auto-generate summary in background (don't block response)
-        generateSummaryBackground(sessionId, session.organization_id).catch(() => { })
+        generateSummaryBackground(sessionId, sessionDoc.organization_id).catch(() => { })
     }
 
     return NextResponse.json({ success: true })

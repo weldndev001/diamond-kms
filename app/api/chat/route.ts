@@ -2,7 +2,6 @@
 // Server-Sent Events streaming endpoint for RAG chatbot
 // Now with session persistence: saves messages to DB, auto-generates title
 import { NextRequest } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import prisma from '@/lib/prisma'
 import { ragQuery, type ChatMessage } from '@/lib/ai/rag-pipeline'
@@ -11,32 +10,25 @@ import { aiRateLimiter, checkRateLimit } from '@/lib/security/rate-limiter'
 import { logger } from '@/lib/logging/redact'
 import { env } from '@/lib/env'
 
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+
 export const maxDuration = 60 // Allow up to 60s for streaming response
 
 export async function POST(req: NextRequest) {
     try {
-        const cookieStore = await cookies()
-        const supabase = createServerClient(
-            env.NEXT_PUBLIC_SUPABASE_URL,
-            env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-            {
-                cookies: {
-                    get: (name: string) => cookieStore.get(name)?.value,
-                },
-            }
-        )
+        const session = await getServerSession(authOptions)
+        const user = session?.user
 
-        // Auth check
-        const {
-            data: { user },
-        } = await supabase.auth.getUser()
         if (!user) {
             return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        const userId = (user as any).id
+
         // Get user profile
         const userDiv = await prisma.userDivision.findFirst({
-            where: { user_id: user.id, is_primary: true },
+            where: { user_id: userId, is_primary: true },
         })
         if (!userDiv) {
             return Response.json({ error: 'User profile not found' }, { status: 401 })
@@ -44,7 +36,7 @@ export async function POST(req: NextRequest) {
 
         // Get org config separately to avoid complex include issues
         const userRecord = await prisma.user.findUnique({
-            where: { id: user.id },
+            where: { id: userId },
             select: { organization_id: true },
         })
         if (!userRecord) {
@@ -131,7 +123,7 @@ export async function POST(req: NextRequest) {
                         const citations = await ragQuery({
                             question,
                             history,
-                            userId: user.id,
+                            userId: userId,
                             orgId,
                             userRole: userDiv.role,
                             divisionId: userDiv.division_id,
@@ -194,7 +186,7 @@ export async function POST(req: NextRequest) {
                             await prisma.aIUsageLog.create({
                                 data: {
                                     organization_id: orgId,
-                                    user_id: user.id,
+                                    user_id: userId,
                                     action_type: 'CHAT_QUERY',
                                     tokens_used: Math.ceil(question.length / 3.5) * 3,
                                     model_used: 'gemini-2.5-flash',

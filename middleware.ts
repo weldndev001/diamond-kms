@@ -1,95 +1,29 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { getToken } from 'next-auth/jwt'
 
 export async function middleware(request: NextRequest) {
-    try {
-        let supabaseResponse = NextResponse.next({
-            request: {
-                headers: request.headers,
-            },
-        })
+    const token = await getToken({ 
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET 
+    })
+    
+    const { pathname } = request.nextUrl
 
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get(name: string) {
-                        return request.cookies.get(name)?.value
-                    },
-                    set(name: string, value: string, options: CookieOptions) {
-                        request.cookies.set({
-                            name,
-                            value,
-                            ...options,
-                        })
-                        supabaseResponse = NextResponse.next({
-                            request: {
-                                headers: request.headers,
-                            },
-                        })
-                        supabaseResponse.cookies.set({
-                            name,
-                            value,
-                            ...options,
-                        })
-                    },
-                    remove(name: string, options: CookieOptions) {
-                        request.cookies.set({
-                            name,
-                            value: '',
-                            ...options,
-                        })
-                        supabaseResponse = NextResponse.next({
-                            request: {
-                                headers: request.headers,
-                            },
-                        })
-                        supabaseResponse.cookies.set({
-                            name,
-                            value: '',
-                            ...options,
-                        })
-                    },
-                },
-            }
-        )
-
-        const {
-            data: { user },
-        } = await supabase.auth.getUser()
-
-        const { pathname } = request.nextUrl
-
-        if (pathname.startsWith('/dashboard') && !user) {
-            const url = request.nextUrl.clone()
-            url.pathname = '/login'
-            return NextResponse.redirect(url)
-        }
-
-        if ((pathname.startsWith('/login') || pathname.startsWith('/register')) && user) {
-            // If logged in and trying to access auth pages, redirect to dashboard root
-            const url = request.nextUrl.clone()
-            url.pathname = '/dashboard'
-            return NextResponse.redirect(url)
-        }
-
-        return supabaseResponse
-    } catch (e) {
-        // If there's an error (e.g., missing env variables), we can still let the request through
-        // but perhaps redirect to login if it's a protected route
-        const { pathname } = request.nextUrl
-        if (pathname.startsWith('/dashboard')) {
-            const url = request.nextUrl.clone()
-            url.pathname = '/login'
-            return NextResponse.redirect(url)
-        }
-        return NextResponse.next({
-            request: {
-                headers: request.headers,
-            },
-        })
+    // Protected routes: redirect to login if no token
+    if (pathname.startsWith('/dashboard') && !token) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        return NextResponse.redirect(url)
     }
+
+    // Auth pages: redirect to dashboard if already logged in
+    if ((pathname.startsWith('/login') || pathname.startsWith('/register')) && token) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
+        return NextResponse.redirect(url)
+    }
+
+    return NextResponse.next()
 }
 
 export const config = {

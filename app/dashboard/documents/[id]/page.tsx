@@ -66,8 +66,7 @@ export default function DocumentDetailPage() {
         if (!doc?.file_path) return
         setPdfLoading(false)
         setPdfError(null)
-        // Use our proxy endpoint that downloads from Supabase server-side
-        // This bypasses any signed URL / JWT expiration issues
+        // Use our proxy endpoint that serves from local filesystem
         setPdfUrl(`/api/documents/pdf/${doc.file_path}`)
     }
 

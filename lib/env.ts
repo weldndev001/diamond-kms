@@ -11,10 +11,8 @@ function getEnv(key: string, required = false): string {
 }
 
 export const env = {
-    // Supabase
-    NEXT_PUBLIC_SUPABASE_URL: getEnv('NEXT_PUBLIC_SUPABASE_URL', true),
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', true),
-    SUPABASE_SERVICE_ROLE_KEY: getEnv('SUPABASE_SERVICE_ROLE_KEY'),
+    // Storage (Local Filesystem)
+    UPLOAD_DIR: getEnv('UPLOAD_DIR') || './uploads',
 
     // Database
     DATABASE_URL: getEnv('DATABASE_URL'),

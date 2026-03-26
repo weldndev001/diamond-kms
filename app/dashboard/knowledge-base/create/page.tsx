@@ -8,7 +8,7 @@ import { getDivisionsAction } from '@/lib/actions/user.actions'
 import { Save, ArrowLeft, BookOpen, Search, X, CheckCircle2, Upload, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { TiptapEditor } from '@/components/editor/TiptapEditor'
-import { createClient } from '@/lib/supabase/client'
+import { uploadFileAction } from '@/lib/actions/storage.actions'
 
 export default function CreateContentPage() {
     const router = useRouter()
@@ -73,20 +73,18 @@ export default function CreateContentPage() {
 
         setUploadingHeader(true)
         try {
-            const supabase = createClient()
             const storagePath = `${organization.id}/header_images/${Date.now()}_${file.name}`
+            
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('path', storagePath)
+            formData.append('bucket', 'documents')
 
-            const { error } = await supabase.storage
-                .from('documents')
-                .upload(storagePath, file)
+            const res = await uploadFileAction(formData)
 
-            if (error) throw error
+            if (!res.success) throw new Error(res.error)
 
-            const { data: { publicUrl } } = supabase.storage
-                .from('documents')
-                .getPublicUrl(storagePath)
-
-            setHeaderImage(publicUrl)
+            setHeaderImage(res.publicUrl!)
         } catch (error) {
             console.error('Header upload failed:', error)
             alert('Gagal mengunggah header image')

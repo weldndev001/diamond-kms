@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import { APIResponse, UserWithRole } from '@/types'
-import { createClient } from '@/lib/supabase/client'
+import { signOut } from 'next-auth/react'
 
 interface UserContextType {
     user: UserWithRole | null
@@ -25,13 +25,12 @@ const UserContext = createContext<UserContextType>({
 // In-memory cache to prevent re-fetching across mounts
 let cachedUser: UserWithRole | null = null
 let fetchPromise: Promise<UserWithRole | null> | null = null
-const supabase = createClient()
 
 async function fetchUserData(): Promise<UserWithRole | null> {
     try {
         const res = await fetch('/api/auth/me')
         if (res.status === 401) {
-            await supabase.auth.signOut()
+            signOut({ redirect: false })
             cachedUser = null
             return null
         }

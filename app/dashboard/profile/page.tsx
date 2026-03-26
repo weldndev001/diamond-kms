@@ -2,22 +2,19 @@
 
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
+import { updatePasswordAction } from '@/lib/actions/auth.actions'
 import { LogOut } from 'lucide-react'
 
 export default function ProfilePage() {
     const { user, role, organization, isLoading } = useCurrentUser()
-    const router = useRouter()
     const [updating, setUpdating] = useState(false)
     const [msg, setMsg] = useState({ type: '', text: '' })
 
     const [password, setPassword] = useState('')
 
     const handleLogout = async () => {
-        const supabase = createClient()
-        await supabase.auth.signOut()
-        router.push('/login')
+        await signOut({ callbackUrl: '/login' })
     }
 
     const handleUpdatePassword = async (e: React.FormEvent) => {
@@ -26,11 +23,10 @@ export default function ProfilePage() {
         setMsg({ type: '', text: '' })
 
         try {
-            const supabase = createClient()
-            const { error } = await supabase.auth.updateUser({ password })
+            const res = await updatePasswordAction(password)
 
-            if (error) {
-                setMsg({ type: 'error', text: error.message })
+            if (!res.success) {
+                setMsg({ type: 'error', text: res.error || 'Gagal memperbarui password' })
             } else {
                 setMsg({ type: 'success', text: 'Password updated successfully' })
                 setPassword('')

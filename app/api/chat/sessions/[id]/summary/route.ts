@@ -1,34 +1,21 @@
-// app/api/chat/sessions/[id]/summary/route.ts
-// POST: Generate AI summary for a chat session
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import { getAIServiceForOrg } from '@/lib/ai/get-ai-service'
-import { env } from '@/lib/env'
-
-async function getAuthUser() {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-        env.NEXT_PUBLIC_SUPABASE_URL,
-        env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        { cookies: { get: (name: string) => cookieStore.get(name)?.value } }
-    )
-    const { data: { user } } = await supabase.auth.getUser()
-    return user
-}
 
 export async function POST(
     _req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const user = await getAuthUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const sessionAuth = await getServerSession(authOptions)
+    if (!sessionAuth?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const userId = (sessionAuth.user as any).id
     const { id } = await params
 
     const session = await prisma.chatSession.findFirst({
-        where: { id, user_id: user.id },
+        where: { id, user_id: userId },
         include: {
             messages: { orderBy: { created_at: 'asc' } },
         },

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { env } from '@/lib/env'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,6 +9,9 @@ export async function GET(
     req: NextRequest,
     { params }: { params: Promise<{ path: string[] }> }
 ) {
+    const session = await getServerSession(authOptions)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { path } = await params
     const filePath = path.join('/')
 
@@ -15,37 +20,12 @@ export async function GET(
     }
 
     try {
-        // Create fresh client per request to avoid stale JWT issues
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        )
+        const appUrl = env.NEXT_PUBLIC_APP_URL || 'http://localhost:7000'
+        const publicUrl = `${appUrl}/api/storage/documents/${filePath}`
 
-        const { data, error } = await supabase.storage
-            .from('documents')
-            .createSignedUrl(filePath, 3600) // 1 hour expiry
-
-        if (error || !data?.signedUrl) {
-            console.error('[Signed URL] Supabase error:', error?.message)
-
-            // Fallback: try public URL if signed URL fails
-            const { data: publicUrlData } = supabase.storage
-                .from('documents')
-                .getPublicUrl(filePath)
-
-            if (publicUrlData?.publicUrl) {
-                return NextResponse.json({ url: publicUrlData.publicUrl })
-            }
-
-            return NextResponse.json(
-                { error: error?.message || 'Failed to create signed URL' },
-                { status: 500 }
-            )
-        }
-
-        return NextResponse.json({ url: data.signedUrl })
+        return NextResponse.json({ url: publicUrl })
     } catch (err: any) {
-        console.error('[Signed URL] Error:', err)
+        console.error('[Storage URL] Error:', err)
         return NextResponse.json(
             { error: err.message || 'Internal server error' },
             { status: 500 }

@@ -28,15 +28,18 @@ export default function LoginPage() {
         setError(null)
 
         try {
-            const formData = new FormData()
-            formData.append('email', data.email)
-            formData.append('password', data.password)
+            const { signIn } = await import('next-auth/react')
+            const res = await signIn('credentials', {
+                email: data.email,
+                password: data.password,
+                redirect: false,
+            })
 
-            const res = await loginAction(formData)
-            if (res.success && res.redirectTo) {
-                router.push(res.redirectTo)
+            if (res?.error) {
+                setError(res.error === 'CredentialsSignin' ? 'Email atau password salah' : res.error)
             } else {
-                setError(res.error || 'Login failed')
+                // Determine redirect based on role (could be more sophisticated)
+                router.push('/dashboard')
             }
         } catch (e: any) {
             setError(e.message)

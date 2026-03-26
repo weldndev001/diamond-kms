@@ -5,6 +5,7 @@ import { existsSync } from 'fs'
 import { readFile } from 'fs/promises'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import mime from 'mime'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,15 +36,15 @@ export async function GET(
 
     try {
         const uploadDir = env.UPLOAD_DIR || './uploads'
+        // Handle path joining safely (basic protection)
         const safeFilePath = filePath.replace(/\.\./g, '')
-        const fullPath = join(process.cwd(), uploadDir, 'documents', safeFilePath)
+        const fullPath = join(process.cwd(), uploadDir, safeFilePath)
 
         if (!existsSync(fullPath)) {
-            console.error('[PDF Proxy] File not found:', fullPath)
             return new NextResponse(
                 `<html><body style="margin:40px;font-family:sans-serif;color:#666">
-                    <h3>⚠️ Gagal memuat PDF</h3>
-                    <p>File tidak ditemukan di server.</p>
+                    <h3>⚠️ Gagal memuat file</h3>
+                    <p>File tidak ditemukan: ${filePath}</p>
                 </body></html>`,
                 {
                     status: 404,
@@ -53,21 +54,22 @@ export async function GET(
         }
 
         const buffer = await readFile(fullPath)
+        const mimeType = mime.getType(fullPath) || 'application/octet-stream'
 
         return new NextResponse(buffer, {
             headers: {
-                'Content-Type': 'application/pdf',
+                'Content-Type': mimeType,
                 'Content-Disposition': 'inline',
                 'Cache-Control': 'private, max-age=3600',
                 'Content-Length': buffer.byteLength.toString(),
             },
         })
     } catch (err: any) {
-        console.error('[PDF Proxy] Error:', err)
+        console.error('[Storage Serve] Error:', err)
         return new NextResponse(
             `<html><body style="margin:40px;font-family:sans-serif;color:#666">
                 <h3>⚠️ Error</h3>
-                <p>${err.message || 'Gagal memuat PDF'}</p>
+                <p>Internal server error when serving file.</p>
             </body></html>`,
             {
                 status: 500,

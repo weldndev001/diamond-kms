@@ -26,6 +26,7 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
+import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
 
 export default function RootLayout({
     children,
@@ -35,14 +36,16 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={`${sora.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-sans bg-surface-50 text-navy-900`}>
-                <ThemeProvider
-                    attribute="class"
-                    defaultTheme="light"
-                    enableSystem
-                    disableTransitionOnChange
-                >
-                    {children}
-                </ThemeProvider>
+                <NextAuthProvider>
+                    <ThemeProvider
+                        attribute="class"
+                        defaultTheme="light"
+                        enableSystem
+                        disableTransitionOnChange
+                    >
+                        {children}
+                    </ThemeProvider>
+                </NextAuthProvider>
             </body>
         </html>
     );

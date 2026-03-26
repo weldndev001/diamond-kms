@@ -1,28 +1,18 @@
-// app/api/documents/[id]/status/route.ts
-// Polling endpoint for document processing status
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import prisma from '@/lib/prisma'
-import { env } from '@/lib/env'
 
 export async function GET(
     _req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-        env.NEXT_PUBLIC_SUPABASE_URL,
-        env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        { cookies: { get: (name: string) => cookieStore.get(name)?.value } }
-    )
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const sessionAuth = await getServerSession(authOptions)
+    if (!sessionAuth?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { id } = await params
 
     try {
-        // Use findFirst without select to get ALL fields including new ones
         const doc = await prisma.document.findFirst({
             where: { id },
         })
