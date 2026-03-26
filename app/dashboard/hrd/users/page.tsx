@@ -90,11 +90,11 @@ export default function UsersPage() {
                                         </td>
                                         <td className="p-4">
                                             <span className="inline-block px-2 py-1 bg-surface-100 text-text-700 text-xs rounded border">
-                                                {u.user_divisions?.[0]?.role || 'NO_ROLE'}
+                                                {u.user_divisions?.find((ud: any) => ud.is_primary)?.role || u.user_divisions?.[0]?.role || 'NO_ROLE'}
                                             </span>
                                         </td>
                                         <td className="p-4 text-sm text-text-500">
-                                            {u.user_divisions?.[0]?.division?.name || '-'}
+                                            {u.user_divisions?.find((ud: any) => ud.is_primary)?.division?.name || u.user_divisions?.[0]?.division?.name || '-'}
                                         </td>
                                         <td className="p-4">
                                             <div className="flex items-center gap-2">

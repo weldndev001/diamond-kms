@@ -6,8 +6,8 @@ import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { RoleGuard } from '@/components/shared/RoleGuard'
 import { Role } from '@prisma/client'
-import { getDivisionsAction, getUsersAction, updateUserRoleAction, deactivateUserAction } from '@/lib/actions/user.actions'
-import { ArrowLeft, Save, Loader2, User as UserIcon, Building2, Shield, UserX } from 'lucide-react'
+import { getDivisionsAction, getUsersAction, updateUserAction, deactivateUserAction } from '@/lib/actions/user.actions'
+import { ArrowLeft, Save, Loader2, User as UserIcon, Building2, Shield, UserX, Mail, Briefcase, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function EditUserPage({ params }: { params: { id: string } }) {
     const { organization } = useCurrentUser()
@@ -17,6 +17,11 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
     const [editingUser, setEditingUser] = useState<any>(null)
     const [loading, setLoading] = useState(true)
 
+    const [fullName, setFullName] = useState('')
+    const [email, setEmail] = useState('')
+    const [jobTitle, setJobTitle] = useState('')
+    const [password, setPassword] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
     const [role, setRole] = useState<Role>(Role.STAFF)
     const [divisionId, setDivisionId] = useState('')
     const [submitStatus, setSubmitStatus] = useState({ type: '', msg: '' })
@@ -40,9 +45,15 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                 const userObj = usersRes.data?.find((u: any) => u.id === params.id)
                 if (userObj) {
                     setEditingUser(userObj)
+                    setFullName(userObj.full_name || '')
+                    setEmail(userObj.email || '')
+                    setJobTitle(userObj.job_title || '')
+                    
                     if (userObj.user_divisions?.length > 0) {
-                        setRole(userObj.user_divisions[0].role)
-                        setDivisionId(userObj.user_divisions[0].division_id)
+                        // Priority: 1. is_primary division, 2. First division in array
+                        const primaryDiv = userObj.user_divisions.find((ud: any) => ud.is_primary) || userObj.user_divisions[0]
+                        setRole(primaryDiv.role as Role)
+                        setDivisionId(primaryDiv.division_id)
                     }
                 } else {
                     setSubmitStatus({ type: 'error', msg: 'User not found' })
@@ -64,7 +75,16 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
             return
         }
 
-        const res = await updateUserRoleAction(editingUser.id, role, divisionId)
+        const res = await updateUserAction({
+            id: editingUser.id,
+            fullName,
+            email,
+            jobTitle,
+            role,
+            divisionId,
+            password
+        })
+
         if (res.success) {
             setSubmitStatus({ type: 'success', msg: 'User updated successfully. Redirecting...' })
             setTimeout(() => {
@@ -150,6 +170,80 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
 
                         <form onSubmit={handleUpdate} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Full Name */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-navy-900 flex items-center gap-2">
+                                        <UserIcon size={16} className="text-navy-500" />
+                                        Full Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        className="input-field w-full text-sm"
+                                        placeholder="Enter full name"
+                                    />
+                                </div>
+
+                                {/* Email Address */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-navy-900 flex items-center gap-2">
+                                        <Mail size={16} className="text-navy-500" />
+                                        Email Address
+                                    </label>
+                                    <input
+                                        type="email"
+                                        required
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="input-field w-full text-sm"
+                                        placeholder="email@example.com"
+                                    />
+                                </div>
+
+                                {/* Job Title */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-navy-900 flex items-center gap-2">
+                                        <Briefcase size={16} className="text-navy-500" />
+                                        Job Title / Position
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={jobTitle}
+                                        onChange={(e) => setJobTitle(e.target.value)}
+                                        className="input-field w-full text-sm"
+                                        placeholder="e.g. Sales Manager"
+                                    />
+                                </div>
+
+                                {/* Password */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-navy-900 flex items-center gap-2">
+                                        <Lock size={16} className="text-navy-500" />
+                                        Password (Hidden)
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="input-field w-full text-sm pr-10"
+                                            placeholder="Leave empty to keep current password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-400 hover:text-navy-600 transition-colors"
+                                        >
+                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                    <p className="text-[10px] text-text-400">
+                                        Password is encrypted and cannot be displayed for security. Enter new password to change.
+                                    </p>
+                                </div>
+
                                 {/* Role Selection */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-navy-900 flex items-center gap-2">
