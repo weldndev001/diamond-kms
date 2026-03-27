@@ -123,16 +123,24 @@ export async function getOrganizationAction(orgId: string) {
 export async function updateOrganizationAction(orgId: string, data: {
     name?: string
     crossDivisionQueryEnabled?: boolean
+    appName?: string
+    slogan?: string
+    logoUrl?: string
+    systemLanguage?: string
 }) {
     try {
         await prisma.organization.update({
             where: { id: orgId },
             data: {
                 name: data.name,
-                cross_division_query_enabled: data.crossDivisionQueryEnabled
+                cross_division_query_enabled: data.crossDivisionQueryEnabled,
+                app_name: data.appName,
+                slogan: data.slogan,
+                logo_url: data.logoUrl,
+                system_language: data.systemLanguage
             }
         })
-        revalidatePath('/dashboard/hrd/settings')
+        revalidatePath('/dashboard/hrd/website')
         return { success: true }
     } catch (error: any) {
         return { success: false, error: error.message }

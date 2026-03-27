@@ -18,6 +18,10 @@ model Organization {
   ai_provider_config           Json?
   cross_division_query_enabled Boolean        @default(false)
   auto_summary_chat            Boolean        @default(false)
+  app_name                     String         @default("DIAMOND KMS")
+  slogan                       String         @default("AI Powered Knowledge Management System")
+  logo_url                     String?
+  system_language              String         @default("en-US")
   created_at                   DateTime       @default(now())
 
   users           User[]
