@@ -1,7 +1,14 @@
 import prisma from '@/lib/prisma'
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
-    const org = await prisma.organization.findFirst()
+    let org = null
+    try {
+        org = await prisma.organization.findFirst()
+    } catch (e) {
+        console.error('Prisma error in AuthLayout (likely missing columns):', e)
+        // Fallback to null to use defaults below
+    }
+
     const appName = org?.app_name || 'DIAMOND KMS'
     const slogan = org?.slogan || 'Enterprise Knowledge Management'
 
