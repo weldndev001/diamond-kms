@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
                                         const { getAIServiceForOrg } = await import('@/lib/ai/get-ai-service')
                                         const ai = await getAIServiceForOrg(orgId)
                                         const title = await ai.generateCompletion(
-                                            `Buatkan judul singkat (maksimal 6 kata, tanpa tanda kutip) untuk percakapan yang dimulai dengan pertanyaan: "${question.slice(0, 200)}"`,
+                                            `Buatkan judul singkat (maksimal 6 kata, tanpa tanda kutip) untuk percakapan yang dimulai dengan pertanyaan: "${question.slice(0, 200)}". JANGAN GUNAKAN FORMAT MARKDOWN ATAU BINTANG. Gunakan penomoran jika perlu.`,
                                             { maxTokens: 30 }
                                         )
                                         const cleanTitle = title.trim().replace(/^["']|["']$/g, '').slice(0, 80)

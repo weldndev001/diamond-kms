@@ -159,6 +159,8 @@ export async function ragQuery(
 Aturan:
 1. Jika jawaban ada di dalam dokumen, JAWABLAH dengan mengandalkan data tersebut dan cantumkan sumbernya (format: [Sumber N]).
 2. Jika pertanyaan TIDAK ADA HUBUNGANNYA dengan dokumen (misalnya pengguna menyapa, bertanya kabar, atau bertanya hal umum sehari-hari), JAWABLAH SEPERTI BIASA layaknya asisten yang pintar. ANDA TIDAK PERLU BERKATA "Informasi tidak ditemukan di dokumen" untuk percakapan umum.
+3. JANGAN GUNAKAN FORMAT MARKDOWN ATAU BINTANG (seperti **teks tebal**, *miring*, dsb). Gunakan teks murni saja.
+4. JANGAN GUNAKAN poin-poin (bullet points) seperti * atau -. Gunakan penomoran angka (1, 2, 3) atau huruf (a, b, c) untuk daftar/poin-poin.
 
 KONTEKS DOKUMEN:
 ${context}`
@@ -166,7 +168,8 @@ ${context}`
         systemPrompt += `\n\nSaat ini tidak ada konteks dokumen internal spesifik yang ditemukan untuk pertanyaan pengguna. 
 Aturan:
 1. Anda bebas menjawab pertanyaan umum, berbincang ramah, atau merespons sapaan menggunakan pengetahuan luas Anda sendiri.
-2. JANGAN berkata "Informasi tidak ditemukan di dokumen" kecuali jika pengguna memang ngotot menanyakan file spesifik.`
+2. JANGAN berkata "Informasi tidak ditemukan di dokumen" kecuali jika pengguna memang ngotot menanyakan file spesifik.
+3. JANGAN GUNAKAN FORMAT MARKDOWN/BINTANG. Gunakan penomoran angka untuk daftar.`
     }
 
     // ── STEP 6: Build prompt from history + new question ────────

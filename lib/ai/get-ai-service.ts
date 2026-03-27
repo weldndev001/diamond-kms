@@ -9,7 +9,13 @@ import type { AIProviderConfig, AIService } from './types'
 // Default Olla load balancer endpoint (self-hosted)
 const OLLA_DEFAULT = 'https://llm01.weldn.ai/olla/openai/v1'
 
+import { appendFileSync } from 'fs'
+import { join } from 'path'
+
 export function getAIService(config: AIProviderConfig): AIService {
+    const logMsg = `[${new Date().toISOString()}] [AI-FACTORY] FULL CONFIG: ${JSON.stringify(config)}\n`
+    appendFileSync(join(process.cwd(), 'ai-debug.log'), logMsg)
+    
     switch (config.provider) {
         case 'managed': {
             const key = env.GEMINI_API_KEY
@@ -48,10 +54,7 @@ export function getAIService(config: AIProviderConfig): AIService {
         }
 
         default: {
-            // Fallback safe — use Gemini managed
-            const key = env.GEMINI_API_KEY
-            if (!key) throw new Error('GEMINI_API_KEY not configured for fallback')
-            return new GeminiService(key)
+            throw new Error(`[AI-FACTORY] Provider '${config.provider}' tidak dikenali.`)
         }
     }
 }
@@ -62,12 +65,19 @@ export function getAIService(config: AIProviderConfig): AIService {
  */
 export async function getAIServiceForOrg(orgId: string): Promise<AIService> {
     const prisma = (await import('@/lib/prisma')).default
-    const org = await prisma.organization.findUnique({
+    let org = await prisma.organization.findUnique({
         where: { id: orgId },
-        select: { ai_provider_config: true },
+        select: { id: true, ai_provider_config: true },
     })
-    const config = (org?.ai_provider_config as AIProviderConfig | null) ?? {
-        provider: 'managed' as const,
+
+    if (!org) {
+        throw new Error(`[AI-FACTORY] Konfigurasi AI untuk organisasi ${orgId} tidak ditemukan. Pastikan sudah diatur di AI Management.`)
     }
+
+    const config = (org?.ai_provider_config as AIProviderConfig | null)
+    if (!config) {
+        throw new Error(`[AI-FACTORY] Provider AI belum dikonfigurasi untuk organisasi ini.`)
+    }
+    
     return getAIService(config)
 }

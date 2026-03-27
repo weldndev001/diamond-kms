@@ -15,9 +15,9 @@ export default function AIManagementPage() {
     const [activeTab, setActiveTab] = useState<'settings' | 'usage'>('settings')
 
     return (
-        <RoleGuard allowedRoles={['SUPER_ADMIN', 'MAINTAINER']}>
+        <RoleGuard allowedRoles={['SUPER_ADMIN', 'MAINTAINER', 'SUPERVISOR']}>
             <div className="space-y-6">
-                <div>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">AI Management</h1>
                     <p className="text-sm text-text-500 mt-1">Configure your AI provider settings and track token usage.</p>
                 </div>

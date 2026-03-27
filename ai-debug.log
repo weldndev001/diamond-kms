@@ -1,0 +1,62 @@
+[2026-03-26T09:28:40.412Z] [PROCESS-BG] STARTED for 07fb3722-a123-4058-a773-b37a55d0d885
+[2026-03-26T09:28:41.378Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-26T09:28:41.447Z] [AI-FACTORY] provider: managed, model: undefined
+[2026-03-26T09:28:41.449Z] Got AI service: google-gemini
+[2026-03-26T09:30:47.868Z] [PROCESS-BG] STARTED for 07fb3722-a123-4058-a773-b37a55d0d885
+[2026-03-26T09:30:48.712Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-26T09:30:48.968Z] [AI-FACTORY] provider: managed, model: undefined
+[2026-03-26T09:30:49.156Z] Got AI service: google-gemini
+[2026-03-26T09:30:49.407Z] [PROCESS-BG] STARTED for 07fb3722-a123-4058-a773-b37a55d0d885
+[2026-03-26T09:30:51.183Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-26T09:30:51.240Z] [AI-FACTORY] provider: managed, model: undefined
+[2026-03-26T09:30:51.293Z] Got AI service: google-gemini
+[2026-03-26T09:34:11.939Z] [PROCESS-BG] STARTED for 07fb3722-a123-4058-a773-b37a55d0d885
+[2026-03-26T09:34:12.589Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-26T09:34:12.629Z] [AI-FACTORY] provider: managed, model: undefined
+[2026-03-26T09:34:12.674Z] Got AI service: google-gemini
+[2026-03-26T09:35:28.339Z] [PROCESS-BG] STARTED for 07fb3722-a123-4058-a773-b37a55d0d885
+[2026-03-26T09:35:28.752Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-26T09:35:28.786Z] [AI-FACTORY] provider: managed, model: undefined
+[2026-03-26T09:35:28.840Z] Got AI service: google-gemini
+[2026-03-26T09:36:25.484Z] [PROCESS-BG] STARTED for 07fb3722-a123-4058-a773-b37a55d0d885
+[2026-03-26T09:36:25.885Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-26T09:36:26.317Z] [AI-FACTORY] provider: managed, model: undefined
+[2026-03-26T09:36:26.531Z] Got AI service: google-gemini
+[2026-03-27T01:41:09.975Z] [AI-FACTORY] provider: self_hosted, model: gpt-3.5-turbo, endpoint: https://httpbin.org/status/404
+[2026-03-27T01:42:17.137Z] [AI-FACTORY] provider: managed, model: gpt-3.5-turbo, endpoint: https://llm01.weldn.ai/olla/openai/v1
+[2026-03-27T01:42:57.248Z] [AI-FACTORY] provider: managed, model: gpt-3.5-turbo, endpoint: https://llm01.weldn.ai/olla/openai/v1
+[2026-03-27T01:43:19.221Z] [PROCESS-BG] STARTED for cce5ea3b-02a2-4bb5-b9af-b95ad7471923
+[2026-03-27T01:43:31.207Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-27T01:43:31.271Z] [AI-FACTORY] provider: managed, model: gpt-3.5-turbo, endpoint: https://llm01.weldn.ai/olla/openai/v1
+[2026-03-27T01:43:31.764Z] Got AI service: google-gemini
+[2026-03-27T01:50:26.299Z] [PROCESS-BG] STARTED for 60691c2e-354c-4c14-bcf1-bc12a586d7ba
+[2026-03-27T01:50:27.191Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-27T01:50:27.291Z] [AI-FACTORY] provider: self_hosted, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf, endpoint: https://llm01.weldn.ai/olla/openai/v1
+[2026-03-27T01:50:27.567Z] Got AI service: ollama-olla
+[2026-03-27T01:50:27.569Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-27T02:16:28.518Z] [PROCESS-BG] STARTED for 60691c2e-354c-4c14-bcf1-bc12a586d7ba
+[2026-03-27T02:16:31.618Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-27T02:16:32.369Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"nomic-embed-text","autoSummaryChat":false}
+[2026-03-27T02:16:32.742Z] Got AI service: ollama-olla
+[2026-03-27T02:16:32.747Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-27T04:07:58.994Z] [PROCESS-BG] STARTED for cab9c5f7-a9b1-4a70-ad4a-10794f3a3db7
+[2026-03-27T04:07:59.755Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-27T04:07:59.808Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-27T04:07:59.889Z] Got AI service: ollama-olla
+[2026-03-27T04:07:59.891Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-27T04:15:52.368Z] [PROCESS-BG] STARTED for 5890cd89-960e-4584-abbe-39ac716404ab
+[2026-03-27T04:15:53.177Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-27T04:15:53.273Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-27T04:15:53.338Z] Got AI service: ollama-olla
+[2026-03-27T04:15:53.339Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-27T04:16:04.508Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-27T04:18:01.577Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-27T04:18:34.875Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-27T04:19:30.560Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-27T04:25:01.345Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-27T04:28:29.578Z] [PROCESS-BG] STARTED for e507f671-b9fa-4a02-a56f-967e88bd7041
+[2026-03-27T04:28:30.457Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-27T04:28:30.546Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-27T04:28:30.673Z] Got AI service: ollama-olla
+[2026-03-27T04:28:30.676Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-27T04:28:42.345Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf

@@ -265,6 +265,16 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
     }
 
     const navEntries = getNavEntries(role)
+    // TEMPORARY BYPASS
+    if (!navEntries.find(g => 'label' in g && g.label === 'Settings')) {
+        navEntries.push({
+            label: 'Settings',
+            icon: 'Settings',
+            children: [
+                { label: 'AI Management', href: '/dashboard/hrd/ai' },
+            ],
+        })
+    }
 
     return (
         <div className="flex h-screen bg-surface-50 overflow-hidden relative">

@@ -229,6 +229,20 @@ export default function UploadDocumentPage() {
         }
     }
 
+    const handleStopProcess = async (docId: string) => {
+        try {
+            const res = await fetch('/api/ai/stop-process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ documentId: docId })
+            })
+            if (res.ok) {
+                // Refresh data to show stopped status
+                loadRecentUploads()
+            }
+        } catch { /* ignore */ }
+    }
+
     const getStatusBadge = (doc: RecentDoc) => {
         switch (doc.processing_status) {
             case 'processing':
@@ -437,6 +451,15 @@ export default function UploadDocumentPage() {
                                                 <Eye size={16} />
                                             </Link>
                                         )}
+                                        {doc.processing_status === 'processing' && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleStopProcess(doc.id); }}
+                                                className="text-red-600 hover:text-red-700 p-1.5 rounded hover:bg-red-50 transition text-xs font-bold flex items-center gap-1"
+                                                title="Stop Process"
+                                            >
+                                                <AlertTriangle size={14} /> STOP
+                                            </button>
+                                        )}
                                         <Dialog>
                                             <DialogTrigger asChild>
                                                 <button
@@ -463,6 +486,14 @@ export default function UploadDocumentPage() {
                                                             <p>Completed: {doc.is_processed ? 'Yes' : 'No'}</p>
                                                             {doc.processing_error && <p className="text-red-600 mt-2 font-bold whitespace-pre-wrap">Error: {doc.processing_error}</p>}
                                                         </div>
+                                                        {doc.processing_status === 'processing' && (
+                                                            <button
+                                                                onClick={() => handleStopProcess(doc.id)}
+                                                                className="mt-3 w-full btn bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 py-2 text-xs font-bold flex items-center justify-center gap-2"
+                                                            >
+                                                                <AlertTriangle size={14} /> STOP PROCESS
+                                                            </button>
+                                                        )}
                                                     </div>
 
                                                     <div>

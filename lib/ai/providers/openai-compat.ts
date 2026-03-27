@@ -46,18 +46,6 @@ export class OpenAICompatService implements AIService {
                 if (!embedding) throw new Error('No embedding returned from provider')
                 return embedding
             } catch (err: any) {
-                // If the provider doesn't support embeddings (like Olla), fallback to Gemini
-                if (err.status === 404 || err.message?.includes('404')) {
-                    logger.warn(`Provider ${this.providerName} doesn't support embeddings, falling back to Gemini.`)
-                    console.log(`[AI-SELFHOSTED] Fallback to Gemini for embeddings`)
-                    const { env } = await import('@/lib/env')
-                    if (!env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY required for fallback embeddings')
-                    const { GoogleGenerativeAI } = await import('@google/generative-ai')
-                    const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY)
-                    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' })
-                    const res = await model.embedContent(text)
-                    return res.embedding.values
-                }
                 console.error(`[AI-SELFHOSTED] Embedding Error:`, err.message)
                 throw err
             }
@@ -69,6 +57,10 @@ export class OpenAICompatService implements AIService {
         options?: { systemPrompt?: string; maxTokens?: number; jsonMode?: boolean }
     ): Promise<string> {
         return withRetry(async () => {
+            const baseUrl = (this.client as any).baseURL
+            const logMsg = `[${new Date().toISOString()}] [AI-CLIENT] Using baseURL: ${baseUrl}, model: ${this.chatModel}\n`
+            const fs = await import('fs')
+            fs.appendFileSync('ai-debug.log', logMsg)
             console.log(`[AI-SELFHOSTED] Generating completion. Model: ${this.chatModel}, Prompt length: ${prompt.length}`)
             const startTime = Date.now()
             const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = []
@@ -138,7 +130,7 @@ export class OpenAICompatService implements AIService {
             `Document content:\n${safeContent}`,
             {
                 systemPrompt:
-                    'You analyze documents. Return ONLY valid JSON with fields: title (string, max 80 chars), summary (string, 2-3 paragraphs), tags (string array, 5 items), language ("id"|"en"|"mixed"), docType ("sop"|"policy"|"guide"|"report"|"regulation"|"other")',
+                    'You analyze documents. Return ONLY valid JSON with fields: title (string, max 80 chars), summary (string, 2-3 paragraphs), tags (string array, 5 items), language ("id"|"en"|"mixed"), docType ("sop"|"policy"|"guide"|"report"|"regulation"|"other"). IMPORTANT: DO NOT USE ANY MARKDOWN OR STARS (no **, no *). USE PLAIN TEXT ONLY. For lists, use numbered format (1., 2.) or letters (a., b.) instead of bullet points.',
                 jsonMode: true,
             }
         )
