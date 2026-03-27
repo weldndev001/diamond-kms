@@ -162,11 +162,11 @@ const getNavEntries = (role?: string): NavEntry[] => {
 
     if (role === 'MAINTAINER') {
         return [
-            { label: 'System Overview', href: '/dashboard/maintainer' },
-            { label: 'Organizations', href: '/dashboard/maintainer/organizations' },
-            { label: 'AI Providers', href: '/dashboard/maintainer/ai-providers' },
+            { label: 'System Overview', href: '/dashboard/maintenance' },
+            { label: 'Organizations', href: '/dashboard/maintenance/organizations' },
+            { label: 'AI Providers', href: '/dashboard/maintenance/ai-providers' },
             { label: 'Monitoring', href: '/admin/monitoring' },
-            { label: 'Logs', href: '/dashboard/maintainer/logs' },
+            { label: 'Logs', href: '/dashboard/maintenance/logs' },
         ]
     }
 
@@ -326,7 +326,7 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
                 <div className="mt-auto p-4 border-t border-white/10">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-navy-600 to-navy-400 flex items-center justify-center text-white font-bold font-display text-xs shrink-0 shadow-md">
-                            {user.full_name?.substring(0, 2).toUpperCase() || 'U'}
+                            {(user.full_name || 'User').substring(0, 2).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
                             <div className="text-[13px] font-semibold text-sidebar-foreground truncate">
@@ -389,9 +389,9 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
                         <NotificationBell userId={user.id} />
                         <Link href="/dashboard/profile" className="flex items-center gap-2 text-sm font-medium text-text-700 hover:text-navy-600 transition-colors">
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-navy-600 to-navy-400 flex items-center justify-center text-white font-bold font-display text-[10px] shadow-sm">
-                                {user.full_name?.substring(0, 2).toUpperCase() || 'U'}
+                                {(user.full_name || 'User').substring(0, 2).toUpperCase()}
                             </div>
-                            <span className="hidden sm:inline-block">{user.full_name?.split(' ')[0]}</span>
+                            <span className="hidden sm:inline-block">{(user.full_name || 'User').split(' ')[0]}</span>
                         </Link>
                     </div>
                 </header>

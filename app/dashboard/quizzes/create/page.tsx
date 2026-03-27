@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { TiptapEditor } from '@/components/editor/TiptapEditor'
 import { uploadFileAction } from '@/lib/actions/storage.actions'
+import { ImageCropper } from '@/components/shared/ImageCropper'
 
 export default function CreateQuizPage() {
     const router = useRouter()
@@ -31,12 +32,17 @@ export default function CreateQuizPage() {
     const [isPublished, setIsPublished] = useState(false)
     const [status, setStatus] = useState({ type: '', msg: '' })
 
+    // Image Cropping State
+    const [tempImage, setTempImage] = useState<string | null>(null)
+    const [isCropperOpen, setIsCropperOpen] = useState(false)
+    const [originalFileName, setOriginalFileName] = useState('')
+
     const [divisions, setDivisions] = useState<any[]>([])
     const [contents, setContents] = useState<any[]>([])
 
     // Manage multiple questions dynamically
     const [questions, setQuestions] = useState<any[]>([
-        { question_text: '', options: ['', '', '', ''], correct_answer: '', image: null }
+        { question_text: '', question_type: 'MULTIPLE_CHOICE', options: ['', '', '', ''], correct_answer: '', image: null }
     ])
 
     useEffect(() => {
@@ -63,14 +69,17 @@ export default function CreateQuizPage() {
                         setQuestions(q.questions.map((quest: any) => {
                             // Mencari index kunci jawaban dengan aman
                             let correctIdx = -1;
-                            if (Array.isArray(quest.options)) {
+                            const isMultipleChoice = quest.question_type === 'MULTIPLE_CHOICE';
+                            
+                            if (isMultipleChoice && Array.isArray(quest.options)) {
                                 correctIdx = quest.options.indexOf(quest.correct_answer);
                             }
                             
                             return {
                                 question_text: quest.question_text,
+                                question_type: quest.question_type || 'MULTIPLE_CHOICE',
                                 options: Array.isArray(quest.options) ? quest.options : ['', '', '', ''],
-                                correct_answer: correctIdx !== -1 ? correctIdx.toString() : '',
+                                correct_answer: isMultipleChoice && correctIdx !== -1 ? correctIdx.toString() : quest.correct_answer,
                                 image: quest.image || null
                             };
                         }))
@@ -83,7 +92,7 @@ export default function CreateQuizPage() {
     }, [organization?.id, editId])
 
     const handleAddQuestion = () => {
-        setQuestions([...questions, { question_text: '', options: ['', '', '', ''], correct_answer: '', image: null }])
+        setQuestions([...questions, { question_text: '', question_type: 'MULTIPLE_CHOICE', options: ['', '', '', ''], correct_answer: '', image: null }])
     }
 
     const handleImageUpload = async (index: number, file: File) => {
@@ -103,13 +112,47 @@ export default function CreateQuizPage() {
         setQuestions(newQs)
     }
 
-    const handleQuestionChange = (index: number, field: string, value: string | string[] | null, optionIndex?: number) => {
+    const handleQuestionChange = (index: number, field: string, value: any, optionIndex?: number) => {
         const newQs = [...questions]
         if (field === 'options' && typeof optionIndex === 'number') {
             newQs[index].options[optionIndex] = value as string
-        } else if (field === 'correct_answer' || field === 'question_text' || field === 'image') {
+        } else if (field === 'correct_answer' || field === 'question_text' || field === 'image' || field === 'question_type') {
             (newQs[index] as any)[field] = value
+            
+            // Reset relevant fields if type changes
+            if (field === 'question_type') {
+                if (value === 'MULTIPLE_CHOICE') {
+                    newQs[index].options = ['', '', '', '']
+                    newQs[index].correct_answer = ''
+                } else if (value === 'ESSAY') {
+                    newQs[index].options = []
+                    newQs[index].correct_answer = ''
+                }
+            }
         }
+        setQuestions(newQs)
+    }
+
+    const handleAddOption = (qIndex: number) => {
+        const newQs = [...questions]
+        newQs[qIndex].options.push('')
+        setQuestions(newQs)
+    }
+
+    const handleRemoveOption = (qIndex: number, optIndex: number) => {
+        const newQs = [...questions]
+        if (newQs[qIndex].options.length <= 2) return // Min 2 options
+        
+        newQs[qIndex].options.splice(optIndex, 1)
+        
+        // Adjust correct answer if needed
+        const correctIdx = parseInt(newQs[qIndex].correct_answer)
+        if (correctIdx === optIndex) {
+            newQs[qIndex].correct_answer = ''
+        } else if (correctIdx > optIndex) {
+            newQs[qIndex].correct_answer = (correctIdx - 1).toString()
+        }
+        
         setQuestions(newQs)
     }
 
@@ -117,10 +160,27 @@ export default function CreateQuizPage() {
         const file = e.target.files?.[0]
         if (!file || !organization?.id) return
 
+        setOriginalFileName(file.name)
+        const reader = new FileReader()
+        reader.onload = (event) => {
+            setTempImage(event.target?.result as string)
+            setIsCropperOpen(true)
+        }
+        reader.readAsDataURL(file)
+        
+        // Reset input to allow re-uploading same file
+        e.target.value = ''
+    }
+
+    const handleCropComplete = async (croppedBlob: Blob) => {
+        if (!organization?.id) return
+
         setIsUploadingHeader(true)
         try {
-            const storagePath = `${organization.id}/quiz_headers/${Date.now()}_${file.name}`
+            const fileName = originalFileName.replace(/\.[^/.]+$/, "") + "_cropped.jpg"
+            const storagePath = `${organization.id}/quiz_headers/${Date.now()}_${fileName}`
             
+            const file = new File([croppedBlob], fileName, { type: 'image/jpeg' })
             const formData = new FormData()
             formData.append('file', file)
             formData.append('path', storagePath)
@@ -136,6 +196,7 @@ export default function CreateQuizPage() {
             setStatus({ type: 'error', msg: 'Failed to upload header image' })
         } finally {
             setIsUploadingHeader(false)
+            setTempImage(null)
         }
     }
 
@@ -172,7 +233,9 @@ export default function CreateQuizPage() {
             is_published: finalIsPublished,
             questions: questions.map(q => ({
                 ...q,
-                correct_answer: q.options[parseInt(q.correct_answer)] || ''
+                correct_answer: q.question_type === 'MULTIPLE_CHOICE' 
+                    ? (q.options[parseInt(q.correct_answer)] || '')
+                    : q.correct_answer
             }))
         }
 
@@ -200,6 +263,15 @@ export default function CreateQuizPage() {
             </div>
 
             <div className="card p-6 dark:bg-surface-0 dark:border-surface-100">
+                {tempImage && (
+                    <ImageCropper
+                        image={tempImage}
+                        isOpen={isCropperOpen}
+                        onClose={() => setIsCropperOpen(false)}
+                        onCropComplete={handleCropComplete}
+                    />
+                )}
+
                 {status.msg && (
                     <div className={`p-4 rounded-md mb-6 text-sm font-medium ${status.type === 'error' ? 'bg-danger-bg text-danger border border-red-200 dark:bg-danger/10 dark:border-danger/20' :
                         status.type === 'success' ? 'bg-success-bg text-green-700 border border-green-200 dark:bg-success/10 dark:border-success/20' :
@@ -400,44 +472,105 @@ export default function CreateQuizPage() {
                                         placeholder="Write your question here..."
                                     />
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-                                        {q.options.map((opt: string, optIndex: number) => (
-                                            <div key={optIndex} className="relative group/opt">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="relative flex items-center">
-                                                        <input
-                                                            type="radio"
-                                                            name={`question-${qIndex}-correctAnswer`}
-                                                            required
-                                                            checked={q.correct_answer === optIndex.toString()}
-                                                            onChange={() => handleQuestionChange(qIndex, 'correct_answer', optIndex.toString())}
-                                                            className="w-5 h-5 text-indigo-600 border-surface-300 dark:border-slate-600 focus:ring-indigo-500 dark:bg-slate-900 transition-all cursor-pointer"
-                                                            disabled={!opt.trim()}
-                                                            title="Mark as correct answer"
-                                                        />
-                                                    </div>
-                                                    <input
-                                                        required
-                                                        type="text"
-                                                        value={opt}
-                                                        onChange={(e) => {
-                                                            const newVal = e.target.value
-                                                            handleQuestionChange(qIndex, 'options', newVal, optIndex)
-                                                        }}
-                                                        className={`w-full rounded-2xl p-3.5 text-sm outline-none transition-all duration-300 border font-bold ${
-                                                            q.correct_answer === optIndex.toString()
-                                                                ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-700 dark:text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.1)]' 
-                                                                : 'bg-white dark:bg-slate-900 border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/5'
-                                                        }`}
-                                                        placeholder={`Answer Option ${optIndex + 1}`}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
+                                    <div className="flex flex-wrap gap-4 pt-2">
+                                        <label className="flex items-center gap-2 cursor-pointer group">
+                                            <input 
+                                                type="radio" 
+                                                checked={q.question_type === 'MULTIPLE_CHOICE'} 
+                                                onChange={() => handleQuestionChange(qIndex, 'question_type', 'MULTIPLE_CHOICE')}
+                                                className="w-4 h-4 text-indigo-600 border-surface-300 focus:ring-indigo-500"
+                                            />
+                                            <span className={`text-sm font-bold ${q.question_type === 'MULTIPLE_CHOICE' ? 'text-indigo-600' : 'text-text-400'}`}>Pilihan Ganda</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer group">
+                                            <input 
+                                                type="radio" 
+                                                checked={q.question_type === 'ESSAY'} 
+                                                onChange={() => handleQuestionChange(qIndex, 'question_type', 'ESSAY')}
+                                                className="w-4 h-4 text-indigo-600 border-surface-300 focus:ring-indigo-500"
+                                            />
+                                            <span className={`text-sm font-bold ${q.question_type === 'ESSAY' ? 'text-indigo-600' : 'text-text-400'}`}>Isian (Essay)</span>
+                                        </label>
                                     </div>
-                                    <p className="text-[11px] text-text-400 font-medium flex items-center gap-2 px-1">
-                                        <Sparkles size={14} className="text-indigo-500" /> Fill in all options and mark the radio button for the correct answer.
-                                    </p>
+
+                                    {q.question_type === 'MULTIPLE_CHOICE' ? (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                                                {q.options.map((opt: string, optIndex: number) => (
+                                                    <div key={optIndex} className="relative group/opt">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="relative flex items-center">
+                                                                <input
+                                                                    type="radio"
+                                                                    name={`question-${qIndex}-correctAnswer`}
+                                                                    required
+                                                                    checked={q.correct_answer === optIndex.toString()}
+                                                                    onChange={() => handleQuestionChange(qIndex, 'correct_answer', optIndex.toString())}
+                                                                    className="w-5 h-5 text-indigo-600 border-surface-300 dark:border-slate-600 focus:ring-indigo-500 dark:bg-slate-900 transition-all cursor-pointer"
+                                                                    disabled={!opt.trim()}
+                                                                    title="Mark as correct answer"
+                                                                />
+                                                            </div>
+                                                            <div className="relative flex-1 group/input">
+                                                                <input
+                                                                    required
+                                                                    type="text"
+                                                                    value={opt}
+                                                                    onChange={(e) => {
+                                                                        const newVal = e.target.value
+                                                                        handleQuestionChange(qIndex, 'options', newVal, optIndex)
+                                                                    }}
+                                                                    className={`w-full rounded-2xl p-3.5 text-sm outline-none transition-all duration-300 border font-bold ${
+                                                                        q.correct_answer === optIndex.toString()
+                                                                            ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-700 dark:text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.1)]' 
+                                                                            : 'bg-white dark:bg-slate-900 border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/5'
+                                                                    }`}
+                                                                    placeholder={`Answer Option ${optIndex + 1}`}
+                                                                />
+                                                                {q.options.length > 2 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleRemoveOption(qIndex, optIndex)}
+                                                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-text-300 hover:text-danger opacity-0 group-hover/input:opacity-100 transition-opacity"
+                                                                        title="Remove Option"
+                                                                    >
+                                                                        <X size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAddOption(qIndex)}
+                                                    className="flex items-center justify-center gap-2 p-3.5 border-2 border-dashed border-surface-200 dark:border-slate-700 rounded-2xl text-text-400 hover:text-indigo-500 hover:border-indigo-200 transition-all font-bold text-sm"
+                                                >
+                                                    <PlusCircle size={16} /> Add Option
+                                                </button>
+                                            </div>
+                                            <p className="text-[11px] text-text-400 font-medium flex items-center gap-2 px-1">
+                                                <Sparkles size={14} className="text-indigo-500" /> Fill in all options and mark the radio button for the correct answer.
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <div className="space-y-4 pt-2">
+                                            <div className="space-y-2">
+                                                <label className="block text-[11px] font-bold text-text-400 uppercase tracking-wider ml-1">Correct Answer (Exact Match)</label>
+                                                <input
+                                                    required
+                                                    type="text"
+                                                    value={q.correct_answer}
+                                                    onChange={(e) => handleQuestionChange(qIndex, 'correct_answer', e.target.value)}
+                                                    className="w-full bg-white dark:bg-slate-900 border border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 rounded-2xl p-3.5 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all font-bold"
+                                                    placeholder="e.g. Paris"
+                                                />
+                                            </div>
+                                            <p className="text-[11px] text-text-400 font-medium flex items-center gap-2 px-1">
+                                                <Sparkles size={14} className="text-indigo-500" /> The participant's answer will be compared to this text (case-insensitive).
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}

@@ -7,6 +7,7 @@ import {
     TrendingUp, BookOpen, BarChart3, CheckCircle
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { getMandatoryReadStatsAction } from '@/lib/actions/read-tracker.actions'
 
 interface DashboardStats {
@@ -24,6 +25,7 @@ interface DashboardStats {
 
 export default function DashboardPage() {
     const { user, role, organization, isLoading } = useCurrentUser()
+    const router = useRouter()
     const [stats, setStats] = useState<DashboardStats | null>(null)
     const [trackerStats, setTrackerStats] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -38,16 +40,20 @@ export default function DashboardPage() {
                 if (trackerRes.success) setTrackerStats(trackerRes.data || [])
                 setLoading(false)
             }).catch(() => setLoading(false))
+        } else if (!isLoading) {
+            // If no organization but user is loaded, stop loading
+            setLoading(false)
         }
-    }, [organization?.id])
+    }, [organization?.id, isLoading])
 
     // MAINTAINER redirects to their own dashboard
-    if (role === 'MAINTAINER') {
-        if (typeof window !== 'undefined') {
-            window.location.href = '/dashboard/maintainer'
+    useEffect(() => {
+        if (role === 'MAINTAINER') {
+            router.push('/dashboard/maintenance')
         }
-        return null
-    }
+    }, [role, router])
+
+    if (role === 'MAINTAINER') return null
 
     if (isLoading || loading) {
         return (

@@ -1,4 +1,10 @@
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+import prisma from '@/lib/prisma'
+
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+    const org = await prisma.organization.findFirst()
+    const appName = org?.app_name || 'DIAMOND KMS'
+    const slogan = org?.slogan || 'Enterprise Knowledge Management'
+
     return (
         <div className="min-h-screen bg-surface-50 flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md fade-in">
@@ -8,10 +14,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                     </div>
                 </div>
                 <h2 className="mt-2 text-center text-3xl font-extrabold text-navy-900 font-display">
-                    DIAMOND KMS
+                    {appName}
                 </h2>
                 <p className="mt-2 text-center text-sm text-text-500 max-w">
-                    Enterprise Knowledge Management
+                    {slogan}
                 </p>
             </div>
 

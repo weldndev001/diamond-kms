@@ -66,6 +66,7 @@ export async function createQuizAction(data: {
     is_published?: boolean
     questions: Array<{
         question_text: string
+        question_type?: string
         options: string[]
         correct_answer: string
         image?: string | null
@@ -95,7 +96,7 @@ export async function createQuizAction(data: {
                 questions: {
                     create: data.questions.map((q, i) => ({
                         question_text: q.question_text,
-                        question_type: 'MULTIPLE_CHOICE',
+                        question_type: q.question_type || 'MULTIPLE_CHOICE',
                         options: q.options || [],
                         correct_answer: q.correct_answer,
                         image: q.image || undefined,
@@ -182,6 +183,7 @@ export async function updateQuizFullAction(id: string, data: {
     questions: Array<{
         id?: string
         question_text: string
+        question_type?: string
         options: string[] | any
         correct_answer: string
         image?: string | null
@@ -229,7 +231,7 @@ export async function updateQuizFullAction(id: string, data: {
                 data: data.questions.map((q, i) => ({
                     quiz_id: id,
                     question_text: q.question_text || "Lihat Gambar di Bawah",
-                    question_type: 'MULTIPLE_CHOICE',
+                    question_type: q.question_type || 'MULTIPLE_CHOICE',
                     options: Array.isArray(q.options) ? q.options : [],
                     correct_answer: q.correct_answer || "",
                     image: q.image || null,

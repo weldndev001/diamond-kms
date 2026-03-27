@@ -15,7 +15,7 @@ export default function TakeQuizPage() {
     const [quiz, setQuiz] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
-    const [answers, setAnswers] = useState<Record<string, number>>({}) // Stores questionId -> selectedOptionIndex
+    const [answers, setAnswers] = useState<Record<string, any>>({}) // Stores questionId -> selectedOptionIndex OR essayText
 
     const [result, setResult] = useState<any>(null)
     const [error, setError] = useState<string | null>(null)
@@ -53,9 +53,9 @@ export default function TakeQuizPage() {
         return () => clearTimeout(tick)
     }, [timeLeft, result])
 
-    const handleOptionSelect = (questionId: string, optionIdx: number) => {
+    const handleAnswerChange = (questionId: string, value: any) => {
         if (result) return // prevent changing answers after submit
-        setAnswers({ ...answers, [questionId]: optionIdx })
+        setAnswers({ ...answers, [questionId]: value })
     }
 
     const handleSubmit = async (e?: React.FormEvent) => {
@@ -66,18 +66,30 @@ export default function TakeQuizPage() {
         // Create text-based answers for submission
         const textAnswers: Record<string, string> = {}
         quiz.questions.forEach((q: any) => {
-            const selectedIdx = answers[q.id]
-            if (selectedIdx !== undefined && Array.isArray(q.options)) {
-                textAnswers[q.id] = q.options[selectedIdx]
+            const answer = answers[q.id]
+            if (answer !== undefined) {
+                if (q.question_type === 'MULTIPLE_CHOICE' && Array.isArray(q.options)) {
+                    textAnswers[q.id] = q.options[answer] || ''
+                } else {
+                    textAnswers[q.id] = answer.toString()
+                }
             }
         })
 
         // Calculate score
         let correctCount = 0
         quiz.questions.forEach((q: any) => {
-            const selectedIdx = answers[q.id]
-            if (selectedIdx !== undefined && q.options[selectedIdx] === q.correct_answer) {
-                correctCount++
+            const answer = answers[q.id]
+            if (answer === undefined) return;
+
+            if (q.question_type === 'MULTIPLE_CHOICE') {
+                if (Array.isArray(q.options) && q.options[answer] === q.correct_answer) {
+                    correctCount++
+                }
+            } else if (q.question_type === 'ESSAY') {
+                if (answer.toString().trim().toLowerCase() === q.correct_answer.trim().toLowerCase()) {
+                    correctCount++
+                }
             }
         })
         const score = Math.round((correctCount / quiz.questions.length) * 100)
@@ -216,32 +228,47 @@ export default function TakeQuizPage() {
                             )}
 
                             <div className="grid grid-cols-1 gap-4">
-                                {Array.isArray(q.options) && q.options.map((opt: string, optIdx: number) => (
-                                    <label
-                                        key={optIdx}
-                                        className={`flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 group/option ${answers[q.id] === optIdx
-                                            ? 'border-navy-600 bg-navy-50 dark:bg-navy-900/30 text-navy-900 dark:text-navy-100 shadow-[0_0_20px_rgba(30,58,138,0.08)]'
-                                            : 'border-surface-100 dark:border-slate-800 hover:border-navy-200 dark:hover:border-navy-800 bg-white dark:bg-slate-900/50 text-text-700 dark:text-slate-300 hover:shadow-md'
-                                            }`}
-                                    >
-                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 transition-all ${answers[q.id] === optIdx
-                                            ? 'border-navy-600 bg-navy-600'
-                                            : 'border-surface-300 dark:border-slate-600 group-hover/option:border-navy-400'
-                                            }`}>
-                                            {answers[q.id] === optIdx && <div className="w-2 h-2 bg-white rounded-full shadow-sm" />}
-                                        </div>
-                                        <input
-                                            type="radio"
-                                            name={`question-${q.id}`}
-                                            value={opt}
-                                            checked={answers[q.id] === optIdx}
+                                {q.question_type === 'MULTIPLE_CHOICE' ? (
+                                    Array.isArray(q.options) && q.options.map((opt: string, optIdx: number) => (
+                                        <label
+                                            key={optIdx}
+                                            className={`flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 group/option ${answers[q.id] === optIdx
+                                                ? 'border-navy-600 bg-navy-50 dark:bg-navy-900/30 text-navy-900 dark:text-navy-100 shadow-[0_0_20px_rgba(30,58,138,0.08)]'
+                                                : 'border-surface-100 dark:border-slate-800 hover:border-navy-200 dark:hover:border-navy-800 bg-white dark:bg-slate-900/50 text-text-700 dark:text-slate-300 hover:shadow-md'
+                                                }`}
+                                        >
+                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 transition-all ${answers[q.id] === optIdx
+                                                ? 'border-navy-600 bg-navy-600'
+                                                : 'border-surface-300 dark:border-slate-600 group-hover/option:border-navy-400'
+                                                }`}>
+                                                {answers[q.id] === optIdx && <div className="w-2 h-2 bg-white rounded-full shadow-sm" />}
+                                            </div>
+                                            <input
+                                                type="radio"
+                                                name={`question-${q.id}`}
+                                                value={opt}
+                                                checked={answers[q.id] === optIdx}
+                                                required
+                                                onChange={() => handleAnswerChange(q.id, optIdx)}
+                                                className="hidden"
+                                            />
+                                            <span className="font-bold text-base">{opt}</span>
+                                        </label>
+                                    ))
+                                ) : (
+                                    <div className="relative group/essay">
+                                        <textarea
                                             required
-                                            onChange={() => handleOptionSelect(q.id, optIdx)}
-                                            className="hidden"
+                                            value={answers[q.id] || ''}
+                                            onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                            placeholder="Type your answer here..."
+                                            className="w-full min-h-[120px] p-6 rounded-2xl border-2 border-surface-100 dark:border-slate-800 focus:border-navy-600 bg-white dark:bg-slate-900/50 text-text-900 dark:text-white outline-none transition-all font-medium text-lg resize-none"
                                         />
-                                        <span className="font-bold text-base">{opt}</span>
-                                    </label>
-                                ))}
+                                        <div className="absolute top-4 right-4 text-text-300 group-hover/essay:text-navy-400 transition-colors">
+                                            <Send size={16} />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}
