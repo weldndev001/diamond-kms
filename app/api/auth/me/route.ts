@@ -16,28 +16,49 @@ export async function GET() {
 
     try {
         console.log('[API auth/me] Fetching Prisma User Profile...');
-        const userProfile = await prisma.user.findUnique({
-            where: { id: userId },
-            include: {
-                organization: {
-                    include: {
-                        feature_flags: true,
-                    }
-                },
-                user_divisions: {
-                    where: { is_primary: true },
-                    include: {
-                        division: true,
+        let userProfile: any = null
+        try {
+            userProfile = await prisma.user.findUnique({
+                where: { id: userId },
+                include: {
+                    organization: {
+                        include: {
+                            feature_flags: true,
+                        }
+                    },
+                    user_divisions: {
+                        where: { is_primary: true },
+                        include: {
+                            division: true,
+                        }
                     }
                 }
+            })
+        } catch (dbError: any) {
+            console.error('[API auth/me] DB Error:', dbError.message);
+            // If it's a column error, try fetching without the organization include
+            if (dbError.code === 'P2022') {
+                userProfile = await prisma.user.findUnique({
+                    where: { id: userId },
+                    include: {
+                        user_divisions: {
+                            where: { is_primary: true },
+                            include: {
+                                division: true,
+                            }
+                        }
+                    }
+                })
+            } else {
+                throw dbError
             }
-        })
+        }
 
         if (!userProfile) {
             return NextResponse.json({ success: false, error: 'User profile not found in DB' }, { status: 401 })
         }
 
-        const primaryDivision = userProfile.user_divisions[0]
+        const primaryDivision = userProfile.user_divisions?.[0]
 
         return NextResponse.json({
             success: true,
