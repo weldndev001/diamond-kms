@@ -1,0 +1,11 @@
+.next
+node_modules
+.vercel
+uploads
+*.log
+git_status.txt
+conflicted_files.txt
+out.txt
+layout_dump.css
+debug.html
+*.tsbuildinfo
