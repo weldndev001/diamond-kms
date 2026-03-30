@@ -28,6 +28,7 @@ export interface RAGQueryParams {
     userRole: Role
     divisionId: string
     crossDivisionEnabled: boolean
+    knowledgeBaseId?: string
     onChunk: (text: string) => void
     signal?: AbortSignal
 }
@@ -42,6 +43,7 @@ export async function ragQuery(
         userRole,
         divisionId,
         crossDivisionEnabled,
+        knowledgeBaseId,
         onChunk,
         signal,
     } = params
@@ -65,6 +67,9 @@ export async function ragQuery(
         // ── STEP 3: Cosine similarity search — top 8 chunks (Documents + Articles) ─────────
         const docDivFilter = scopedToDiv ? `AND d.division_id = '${divisionId}'` : ''
         const contentDivFilter = scopedToDiv ? `AND (c.division_id = '${divisionId}' OR c.division_id IS NULL)` : ''
+        
+        const docKBJoin = knowledgeBaseId ? `JOIN knowledge_base_sources kbs ON kbs.source_id = d.id AND kbs.source_type = 'document' AND kbs.knowledge_base_id = '${knowledgeBaseId}'` : ''
+        const contentKBJoin = knowledgeBaseId ? `JOIN knowledge_base_sources kbs2 ON kbs2.source_id = c.id AND kbs2.source_type = 'content' AND kbs2.knowledge_base_id = '${knowledgeBaseId}'` : ''
 
         relevantChunks = await prisma.$queryRawUnsafe<
             {
@@ -80,8 +85,7 @@ export async function ragQuery(
             }[]
         >(
             `
-            WITH combined_chunks AS (
-                -- 1. Get from Document Chunks
+            WITH doc_chunks AS (
                 SELECT
                     dc.id AS chunk_id,
                     d.id AS document_id,
@@ -95,14 +99,15 @@ export async function ragQuery(
                 FROM document_chunks dc
                 JOIN documents d ON dc.document_id = d.id
                 JOIN divisions div ON d.division_id = div.id
+                ${docKBJoin}
                 WHERE d.organization_id = $2
                   AND d.is_processed = true
                   AND dc.embedding IS NOT NULL
                   ${docDivFilter}
-
-                UNION ALL
-
-                -- 2. Get from Content (Article) Chunks
+                ORDER BY similarity DESC
+                LIMIT 15
+            ),
+            content_chunks_raw AS (
                 SELECT
                     cc.id AS chunk_id,
                     c.id AS document_id,
@@ -116,13 +121,27 @@ export async function ragQuery(
                 FROM content_chunks cc
                 JOIN contents c ON cc.content_id = c.id
                 LEFT JOIN divisions div ON c.division_id = div.id
+                ${contentKBJoin}
                 WHERE c.organization_id = $2
                   AND c.status = 'PUBLISHED'
                   AND c.is_processed = true
                   AND cc.embedding IS NOT NULL
                   ${contentDivFilter}
+                ORDER BY similarity DESC
+                LIMIT 15
+            ),
+            combined_chunks AS (
+                SELECT * FROM doc_chunks
+                UNION ALL
+                SELECT * FROM content_chunks_raw
+            ),
+            ranked_chunks AS (
+                SELECT *,
+                       ROW_NUMBER() OVER(PARTITION BY document_id ORDER BY similarity DESC) as doc_rank
+                FROM combined_chunks
             )
-            SELECT * FROM combined_chunks
+            SELECT * FROM ranked_chunks
+            WHERE doc_rank <= 3
             ORDER BY similarity DESC
             LIMIT 8
             `,
@@ -150,26 +169,43 @@ export async function ragQuery(
         .join('\n\n---\n\n')
 
     // ── STEP 5: Build system prompt ─────────────────────────────
-    // Dynamic system prompt: if we have context, prioritize it. 
-    // If we don't, allow the AI to be a helpful general assistant instead of a strict document reader.
     let systemPrompt = `Anda adalah asisten AI cerdas, luwes, dan ramah untuk karyawan di organisasi ini.`
 
-    if (context.trim()) {
-        systemPrompt += `\n\nTugas utama Anda adalah menjawab pertanyaan berdasarkan Kumpulan Dokumen di bawah ini.
+    if (knowledgeBaseId) {
+        // STRICT MODE for Knowledge Base
+        systemPrompt = `Halo! Saya AISA, asisten pintar Anda. 
+Tugas saya adalah membantu Anda memahami isi Knowledge Base ini dengan cara yang ramah dan mudah dimengerti.
+
+ATURAN MAIN (WAJIB):
+1. JAWABLAH SECARA ULTRA-SINGKAT, PADAT, DAN JELAS. Langsung pada inti jawaban.
+2. JANGAN PERNAH GUNAKAN SIMBOL BINTANG (**) ATAU MARKDOWN APAPUN. Gunakan TEKS BIASA polos (Plain Text).
+3. Gunakan bahasa Indonesia yang BAIK, BENAR, DAN MUDAH DIMENGERTI. Tetap ramah seperti asisten profesional, tapi hindari bahasa gaul/slang yang tidak baku.
+4. Jika user bertanya "intinya", "kesimpulannya", atau sejenisnya, berikan ringkasan dalam 1-2 kalimat yang sangat jelas.
+5. JANGAN mengulang pertanyaan user atau memberikan pendahuluan yang panjang lebar.
+6. Tetap cantumkan sumber di akhir kalimat (format: [Sumber N]).
+
+KONTEKS DOKUMEN:
+${context || 'Daftar dokumen kosong. Beritahu user untuk menambahkan dokumen ke Knowledge Base ini.'}`
+    } else if (context.trim()) {
+        // Flexible mode for general documents
+        systemPrompt += `\n\nTugas saya adalah membantu Anda menjawab pertanyaan berdasarkan dokumen yang ada. 
+
 Aturan:
-1. Jika jawaban ada di dalam dokumen, JAWABLAH dengan mengandalkan data tersebut dan cantumkan sumbernya (format: [Sumber N]).
-2. Jika pertanyaan TIDAK ADA HUBUNGANNYA dengan dokumen (misalnya pengguna menyapa, bertanya kabar, atau bertanya hal umum sehari-hari), JAWABLAH SEPERTI BIASA layaknya asisten yang pintar. ANDA TIDAK PERLU BERKATA "Informasi tidak ditemukan di dokumen" untuk percakapan umum.
-3. JANGAN GUNAKAN FORMAT MARKDOWN ATAU BINTANG (seperti **teks tebal**, *miring*, dsb). Gunakan teks murni saja.
-4. JANGAN GUNAKAN poin-poin (bullet points) seperti * atau -. Gunakan penomoran angka (1, 2, 3) atau huruf (a, b, c) untuk daftar/poin-poin.
+1. JAWABLAH DENGAN SANGAT RINGKAS DAN JELAS. 
+2. JANGAN PERNAH GUNAKAN SIMBOL BINTANG (**). Gunakan TEKS BIASA polos.
+3. Gunakan bahasa yang ramah dan profesional. Hindari slang atau kata-kata yang membingungkan.
+4. Jika diminta "intinya", berikan 1 kalimat kesimpulan yang paling penting.
 
 KONTEKS DOKUMEN:
 ${context}`
     } else {
-        systemPrompt += `\n\nSaat ini tidak ada konteks dokumen internal spesifik yang ditemukan untuk pertanyaan pengguna. 
+        // General Assistant mode
+        systemPrompt += `\n\nSaat ini tidak ada konteks dokumen internal spesifik yang ditemukan. 
 Aturan:
-1. Anda bebas menjawab pertanyaan umum, berbincang ramah, atau merespons sapaan menggunakan pengetahuan luas Anda sendiri.
-2. JANGAN berkata "Informasi tidak ditemukan di dokumen" kecuali jika pengguna memang ngotot menanyakan file spesifik.
-3. JANGAN GUNAKAN FORMAT MARKDOWN/BINTANG. Gunakan penomoran angka untuk daftar.`
+1. Anda bebas menjawab pertanyaan umum atau merespons sapaan menggunakan pengetahuan Anda.
+2. JANGAN berkata "Informasi tidak ditemukan" kecuali ditanya file spesifik.
+3. JAWABLAH SECARA ULTRA-SINGKAT DAN JELAS dalam bahasa Indonesia yang baik dan ramah.
+4. JANGAN PERNAH GUNAKAN SIMBOL BINTANG (**). Gunakan TEKS BIASA polos (Plain Text).`
     }
 
     // ── STEP 6: Build prompt from history + new question ────────

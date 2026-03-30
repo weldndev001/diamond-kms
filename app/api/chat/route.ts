@@ -66,11 +66,13 @@ export async function POST(req: NextRequest) {
         let question: string
         let history: ChatMessage[]
         let sessionId: string | undefined
+        let knowledgeBaseId: string | undefined
         try {
             const body = await req.json()
             question = body.question
             history = body.history ?? []
             sessionId = body.sessionId
+            knowledgeBaseId = body.knowledgeBaseId
         } catch {
             return Response.json({ error: 'Invalid request body' }, { status: 400 })
         }
@@ -98,15 +100,31 @@ export async function POST(req: NextRequest) {
                 }
 
                 try {
+                    let kbName = ''
+                    if (knowledgeBaseId) {
+                        const kb = await prisma.knowledgeBase.findUnique({
+                            where: { id: knowledgeBaseId },
+                            select: { name: true }
+                        })
+                        kbName = kb?.name || ''
+                    }
+
                     if (isGreeting) {
                         // ── Greeting response without RAG/references ──────
-                        const greetingResponses = [
-                            'Halo! 👋 Ada yang bisa saya bantu mengenai dokumen perusahaan?',
-                            'Hai! 😊 Silakan tanyakan apapun tentang knowledge base Anda.',
-                            'Halo! Saya siap membantu Anda mencari informasi dari dokumen. Silakan bertanya!',
-                            'Hai! 👋 Saya AI Knowledge Assistant. Apa yang ingin Anda ketahui?',
-                        ]
-                        const greetReply = greetingResponses[Math.floor(Math.random() * greetingResponses.length)]
+                        const greetingResponses = kbName 
+                            ? [
+                                `Halo! 👋 Saya siap membantu Anda mengenai **${kbName}**. Apa yang ingin Anda tanyakan?`,
+                                `Hai! 😊 Ada yang bisa saya bantu terkait informasi di dalam **${kbName}**?`,
+                                `Halo! Saya AI asisten untuk **${kbName}**. Silakan ajukan pertanyaan Anda.`,
+                            ]
+                            : [
+                                'Halo! 👋 Ada yang bisa saya bantu mengenai dokumen perusahaan?',
+                                'Hai! 😊 Silakan tanyakan apapun tentang knowledge base Anda.',
+                                'Halo! Saya siap membantu Anda mencari informasi dari dokumen. Silakan bertanya!',
+                                'Hai! 👋 Saya AI Knowledge Assistant. Apa yang ingin Anda ketahui?',
+                            ]
+                        const rawReply = greetingResponses[Math.floor(Math.random() * greetingResponses.length)]
+                        const greetReply = rawReply.replace(/\*\*/g, '')
 
                         // Send as streaming chunks (natural feel)
                         const words = greetReply.split(' ')
@@ -129,6 +147,7 @@ export async function POST(req: NextRequest) {
                             divisionId: userDiv.division_id,
                             crossDivisionEnabled:
                                 orgConfig?.cross_division_query_enabled ?? false,
+                            knowledgeBaseId,
                             onChunk: (text) => send('chunk', { text }),
                             signal,
                         })

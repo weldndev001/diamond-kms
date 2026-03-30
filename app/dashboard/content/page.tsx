@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getContentsAction, deleteContentAction } from '@/lib/actions/content.actions'
 import { getDivisionsAction } from '@/lib/actions/user.actions'
-import { Search, Filter, FileText, Plus, LayoutGrid, List, ChevronRight, Clock, CheckCircle, AlertCircle, Loader2, Eye, Trash2, ClipboardCheck, BookOpen } from 'lucide-react'
+import { Search, Filter, FileText, Plus, LayoutGrid, List, ChevronRight, Clock, CheckCircle, AlertCircle, Loader2, Eye, Trash2, ClipboardCheck, BookOpen, Edit } from 'lucide-react'
 import Link from 'next/link'
 
 const getStatusBadge = (status: string) => {
@@ -198,6 +198,14 @@ export default function ContentListPage() {
                                         <Link href={`/dashboard/knowledge-base/${content.id}`} className="btn btn-primary flex-1 justify-center text-sm">
                                             <Eye size={14} /> View
                                         </Link>
+                                        {['SUPER_ADMIN', 'GROUP_ADMIN', 'MAINTAINER', 'SUPERVISOR'].includes(role || '') && (
+                                            <Link href={`/dashboard/content/${content.id}/edit`}
+                                                className="w-10 h-10 flex items-center justify-center text-text-500 bg-white border border-surface-200 hover:bg-surface-100 rounded-lg transition shrink-0"
+                                                title="Edit"
+                                            >
+                                                <Edit size={16} />
+                                            </Link>
+                                        )}
                                         {['SUPER_ADMIN', 'GROUP_ADMIN'].includes(role || '') && (
                                             <button
                                                 onClick={() => handleDelete(content.id)}
@@ -227,9 +235,20 @@ export default function ContentListPage() {
                                     <div className="flex items-center gap-3 text-[11px] text-text-400 shrink-0">
                                         <span className="whitespace-nowrap">{content.division?.name || 'Global'}</span>
                                         {getStatusBadge(content.status)}
-                                        <span className="whitespace-nowrap">
-                                            {new Date(content.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            {['SUPER_ADMIN', 'GROUP_ADMIN', 'MAINTAINER', 'SUPERVISOR'].includes(role || '') && (
+                                                <Link href={`/dashboard/content/${content.id}/edit`}
+                                                    className="p-1.5 text-text-400 hover:text-navy-600 hover:bg-navy-50 rounded-md transition"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    title="Edit"
+                                                >
+                                                    <Edit size={15} />
+                                                </Link>
+                                            )}
+                                            <span className="whitespace-nowrap ml-1">
+                                                {new Date(content.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                                            </span>
+                                        </div>
                                     </div>
                                     <ChevronRight size={16} className="text-text-300 group-hover:text-navy-600 transition shrink-0" />
                                 </Link>

@@ -594,10 +594,10 @@ export default function ContentDetailPage() {
                     )}
 
                     {['SUPER_ADMIN', 'GROUP_ADMIN', 'SUPERVISOR', 'MAINTAINER'].includes(role || '') && (
-                        <button className="px-4 py-2 border border-navy-600 text-navy-600 font-medium rounded-md hover:bg-navy-50 transition flex items-center gap-2">
+                        <Link href={`/dashboard/content/${params.id}/edit`} className="px-4 py-2 border border-navy-600 text-navy-600 font-medium rounded-md hover:bg-navy-50 transition flex items-center gap-2">
                             <Edit size={18} />
                             Edit
-                        </button>
+                        </Link>
                     )}
 
                     {/* Review Comments Toggle */}

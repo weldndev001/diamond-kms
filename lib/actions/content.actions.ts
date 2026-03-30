@@ -129,3 +129,42 @@ export async function deleteContentAction(id: string) {
         return { success: false, error: error.message }
     }
 }
+
+export async function updateContentAction(id: string, data: {
+    title?: string
+    body?: string
+    category?: string
+    divisionId?: string
+    isMandatory?: boolean
+    imageUrl?: string
+}) {
+    try {
+        const updateData: any = {
+            title: data.title,
+            body: data.body,
+            category: data.category,
+            is_mandatory_read: data.isMandatory,
+            image_url: data.imageUrl,
+            updated_at: new Date(),
+        }
+
+        if (data.divisionId) {
+            if (data.divisionId === 'global') {
+                updateData.division_id = null
+            } else {
+                updateData.division_id = data.divisionId
+            }
+        }
+
+        const content = await prisma.content.update({
+            where: { id },
+            data: updateData
+        })
+
+        revalidatePath('/dashboard/content')
+        revalidatePath(`/dashboard/knowledge-base/${id}`)
+        return { success: true, data: content }
+    } catch (error: any) {
+        return { success: false, error: error.message }
+    }
+}
