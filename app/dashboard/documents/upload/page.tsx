@@ -12,6 +12,7 @@ import {
 import { uploadFileAction } from '@/lib/actions/storage.actions'
 import Link from 'next/link'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface ProcessingLogEntry {
     time: string
@@ -34,6 +35,7 @@ interface RecentDoc {
 
 export default function UploadDocumentPage() {
     const router = useRouter()
+    const { t } = useTranslation()
     const { organization, user } = useCurrentUser()
     const [divisions, setDivisions] = useState<any[]>([])
     const [divisionId, setDivisionId] = useState('')
@@ -186,7 +188,7 @@ export default function UploadDocumentPage() {
             })
 
             if (!docRes.success) {
-                setError(docRes.error || 'Failed to create document record')
+                setError(docRes.error || t('documents.upload_failed'))
                 setUploading(false)
                 return
             }
@@ -207,7 +209,7 @@ export default function UploadDocumentPage() {
                 id: docRes.data!.id,
                 file_name: file.name,
                 processing_status: 'processing',
-                processing_log: [{ time: new Date().toISOString(), message: 'Starting process...', progress: 5 }],
+                processing_log: [{ time: new Date().toISOString(), message: t('knowledge_base.searching_answers'), progress: 5 }],
                 is_processed: false,
                 processing_error: null,
                 ai_title: null,
@@ -245,30 +247,30 @@ export default function UploadDocumentPage() {
 
     const getStatusBadge = (doc: RecentDoc) => {
         switch (doc.processing_status) {
-            case 'processing':
-                return (
+            case 'processing':                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                        <Loader2 size={12} className="animate-spin" /> Processing
+                        <Loader2 size={12} className="animate-spin" /> {t('documents.status_processing')}
                     </span>
                 )
             case 'completed':
                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                        <CheckCircle size={12} /> Completed
+                        <CheckCircle size={12} /> {t('documents.completed')}
                     </span>
                 )
             case 'failed':
                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                        <AlertTriangle size={12} /> Failed
+                        <AlertTriangle size={12} /> {t('documents.status_failed')}
                     </span>
                 )
             default:
                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-surface-100 text-text-500">
-                        Waiting
+                        {t('documents.waiting')}
                     </span>
                 )
+
         }
     }
 
@@ -284,7 +286,7 @@ export default function UploadDocumentPage() {
                 <Link href="/dashboard/documents" className="p-2 text-text-500 hover:text-navy-900 hover:bg-surface-100 rounded-full transition">
                     <ArrowLeft size={20} />
                 </Link>
-                <h1 className="text-2xl font-bold font-display text-navy-900">Upload Document</h1>
+                <h1 className="text-2xl font-bold font-display text-navy-900">{t('documents.upload_title')}</h1>
             </div>
 
             {/* Upload Form Card */}
@@ -297,7 +299,7 @@ export default function UploadDocumentPage() {
 
                 <div className="space-y-6">
                     <div className="space-y-2">
-                        <label className="block text-sm font-medium text-text-700">Target Division <span className="text-danger">*</span></label>
+                        <label className="block text-sm font-medium text-text-700">{t('documents.target_division')} <span className="text-danger">*</span></label>
                         <select
                             value={divisionId}
                             onChange={(e) => setDivisionId(e.target.value)}
@@ -334,16 +336,16 @@ export default function UploadDocumentPage() {
                                     <p className="font-bold text-navy-900">{file.name}</p>
                                     <p className="text-sm text-text-500 mt-1">{(file.size / 1024).toFixed(1)} KB • {file.type || 'Unknown type'}</p>
                                 </div>
-                                <p className="text-xs text-text-300 mt-2">Click to change file</p>
+                                <p className="text-xs text-text-300 mt-2">{t('documents.drop_file_hint')}</p>
                             </div>
                         ) : (
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-14 h-14 bg-surface-100 text-text-300 rounded-full flex items-center justify-center">
                                     <Upload size={28} />
                                 </div>
-                                <div>
-                                    <p className="font-bold text-navy-900">Drop file here or click to browse</p>
-                                    <p className="text-sm text-text-500 mt-1">PDF, Word, Excel, PowerPoint, TXT, Markdown, CSV, SQL</p>
+                                <div className="space-y-1">
+                                    <p className="font-bold text-navy-900">{t('documents.drop_file_hint')}</p>
+                                    <p className="text-sm text-text-500">{t('documents.file_types_hint')}</p>
                                 </div>
                             </div>
                         )}
@@ -351,7 +353,7 @@ export default function UploadDocumentPage() {
 
                     <div className="flex justify-between items-center">
                         <p className="text-xs text-text-400">
-                            💡 You can leave this page after uploading — the AI process will continue to run in the background.
+                            💡 {t('documents.background_process_hint')}
                         </p>
                         <button
                             onClick={handleUpload}
@@ -359,9 +361,9 @@ export default function UploadDocumentPage() {
                             className="btn btn-primary shadow-md disabled:opacity-50 flex items-center gap-2"
                         >
                             {uploading ? (
-                                <><Loader2 size={16} className="animate-spin" /> Uploading...</>
+                                <><Loader2 size={16} className="animate-spin" /> {t('documents.uploading')}</>
                             ) : (
-                                <><Upload size={16} /> Upload & Process</>
+                                <><Upload size={16} /> {t('documents.upload_process_btn')}</>
                             )}
                         </button>
                     </div>
@@ -373,7 +375,7 @@ export default function UploadDocumentPage() {
                 <div className="p-5 border-b border-surface-200 flex items-center justify-between">
                     <h2 className="text-lg font-bold font-display text-navy-900 flex items-center gap-2">
                         <Bot size={20} className="text-navy-600" />
-                        Recent Upload Processes
+                        {t('documents.recent_processes_title')}
                     </h2>
                     <button
                         onClick={loadRecentUploads}
@@ -387,12 +389,12 @@ export default function UploadDocumentPage() {
                 {loadingRecent ? (
                     <div className="p-8 text-center">
                         <Loader2 size={24} className="animate-spin text-navy-400 mx-auto" />
-                        <p className="text-sm text-text-400 mt-2">Loading...</p>
+                        <p className="text-sm text-text-400 mt-2">{t('common.loading')}</p>
                     </div>
                 ) : recentDocs.length === 0 ? (
                     <div className="p-8 text-center text-text-400">
                         <FileText size={32} className="mx-auto mb-2 text-surface-300" />
-                        <p className="text-sm">No recent uploads yet</p>
+                        <p className="text-sm">{t('documents.no_recent_uploads')}</p>
                     </div>
                 ) : (
                     <div className="divide-y divide-surface-100">
@@ -473,17 +475,17 @@ export default function UploadDocumentPage() {
                                             <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
                                                 <DialogHeader>
                                                     <DialogTitle className="flex flex-col gap-1 text-left">
-                                                        <span>Debug Process: {doc.ai_title || doc.file_name}</span>
+                                                        <span>{t('documents.debug_ai_title')}: {doc.ai_title || doc.file_name}</span>
                                                         <span className="text-xs text-text-400 font-normal">ID: {doc.id}</span>
                                                     </DialogTitle>
                                                 </DialogHeader>
                                                 <div className="space-y-4 pt-4">
                                                     <div>
-                                                        <h4 className="text-sm font-semibold text-navy-900 mb-2">General Status</h4>
+                                                        <h4 className="text-sm font-semibold text-navy-900 mb-2">{t('documents.general_status')}</h4>
                                                         <div className="bg-surface-50 p-3 rounded-md border border-surface-200 text-xs font-mono space-y-1">
                                                             <p>Status: <span className="font-bold text-navy-600">{doc.processing_status}</span></p>
                                                             <p>Progress: <span className="font-bold text-navy-600">{getLatestProgress(doc)}%</span></p>
-                                                            <p>Completed: {doc.is_processed ? 'Yes' : 'No'}</p>
+                                                            <p>Completed: {doc.is_processed ? t('common.yes') : t('common.no')}</p>
                                                             {doc.processing_error && <p className="text-red-600 mt-2 font-bold whitespace-pre-wrap">Error: {doc.processing_error}</p>}
                                                         </div>
                                                         {doc.processing_status === 'processing' && (
@@ -497,7 +499,7 @@ export default function UploadDocumentPage() {
                                                     </div>
 
                                                     <div>
-                                                        <h4 className="text-sm font-semibold text-navy-900 mb-2">Backend Log</h4>
+                                                        <h4 className="text-sm font-semibold text-navy-900 mb-2">{t('documents.backend_log')}</h4>
                                                         <div className="bg-slate-900 text-slate-300 p-3 rounded-md text-xs font-mono max-h-64 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-slate-700">
                                                             {doc.processing_log && doc.processing_log.length > 0 ? (
                                                                 doc.processing_log.map((log, i) => (
@@ -515,7 +517,7 @@ export default function UploadDocumentPage() {
                                                             {doc.processing_status === 'processing' && (
                                                                 <div className="flex gap-3 text-slate-500 animate-pulse mt-2 pt-2 border-t border-slate-800">
                                                                     <span>[   ...  ]</span>
-                                                                    <span>Waiting for updates from server...</span>
+                                                                    <span>{t('documents.waiting_updates')}</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -561,7 +563,7 @@ export default function UploadDocumentPage() {
                                         {/* AI Result */}
                                         {doc.processing_status === 'completed' && doc.ai_summary && (
                                             <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 space-y-2">
-                                                <p className="text-xs font-bold text-emerald-800">✨ AI Summary</p>
+                                                <p className="text-xs font-bold text-emerald-800">{t('documents.ai_summary_title')}</p>
                                                 <p className="text-xs text-emerald-700 leading-relaxed">{doc.ai_summary}</p>
                                                 {doc.ai_tags && doc.ai_tags.length > 0 && (
                                                     <div className="flex flex-wrap gap-1.5 mt-1">
@@ -580,7 +582,7 @@ export default function UploadDocumentPage() {
                                             <div className="border border-surface-200 rounded-lg bg-surface-50 overflow-hidden">
                                                 <div className="p-3 bg-white border-b border-surface-200">
                                                     <span className="text-xs font-semibold text-navy-900">
-                                                        Activity Details ({doc.processing_log.length})
+                                                        {t('documents.activity_details')} ({doc.processing_log.length})
                                                     </span>
                                                 </div>
                                                 <div className="p-3 max-h-48 overflow-y-auto space-y-2 font-mono text-[11px]">
@@ -597,7 +599,7 @@ export default function UploadDocumentPage() {
                                                     {doc.processing_status === 'processing' && (
                                                         <div className="flex gap-2 text-text-400 animate-pulse">
                                                             <span>[...]</span>
-                                                            <span>Waiting for the next process...</span>
+                                                            <span>{t('documents.waiting_next_process')}</span>
                                                         </div>
                                                     )}
                                                 </div>

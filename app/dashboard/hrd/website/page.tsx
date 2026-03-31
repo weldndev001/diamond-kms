@@ -15,9 +15,12 @@ import {
     Settings, ToggleLeft, ToggleRight, Plus, Building2, 
     Shield, Users, FolderTree, FileText, BarChart3, Loader2
 } from 'lucide-react'
+import { useTranslation } from '@/hooks/useTranslation'
+import ImageCropper from '@/components/shared/ImageCropper'
 
 export default function WebsiteSettingsPage() {
     const { organization, refresh } = useCurrentUser()
+    const { t } = useTranslation()
     
     // Organization & Feature Flags State
     const [flags, setFlags] = useState<any[]>([])
@@ -36,6 +39,52 @@ export default function WebsiteSettingsPage() {
     
     const [isSaving, setIsSaving] = useState(false)
     const [success, setSuccess] = useState('')
+
+    // Cropping State
+    const [isCropping, setIsCropping] = useState(false)
+    const [selectedImage, setSelectedImage] = useState<string | null>(null)
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onload = () => {
+                setSelectedImage(reader.result as string)
+                setIsCropping(true)
+            }
+            reader.readAsDataURL(file)
+        }
+    }
+
+    const handleCropComplete = async (croppedBlob: Blob) => {
+        setIsCropping(false)
+        setIsSaving(true)
+        
+        const formData = new FormData()
+        formData.append('file', croppedBlob, 'logo.png')
+
+        try {
+            const res = await fetch('/api/organization/logo', {
+                method: 'POST',
+                body: formData
+            })
+            const data = await res.json()
+            if (data.success) {
+                setLogo(data.logo_url)
+                setSuccess(t('settings.logo_success'))
+                await refresh()
+            } else {
+                alert(t('common.error') + ': ' + data.error)
+            }
+        } catch (err) {
+            console.error(err)
+            alert(t('settings.upload_error'))
+        } finally {
+            setIsSaving(false)
+            setSelectedImage(null)
+            setTimeout(() => setSuccess(''), 5000)
+        }
+    }
 
     const loadData = async () => {
         if (!organization?.id) return
@@ -95,10 +144,10 @@ export default function WebsiteSettingsPage() {
 
             if (res.success) {
                 await new Promise(r => setTimeout(r, 800))
-                setSuccess('Settings and Branding updated successfully!')
+                setSuccess(t('settings.settings_success'))
                 await refresh()
             } else {
-                alert('Failed to save settings')
+                alert(t('settings.save_failed'))
             }
         } catch (err) {
             console.error(err)
@@ -113,15 +162,15 @@ export default function WebsiteSettingsPage() {
             <div className="space-y-6 max-w-6xl mx-auto">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">Application Settings</h1>
-                        <p className="text-sm text-text-500 mt-1">Configure your workspace branding, system preferences, and feature flags.</p>
+                        <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">{t('settings.title')}</h1>
+                        <p className="text-sm text-text-500 mt-1">{t('settings.subtitle')}</p>
                     </div>
                 </div>
 
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20 bg-white/50 rounded-2xl border-2 border-dashed border-navy-100">
                         <Loader2 className="w-10 h-10 text-navy-600 animate-spin mb-4" />
-                        <p className="text-text-500 font-medium font-display">Loading your settings...</p>
+                        <p className="text-text-500 font-medium font-display">{t('settings.loading')}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -145,12 +194,12 @@ export default function WebsiteSettingsPage() {
                                             <div className="p-1.5 bg-navy-50 rounded-lg">
                                                 <Layout size={18} className="text-navy-600" />
                                             </div>
-                                            Brand Identity
+                                            {t('settings.brand_identity')}
                                         </h2>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-semibold text-text-700">Organization Name</label>
+                                                <label className="text-sm font-semibold text-text-700">{t('settings.org_name')}</label>
                                                 <input
                                                     type="text"
                                                     value={orgName}
@@ -163,7 +212,7 @@ export default function WebsiteSettingsPage() {
                                                 </p>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-semibold text-text-700">Application Name</label>
+                                                <label className="text-sm font-semibold text-text-700">{t('settings.app_name')}</label>
                                                 <input
                                                     type="text"
                                                     value={appName}
@@ -176,7 +225,7 @@ export default function WebsiteSettingsPage() {
 
                                         <div className="space-y-2">
                                             <label className="text-sm font-semibold text-text-700 flex items-center gap-2">
-                                                <Type size={14} className="text-text-400" /> Application Slogan
+                                                <Type size={14} className="text-text-400" /> {t('settings.app_slogan')}
                                             </label>
                                             <input
                                                 type="text"
@@ -194,23 +243,42 @@ export default function WebsiteSettingsPage() {
                                             <div className="p-1.5 bg-navy-50 rounded-lg">
                                                 <ImageIcon size={18} className="text-navy-600" />
                                             </div>
-                                            Visual Assets
+                                            {t('settings.visual_assets')}
                                         </h2>
                                         <div className="flex items-center gap-6">
                                             <div className="w-24 h-24 rounded-2xl bg-surface-50 border border-surface-200 flex items-center justify-center overflow-hidden shrink-0 shadow-inner group relative">
-                                                <div className="font-display font-black text-navy-600 text-[10px] text-center px-1 truncate leading-relaxed">
-                                                    {logo}
-                                                </div>
+                                                {logo && (logo.includes('/') || logo.includes('.')) ? (
+                                                    <img 
+                                                        src={logo.startsWith('http') || logo.startsWith('/') ? logo : `/${logo}`} 
+                                                        alt="Organization Logo" 
+                                                        className="w-full h-full object-contain p-2"
+                                                    />
+                                                ) : (
+                                                    <div className="font-display font-black text-navy-600 text-[10px] text-center px-1 truncate leading-relaxed">
+                                                        {logo}
+                                                    </div>
+                                                )}
                                                 <div className="absolute inset-0 bg-navy-900/0 group-hover:bg-navy-900/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                                                     <ImageIcon size={20} className="text-white" />
                                                 </div>
                                             </div>
                                             <div className="flex-1 space-y-3">
-                                                <button type="button" className="btn bg-white border border-surface-300 text-text-600 w-full md:w-auto px-6 text-sm hover:bg-surface-50 hover:border-navy-300 transition-all font-semibold">
-                                                    Change Logo
+                                                <input
+                                                    type="file"
+                                                    id="logo-upload"
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={handleFileSelect}
+                                                />
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => document.getElementById('logo-upload')?.click()}
+                                                    className="btn bg-white border border-surface-300 text-text-600 w-full md:w-auto px-6 text-sm hover:bg-surface-50 hover:border-navy-300 transition-all font-semibold"
+                                                >
+                                                    {t('settings.change_logo')}
                                                 </button>
                                                 <p className="text-[10px] text-text-400 max-w-sm">
-                                                    Supported formats: <span className="font-semibold text-text-600">PNG, SVG, WEBP</span>. Recommended size: <span className="font-semibold text-text-600">512x512px</span>.
+                                                    {t('settings.logo_requirements')}
                                                 </p>
                                             </div>
                                         </div>
@@ -223,7 +291,7 @@ export default function WebsiteSettingsPage() {
                                         <div className="p-1.5 bg-navy-50 rounded-lg">
                                             <Settings size={18} className="text-navy-600" />
                                         </div>
-                                        System Preferences
+                                        {t('settings.system_preferences')}
                                     </h2>
 
                                     <div className="flex items-start gap-4 bg-surface-50 border border-surface-200 rounded-2xl p-5 transition-all hover:bg-surface-100/50 hover:shadow-sm group">
@@ -239,9 +307,9 @@ export default function WebsiteSettingsPage() {
                                             )}
                                         </button>
                                         <div>
-                                            <p className="font-bold text-navy-900 group-hover:text-navy-600 transition-colors">Cross-Division Documents Query</p>
+                                            <p className="font-bold text-navy-900 group-hover:text-navy-600 transition-colors">{t('settings.cross_div_query')}</p>
                                             <p className="text-sm text-text-500 mt-1 leading-relaxed">
-                                                Allow users to search and ask questions across all divisions. Enabling this might compromise division-level data privacy.
+                                                {t('settings.cross_div_desc')}
                                             </p>
                                         </div>
                                     </div>
@@ -253,8 +321,8 @@ export default function WebsiteSettingsPage() {
                                                 <Globe size={18} className="text-navy-600" />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-navy-900 group-hover:text-navy-600 transition-colors">System Language</p>
-                                                <p className="text-sm text-text-500 mt-1">Select your preferred language for the system interface.</p>
+                                                <p className="font-bold text-navy-900 group-hover:text-navy-600 transition-colors">{t('settings.system_language')}</p>
+                                                <p className="text-sm text-text-500 mt-1">{t('settings.system_language_desc')}</p>
                                             </div>
                                         </div>
                                         
@@ -281,7 +349,7 @@ export default function WebsiteSettingsPage() {
                                         className="btn btn-primary px-10 py-3 flex items-center gap-2 shadow-xl shadow-navy-600/20 active:scale-95 transition-transform"
                                     >
                                         {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                                        Save All Changes
+                                        {t('settings.save_all')}
                                     </button>
                                 </div>
                             </form>
@@ -293,15 +361,15 @@ export default function WebsiteSettingsPage() {
                                         <div className="p-1.5 bg-navy-100 rounded-lg">
                                             <Shield size={18} className="text-navy-700" />
                                         </div>
-                                        Enterprise Feature Flags
+                                        {t('settings.feature_flags')}
                                     </h2>
-                                    <span className="text-[10px] font-bold text-navy-500 bg-navy-50 px-2 py-0.5 rounded-full uppercase tracking-widest">Advanced</span>
+                                    <span className="text-[10px] font-bold text-navy-500 bg-navy-50 px-2 py-0.5 rounded-full uppercase tracking-widest">{t('settings.advanced')}</span>
                                 </div>
 
                                 <div className="divide-y divide-surface-100">
                                     {flags.length === 0 ? (
                                         <div className="p-12 text-center text-text-400 italic font-display">
-                                            No special feature flags configured for this organization.
+                                            {t('settings.no_flags')}
                                         </div>
                                     ) : (
                                         flags.map(flag => (
@@ -309,9 +377,9 @@ export default function WebsiteSettingsPage() {
                                                 <div className="space-y-1">
                                                     <p className="font-bold text-navy-900 font-mono text-sm group-hover:text-navy-600 transition-colors">{flag.flag_key}</p>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] text-text-300 font-mono">ID: {flag.id.slice(0, 8)}...</span>
+                                                        <span className="text-[10px] text-text-300 font-mono">{t('settings.flag_id')}: {flag.id.slice(0, 8)}...</span>
                                                         <span className="w-1 h-1 rounded-full bg-surface-200" />
-                                                        <span className="text-[10px] text-text-300">Enabled: {new Date(flag.created_at).toLocaleDateString()}</span>
+                                                        <span className="text-[10px] text-text-300">{t('settings.flag_enabled_at')}: {new Date(flag.created_at).toLocaleDateString()}</span>
                                                     </div>
                                                 </div>
                                                 <button
@@ -336,7 +404,7 @@ export default function WebsiteSettingsPage() {
                                         </div>
                                         <input
                                             type="text"
-                                            placeholder="new_feature_key"
+                                            placeholder={t('settings.new_flag_placeholder')}
                                             value={newFlagKey}
                                             onChange={(e) => setNewFlagKey(e.target.value)}
                                             className="input-field pl-9 font-mono text-sm bg-white"
@@ -349,7 +417,7 @@ export default function WebsiteSettingsPage() {
                                         className="btn btn-primary bg-navy-600 hover:bg-navy-700 shrink-0 flex items-center gap-2 px-6"
                                     >
                                         {addingFlag ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-                                        Add Flag
+                                        {t('settings.add_flag')}
                                     </button>
                                 </div>
                             </div>
@@ -357,25 +425,25 @@ export default function WebsiteSettingsPage() {
 
                         {/* Right: Quick Stats Sidebar */}
                         <div className="space-y-6">
-                            <h3 className="text-xs font-bold text-text-400 uppercase tracking-widest px-1">System Statistics</h3>
+                            <h3 className="text-xs font-bold text-text-400 uppercase tracking-widest px-1">{t('settings.stats_title')}</h3>
 
                             <div className="grid grid-cols-1 gap-4">
                                 <div className="card p-6 text-center shadow-sm hover:shadow-md transition-shadow group">
                                     <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-500 group-hover:text-white transition-all">
                                         <Users size={24} />
                                     </div>
-                                    <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Team Size</p>
+                                    <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('settings.team_size')}</p>
                                     <p className="text-3xl font-black font-display text-navy-900 mt-1">
                                         {org?._count?.users || 0}
                                     </p>
-                                    <p className="text-[10px] text-text-300 mt-1">registered users</p>
+                                    <p className="text-[10px] text-text-300 mt-1">{t('settings.registered_users')}</p>
                                 </div>
 
                                 <div className="card p-6 text-center shadow-sm hover:shadow-md transition-shadow group">
                                     <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-500 group-hover:text-white transition-all">
                                         <FolderTree size={24} />
                                     </div>
-                                    <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Divisions</p>
+                                    <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('settings.divisions')}</p>
                                     <p className="text-3xl font-black font-display text-navy-900 mt-1">
                                         {org?._count?.divisions || 0}
                                     </p>
@@ -385,7 +453,7 @@ export default function WebsiteSettingsPage() {
                                     <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:bg-amber-500 group-hover:text-white transition-all">
                                         <FileText size={24} />
                                     </div>
-                                    <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Documents</p>
+                                    <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('settings.documents')}</p>
                                     <p className="text-3xl font-black font-display text-navy-900 mt-1">
                                         {org?._count?.documents || 0}
                                     </p>
@@ -395,7 +463,7 @@ export default function WebsiteSettingsPage() {
                                     <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:bg-emerald-500 group-hover:text-white transition-all">
                                         <BarChart3 size={24} />
                                     </div>
-                                    <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">KB Articles</p>
+                                    <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('settings.kb_articles')}</p>
                                     <p className="text-3xl font-black font-display text-navy-900 mt-1">
                                         {org?._count?.contents || 0}
                                     </p>
@@ -406,16 +474,27 @@ export default function WebsiteSettingsPage() {
                                 <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
                                     <Shield size={100} />
                                 </div>
-                                <h4 className="font-bold text-sm relative">Need Help?</h4>
+                                <h4 className="font-bold text-sm relative">{t('settings.need_help')}</h4>
                                 <p className="text-xs text-navy-200 mt-2 leading-relaxed relative">
-                                    If you need advanced system configuration or data migration assistance, contact WELDN_AI support team.
+                                    {t('settings.help_desc')}
                                 </p>
                                 <button className="mt-4 text-[10px] font-bold bg-white/10 hover:bg-white/20 transition-colors px-3 py-1.5 rounded-lg relative border border-white/20">
-                                    Contact Support
+                                    {t('settings.contact_support')}
                                 </button>
                             </div>
                         </div>
                     </div>
+                )}
+
+                {isCropping && selectedImage && (
+                    <ImageCropper
+                        image={selectedImage}
+                        onCropComplete={handleCropComplete}
+                        onCancel={() => {
+                            setIsCropping(false)
+                            setSelectedImage(null)
+                        }}
+                    />
                 )}
             </div>
         </RoleGuard>

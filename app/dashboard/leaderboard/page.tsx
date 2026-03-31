@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useTranslation } from '@/hooks/useTranslation'
 import { getLeaderboardAction } from '@/lib/actions/leaderboard.actions'
 import { Trophy, Medal, Award, TrendingUp, Sparkles } from 'lucide-react'
 
 export default function LeaderboardPage() {
     const { organization, user, role, division } = useCurrentUser()
+    const { t } = useTranslation()
     const [leaders, setLeaders] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const isStaff = role === 'STAFF'
@@ -44,13 +46,13 @@ export default function LeaderboardPage() {
                 <div className="relative z-10 max-w-2xl">
                     <div className="flex items-center gap-3 text-blue-200 mb-2 font-medium tracking-wider uppercase text-sm">
                         <Sparkles size={16} />
-                        Gamification & Rewards
+                        {t('leaderboard.gamification_title')}
                     </div>
                     <h1 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">
-                        {isStaff ? 'Pemahaman Pegawai Divisi' : 'Pemahaman Pegawai Organisasi'}
+                        {isStaff ? t('leaderboard.staff_title') : t('leaderboard.org_title')}
                     </h1>
                     <p className="text-blue-100 text-lg leading-relaxed opacity-90">
-                        Compete with your peers by completing mandatory readings and scoring high on quizzes to showcase your expertise. Top learners shape the future of our knowledge base!
+                        {t('leaderboard.subtitle')}
                     </p>
                 </div>
             </div>
@@ -60,36 +62,36 @@ export default function LeaderboardPage() {
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-surface-200 text-center">
                         <div className="w-16 h-16 bg-navy-100 text-navy-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <TrendingUp size={32} />
+                             <TrendingUp size={32} />
                         </div>
-                        <h3 className="font-bold font-display text-navy-900 text-xl mb-2">How to earn points?</h3>
+                        <h3 className="font-bold font-display text-navy-900 text-xl mb-2">{t('leaderboard.how_to_earn')}</h3>
                         <ul className="text-sm text-text-500 space-y-3 text-left w-full mx-auto p-4 bg-surface-50 rounded-lg">
                             <li className="flex gap-2">
                                 <span className="text-success font-bold font-display">+50</span>
-                                <span>Acknowledge Mandatory Documents</span>
+                                <span>{t('leaderboard.pts_mandatory')}</span>
                             </li>
                             <li className="flex gap-2">
                                 <span className="text-navy-600 font-bold font-display">+10</span>
-                                <span>Per 10% Score in Academy Quizzes</span>
+                                <span>{t('leaderboard.pts_quiz')}</span>
                             </li>
                             <li className="flex gap-2 opacity-50">
                                 <span className="text-purple-500 font-bold font-display">+100</span>
-                                <span>Write Approved Article (Coming Soon)</span>
+                                <span>{t('leaderboard.pts_article')}</span>
                             </li>
                         </ul>
                     </div>
 
-                    {/* User's own Rank Snippet */}
+                     {/* User's own Rank Snippet */}
                     {!loading && user && (
                         <div className="bg-navy-900 p-6 rounded-xl shadow-sm border border-slate-700 text-white relative overflow-hidden">
-                            <h3 className="text-text-300 font-medium mb-1">Your Standing</h3>
+                            <h3 className="text-text-300 font-medium mb-1">{t('leaderboard.standing_title')}</h3>
                             <div className="flex items-end gap-3 mt-2">
                                 <div className="text-4xl font-black">
                                     {leaders.find(l => l.userId === user.id)?.points || 0}
                                 </div>
-                                <div className="text-text-300 mb-1">PTS</div>
+                                <div className="text-text-300 mb-1">{t('leaderboard.pts_label')}</div>
                             </div>
-                            <p className="text-sm text-text-300 mt-4">Keep learning to climb up the ranks!</p>
+                            <p className="text-sm text-text-300 mt-4">{t('leaderboard.motivation')}</p>
                             <Award className="absolute -bottom-4 -right-4 text-text-700 opacity-50" size={100} />
                         </div>
                     )}
@@ -101,22 +103,22 @@ export default function LeaderboardPage() {
                         <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-surface-50">
                             <h2 className="font-bold font-display text-navy-900 text-lg flex items-center gap-2">
                                 <Trophy size={20} className="text-amber-500" />
-                                Top Performers
+                                {t('leaderboard.top_performers')}
                             </h2>
                             <div className="text-sm font-medium text-text-500 bg-white px-3 py-1 rounded-full border shadow-sm">
-                                All-Time
+                                {t('leaderboard.all_time')}
                             </div>
                         </div>
 
                         {loading ? (
-                            <div className="p-12 text-center text-text-500 animate-pulse">Calculating rankings...</div>
+                            <div className="p-12 text-center text-text-500 animate-pulse">{t('leaderboard.calculating')}</div>
                         ) : leaders.length === 0 ? (
                             <div className="p-12 text-center">
                                 <div className="w-16 h-16 bg-surface-100 text-text-300 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <Sparkles size={32} />
                                 </div>
-                                <h3 className="font-bold font-display text-text-700 mb-1">No points recorded yet!</h3>
-                                <p className="text-text-500 text-sm">Be the first to claim the #1 spot by taking a quiz.</p>
+                                <h3 className="font-bold font-display text-text-700 mb-1">{t('leaderboard.no_points')}</h3>
+                                <p className="text-text-500 text-sm">{t('leaderboard.claim_spot')}</p>
                             </div>
                         ) : (
                             <ul className="divide-y divide-slate-100">
@@ -141,12 +143,12 @@ export default function LeaderboardPage() {
                                                     </p>
                                                     {isMe && (
                                                         <span className="text-[10px] font-bold font-display uppercase tracking-wider bg-navy-100 text-navy-700 px-1.5 py-0.5 rounded">
-                                                            You
+                                                            {t('leaderboard.you')}
                                                         </span>
                                                     )}
                                                 </div>
                                                 <p className="text-xs text-text-500 truncate mt-0.5">
-                                                    {leader.division} • {leader.jobTitle || 'Employee'}
+                                                    {leader.division} • {leader.jobTitle || t('leaderboard.employee')}
                                                 </p>
                                             </div>
 
@@ -155,7 +157,7 @@ export default function LeaderboardPage() {
                                                     {leader.points.toLocaleString()}
                                                 </div>
                                                 <div className="text-[10px] font-medium text-text-300 uppercase tracking-widest">
-                                                    Points
+                                                    {t('leaderboard.points')}
                                                 </div>
                                             </div>
                                         </li>

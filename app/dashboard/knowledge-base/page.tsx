@@ -17,6 +17,7 @@ import {
     Trash2, Tags, FolderOpen, Clock, Users as UsersIcon,
     LayoutGrid, List
 } from 'lucide-react'
+import { useTranslation } from '@/hooks/useTranslation'
 
 /* ═══════════════════════════════════════════
    TYPES
@@ -68,6 +69,7 @@ function KBListView({ knowledgeBases, onSelect, onCreate, onDelete }: {
     onCreate: () => void
     onDelete: (kb: KnowledgeBase) => void
 }) {
+    const { t } = useTranslation()
     const [search, setSearch] = useState('')
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
     const filtered = knowledgeBases.filter(kb =>
@@ -81,13 +83,13 @@ function KBListView({ knowledgeBases, onSelect, onCreate, onDelete }: {
                 <div>
                     <h1 className="text-2xl font-bold font-display text-navy-900 flex items-center gap-2">
                         <Tags size={22} className="text-navy-600" />
-                        Knowledge Base Management
+                        {t('knowledge_base.title')}
                     </h1>
-                    <p className="text-text-400 text-sm mt-1">Create, edit, and manage all organizational knowledge bases</p>
+                    <p className="text-text-400 text-sm mt-1">{t('knowledge_base.subtitle')}</p>
                 </div>
                 <button onClick={onCreate}
                     className="btn btn-primary flex items-center gap-2">
-                    <Plus size={16} /> Create Knowledge Base
+                    <Plus size={16} /> {t('knowledge_base.create_kb')}
                 </button>
             </div>
 
@@ -95,19 +97,19 @@ function KBListView({ knowledgeBases, onSelect, onCreate, onDelete }: {
             <div className="flex items-center justify-between gap-4">
                 <div className="relative w-full max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-300" size={16} />
-                    <input type="text" placeholder="Search knowledge base..."
+                    <input type="text" placeholder={t('knowledge_base.search_placeholder')}
                         value={search} onChange={e => setSearch(e.target.value)}
                         className="pl-10 pr-4 py-2.5 border rounded-xl w-full focus:ring-navy-600 focus:border-navy-600 text-sm" />
                 </div>
                 <div className="flex items-center bg-surface-100 rounded-lg p-0.5 border border-surface-200 shrink-0">
                     <button onClick={() => setViewMode('grid')}
                         className={`p-2 rounded-md transition ${viewMode === 'grid' ? 'bg-white shadow-sm text-navy-600' : 'text-text-400 hover:text-text-600'}`}
-                        title="Grid View">
+                        title={t('knowledge_base.grid_view')}>
                         <LayoutGrid size={16} />
                     </button>
                     <button onClick={() => setViewMode('list')}
                         className={`p-2 rounded-md transition ${viewMode === 'list' ? 'bg-white shadow-sm text-navy-600' : 'text-text-400 hover:text-text-600'}`}
-                        title="List View">
+                        title={t('knowledge_base.list_view')}>
                         <List size={16} />
                     </button>
                 </div>
@@ -119,11 +121,11 @@ function KBListView({ knowledgeBases, onSelect, onCreate, onDelete }: {
                     <div className="w-20 h-20 bg-surface-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <FolderOpen size={36} className="text-text-300" />
                     </div>
-                    <h3 className="font-bold text-navy-900 text-lg mb-1">No Knowledge Base yet</h3>
-                    <p className="text-text-400 text-sm mb-4">Create your first knowledge base from your documents or content</p>
+                    <h3 className="font-bold text-navy-900 text-lg mb-1">{t('knowledge_base.no_kb_yet')}</h3>
+                    <p className="text-text-400 text-sm mb-4">{t('knowledge_base.no_kb_desc')}</p>
                     <button onClick={onCreate}
                         className="btn btn-primary inline-flex items-center gap-2">
-                        <Plus size={16} /> Create Knowledge Base
+                        <Plus size={16} /> {t('knowledge_base.create_kb')}
                     </button>
                 </div>
             ) : viewMode === 'grid' ? (
@@ -148,10 +150,10 @@ function KBListView({ knowledgeBases, onSelect, onCreate, onDelete }: {
                             <p className="text-text-400 text-xs mb-3 line-clamp-2">{kb.description}</p>
                             <div className="flex items-center gap-3 text-[11px] text-text-400">
                                 <span className="flex items-center gap-1">
-                                    <FileText size={11} /> {kb.documents.length} sources
+                                    <FileText size={11} /> {kb.documents.length} {t('knowledge_base.sources_count')}
                                 </span>
                                 <span className="flex items-center gap-1">
-                                    <MessageSquare size={11} /> {kb.messageCount} messages
+                                    <MessageSquare size={11} /> {kb.messageCount} {t('knowledge_base.messages_count')}
                                 </span>
                                 <span className="flex items-center gap-1">
                                     <Clock size={11} /> {new Date(kb.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
@@ -186,10 +188,10 @@ function KBListView({ knowledgeBases, onSelect, onCreate, onDelete }: {
                             </div>
                             <div className="flex items-center gap-4 text-[11px] text-text-400 shrink-0">
                                 <span className="flex items-center gap-1 whitespace-nowrap">
-                                    <FileText size={11} /> {kb.documents.length} sources
+                                    <FileText size={11} /> {kb.documents.length} {t('knowledge_base.sources_count')}
                                 </span>
                                 <span className="flex items-center gap-1 whitespace-nowrap">
-                                    <MessageSquare size={11} /> {kb.messageCount} messages
+                                    <MessageSquare size={11} /> {kb.messageCount} {t('knowledge_base.messages_count')}
                                 </span>
                                 <span className="flex items-center gap-1 whitespace-nowrap">
                                     <Clock size={11} /> {new Date(kb.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
@@ -229,6 +231,7 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
     onBack: () => void
     onCreateDone: (kb: KnowledgeBase) => void
 }) {
+    const { t } = useTranslation()
     const [step, setStep] = useState<1 | 2>(1) // 1=name, 2=select docs
     const [name, setName] = useState('')
     const [desc, setDesc] = useState('')
@@ -266,22 +269,22 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
             <div>
                 <button onClick={onBack}
                     className="flex items-center gap-1.5 text-text-400 hover:text-navy-600 text-sm font-medium transition mb-3">
-                    <ArrowLeft size={14} /> Back
+                    <ArrowLeft size={14} /> {t('common.back')}
                 </button>
-                <h1 className="text-2xl font-bold font-display text-navy-900">Create New Knowledge Base</h1>
-                <p className="text-text-400 text-sm mt-1">Select documents and content for the new knowledge base</p>
+                <h1 className="text-2xl font-bold font-display text-navy-900">{t('knowledge_base.create_new_title')}</h1>
+                <p className="text-text-400 text-sm mt-1">{t('knowledge_base.create_new_subtitle')}</p>
             </div>
 
             {/* Steps indicator */}
             <div className="flex items-center gap-3">
                 <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-semibold transition ${step === 1 ? 'bg-navy-600 text-white border-navy-600' : 'bg-surface-50 text-text-500 border-surface-200'}`}>
                     <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">1</span>
-                    Details
+                    {t('common.details')}
                 </div>
                 <div className="w-8 h-px bg-surface-200" />
                 <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-semibold transition ${step === 2 ? 'bg-navy-600 text-white border-navy-600' : 'bg-surface-50 text-text-500 border-surface-200'}`}>
                     <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">2</span>
-                    Select Sources
+                    {t('knowledge_base.select_sources')}
                 </div>
             </div>
 
@@ -289,20 +292,20 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
             {step === 1 && (
                 <div className="card p-6 max-w-xl space-y-4">
                     <div>
-                        <label className="block text-sm font-semibold text-navy-900 mb-1.5">Knowledge Base Name</label>
+                        <label className="block text-sm font-semibold text-navy-900 mb-1.5">{t('knowledge_base.kb_name_label')}</label>
                         <input type="text" value={name} onChange={e => setName(e.target.value)}
-                            placeholder="Example: Operational SOP"
+                            placeholder={t('knowledge_base.kb_name_placeholder')}
                             className="w-full px-4 py-2.5 border rounded-xl focus:ring-navy-600 focus:border-navy-600 text-sm" />
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold text-navy-900 mb-1.5">Description (optional)</label>
+                        <label className="block text-sm font-semibold text-navy-900 mb-1.5">{t('knowledge_base.kb_desc_label')}</label>
                         <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3}
-                            placeholder="Explain the contents of this knowledge base..."
+                            placeholder={t('knowledge_base.kb_desc_placeholder')}
                             className="w-full px-4 py-2.5 border rounded-xl focus:ring-navy-600 focus:border-navy-600 text-sm resize-none" />
                     </div>
                     <button onClick={() => setStep(2)} disabled={!name.trim()}
                         className="btn btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50">
-                        Continue to Select Sources <ChevronRight size={16} />
+                        {t('knowledge_base.continue_to_sources')} <ChevronRight size={16} />
                     </button>
                 </div>
             )}
@@ -313,19 +316,19 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
                     <div className="flex items-center justify-between">
                         <div className="relative w-80">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-300" size={16} />
-                            <input type="text" placeholder="Search documents or content..."
+                            <input type="text" placeholder={t('knowledge_base.search_docs_placeholder')}
                                 value={search} onChange={e => setSearch(e.target.value)}
                                 className="pl-10 pr-4 py-2.5 border rounded-xl w-full focus:ring-navy-600 focus:border-navy-600 text-sm" />
                         </div>
                         <span className="text-sm text-text-500 font-medium">
-                            {selected.size} selected
+                            {selected.size} {t('knowledge_base.selected')}
                         </span>
                     </div>
 
                     {/* Docs list */}
                     <div className="card divide-y max-h-[400px] overflow-y-auto">
                         {filteredDocs.length === 0 ? (
-                            <div className="p-8 text-center text-text-400 text-sm">No documents found</div>
+                            <div className="p-8 text-center text-text-400 text-sm">{t('knowledge_base.no_docs_found')}</div>
                         ) : filteredDocs.map(doc => (
                             <button key={doc.id} onClick={() => toggleDoc(doc.id)}
                                 className={`w-full flex items-center gap-3 p-4 text-left transition hover:bg-surface-50 ${selected.has(doc.id) ? 'bg-navy-50' : ''}`}>
@@ -339,7 +342,7 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
                                     <div className="font-medium text-navy-900 text-sm truncate">{doc.title}</div>
                                     <div className="text-[11px] text-text-400 mt-0.5 flex items-center gap-2">
                                         <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${doc.type === 'document' ? 'bg-navy-100 text-navy-700' : 'bg-amber-100 text-amber-700'}`}>
-                                            {doc.type === 'document' ? 'Document' : 'Content'}
+                                            {doc.type === 'document' ? t('knowledge_base.type_document') : t('knowledge_base.type_content')}
                                         </span>
                                         {doc.division && <span>{doc.division}</span>}
                                     </div>
@@ -352,11 +355,11 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
                     <div className="flex items-center gap-3">
                         <button onClick={() => setStep(1)}
                             className="px-4 py-2.5 border border-surface-200 rounded-xl text-sm font-medium text-text-600 hover:bg-surface-50 transition">
-                            ← Back
+                            ← {t('common.back')}
                         </button>
                         <button onClick={handleCreate} disabled={selected.size === 0}
                             className="btn btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50">
-                            <Sparkles size={16} /> Create Knowledge Base ({selected.size} sources)
+                            <Sparkles size={16} /> {t('knowledge_base.create_btn')} ({selected.size} {t('knowledge_base.sources_count')})
                         </button>
                     </div>
                 </div>
@@ -378,6 +381,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
     onLoadSession: (sessionId: string) => void
     onNewSession: () => void
 }) {
+    const { t } = useTranslation()
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [input, setInput] = useState('')
     const [isTyping, setIsTyping] = useState(false)
@@ -506,16 +510,16 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                     <div className="flex items-center gap-1 bg-surface-100 p-1 rounded-xl">
                         <button onClick={() => { setShowSidebar(true); setSidebarTab('docs') }}
                             className={`px-3 py-1.5 rounded-lg transition text-sm font-medium flex items-center gap-1.5 ${showSidebar && sidebarTab === 'docs' ? 'bg-white shadow-sm text-navy-600' : 'text-text-400 hover:text-text-600'}`}>
-                            <FileText size={14} /> Sources
+                            <FileText size={14} /> {t('common.sources')}
                         </button>
                         <button onClick={() => setShowNewSessionModal(true)}
                             className="p-1.5 rounded-lg transition text-text-400 hover:text-navy-600 hover:bg-white"
-                            title="New Session">
+                            title={t('common.new')}>
                             <Plus size={16} />
                         </button>
                         <button onClick={() => { setShowSidebar(true); setSidebarTab('history') }}
                             className={`px-3 py-1.5 rounded-lg transition text-sm font-medium flex items-center gap-1.5 ${showSidebar && sidebarTab === 'history' ? 'bg-white shadow-sm text-navy-600' : 'text-text-400 hover:text-text-600'}`}>
-                            <MessageSquare size={14} /> Chat History
+                            <MessageSquare size={14} /> {t('common.history')}
                         </button>
                     </div>
                 </div>
@@ -527,16 +531,16 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                             <div className="w-20 h-20 bg-navy-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Sparkles size={36} className="text-navy-400" />
                             </div>
-                            <h3 className="font-bold font-display text-navy-900 text-xl mb-2">Chat with {kb.name}</h3>
+                            <h3 className="font-bold font-display text-navy-900 text-xl mb-2">{t('knowledge_base.chat_title')} {kb.name}</h3>
                             <p className="text-sm max-w-md mx-auto">
-                                Ask anything and AI will answer based on the {kb.documents.length} available documents.
+                                {t('knowledge_base.chat_subtitle')}
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg mx-auto mt-6">
                                 {[
-                                    `Summarize ${kb.documents[0]?.title || 'document'}`,
-                                    'What are the key points from this source?',
-                                    'Explain the procedures mentioned',
-                                    'Compare information between documents'
+                                    `${t('knowledge_base.suggestion_summarize')} ${kb.documents[0]?.title || t('knowledge_base.type_document')}`,
+                                    t('knowledge_base.suggestion_key_points'),
+                                    t('knowledge_base.suggestion_procedures'),
+                                    t('knowledge_base.suggestion_compare')
                                 ].map((suggestion, i) => (
                                     <button key={i} onClick={() => setInput(suggestion)}
                                         className="text-left text-xs bg-surface-50 border border-surface-200 hover:border-navy-300 hover:bg-navy-50 p-3 rounded-lg transition text-text-600">
@@ -576,7 +580,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                                     <span className="w-2 h-2 bg-navy-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                                     <span className="w-2 h-2 bg-navy-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                 </div>
-                                <span className="text-sm text-text-500">Searching for answers...</span>
+                                <span className="text-sm text-text-500">{t('knowledge_base.searching_answers')}</span>
                             </div>
                         </div>
                     )}
@@ -605,9 +609,9 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                         <>
                             <div className="p-4 border-b border-surface-200">
                                 <h3 className="font-bold text-navy-900 text-sm flex items-center gap-2">
-                                    <FileText size={14} className="text-navy-500" /> Document Sources
+                                    <FileText size={14} className="text-navy-500" /> {t('knowledge_base.doc_sources_title')}
                                 </h3>
-                                <p className="text-[11px] text-text-400 mt-1">{kb.documents.length} documents & content</p>
+                                <p className="text-[11px] text-text-400 mt-1">{kb.documents.length} {t('knowledge_base.docs_and_content')}</p>
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
@@ -620,9 +624,9 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                                             <p className="text-[13px] font-medium text-navy-900 truncate">{doc.title}</p>
                                             <p className="text-[11px] text-text-400 mt-0.5 flex items-center gap-1">
                                                 <span className={`px-1 py-0.5 rounded text-[9px] font-semibold ${doc.type === 'document' ? 'bg-navy-100 text-navy-600' : 'bg-amber-100 text-amber-600'}`}>
-                                                    {doc.type === 'document' ? 'DOC' : 'CONTENT'}
+                                                    {doc.type === 'document' ? 'DOC' : t('knowledge_base.type_content').toUpperCase()}
                                                 </span>
-                                                {doc.division}
+                                                {doc.division || t('knowledge_base.group_general')}
                                             </p>
                                         </div>
                                         <button onClick={() => onRemoveDoc(doc.id)}
@@ -637,7 +641,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                             <div className="p-3 border-t border-surface-200">
                                 <button onClick={onAddDoc}
                                     className="w-full py-2.5 px-4 border-2 border-dashed border-surface-300 hover:border-navy-400 text-text-500 hover:text-navy-600 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition">
-                                    <Plus size={14} /> Add Source
+                                    <Plus size={14} /> {t('knowledge_base.add_source')}
                                 </button>
                             </div>
                         </>
@@ -646,10 +650,10 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                             <div className="p-4 border-b border-surface-200 space-y-3">
                                 <div className="flex justify-between items-center">
                                     <h3 className="font-bold text-navy-900 text-sm flex items-center gap-2">
-                                        <MessageSquare size={14} className="text-navy-500" /> Chat History
+                                        <MessageSquare size={14} className="text-navy-500" /> {t('knowledge_base.chat_history')}
                                     </h3>
-                                    <button onClick={() => setShowNewSessionModal(true)} className="text-navy-600 hover:bg-navy-50 p-1.5 rounded-lg transition flex items-center gap-1 px-2" title="New Chat">
-                                        <Plus size={14} /> <span className="text-xs font-semibold">New</span>
+                                    <button onClick={() => setShowNewSessionModal(true)} className="text-navy-600 hover:bg-navy-50 p-1.5 rounded-lg transition flex items-center gap-1 px-2" title={t('knowledge_base.new_session_title')}>
+                                        <Plus size={14} /> <span className="text-xs font-semibold">{t('common.new')}</span>
                                     </button>
                                 </div>
                                 <div className="relative">
@@ -663,7 +667,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                                 {chatSessions.length === 0 ? (
                                     <div className="text-center flex flex-col items-center gap-2 text-xs text-text-400 py-8">
                                         <MessageSquare size={24} className="text-surface-300" />
-                                        No chat history yet
+                                        {t('knowledge_base.no_history')}
                                     </div>
                                 ) : chatSessions.map(session => (
                                     <button key={session.id} onClick={() => onLoadSession(session.id)}
@@ -686,19 +690,19 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
                             <div className="w-12 h-12 bg-navy-100 rounded-xl flex items-center justify-center mb-4 mx-auto text-navy-600">
                                 <Plus size={24} />
                             </div>
-                            <h2 className="text-lg font-bold text-navy-900 text-center mb-2">Start New Session?</h2>
+                            <h2 className="text-lg font-bold text-navy-900 text-center mb-2">{t('knowledge_base.new_session_title')}</h2>
                             <p className="text-text-500 text-sm text-center">
-                                You will start a new chat session. The current chat history will be saved in Chat History.
+                                {t('knowledge_base.new_session_desc')}
                             </p>
                         </div>
                         <div className="bg-surface-50 p-4 border-t border-surface-200 flex gap-3">
                             <button onClick={() => setShowNewSessionModal(false)}
                                 className="flex-1 py-2 px-4 border border-surface-200 text-text-600 font-medium rounded-xl hover:bg-white transition text-sm">
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button onClick={handleConfirmNewSession}
                                 className="flex-1 py-2 px-4 bg-navy-600 text-white font-medium rounded-xl hover:bg-navy-700 transition shadow-sm text-sm">
-                                Yes, Start New Session
+                                {t('knowledge_base.new_session_confirm')}
                             </button>
                         </div>
                     </div>
@@ -720,13 +724,14 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc, onD
     onRemoveDoc: (id: string) => void
     onDelete: (kb: KnowledgeBase) => void
 }) {
+    const { t } = useTranslation()
     return (
         <div className="space-y-6 max-w-5xl mx-auto pb-12">
             {/* Header / Breadcrumb */}
             <div>
                 <button onClick={onBack}
                     className="flex items-center gap-1.5 text-text-400 hover:text-navy-600 text-sm font-medium transition mb-4">
-                    <ArrowLeft size={14} /> Back to List
+                    <ArrowLeft size={14} /> {t('knowledge_base.back_to_list')}
                 </button>
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
@@ -755,7 +760,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc, onD
                         <FileText size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Total Documents</p>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">{t('dashboard.total_documents')}</p>
                         <p className="text-xl font-bold text-navy-900">{kb.documents.filter(d => d.type === 'document').length}</p>
                     </div>
                 </div>
@@ -764,7 +769,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc, onD
                         <BookOpen size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Number of Sources</p>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">{t('knowledge_base.number_of_sources')}</p>
                         <p className="text-xl font-bold text-navy-900">{kb.documents.length}</p>
                     </div>
                 </div>
@@ -773,7 +778,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc, onD
                         <Clock size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Last Updated</p>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">{t('knowledge_base.last_updated')}</p>
                         <p className="text-sm font-bold text-navy-900">{new Date(kb.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</p>
                     </div>
                 </div>
@@ -782,7 +787,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc, onD
                         <User size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">Owner / Admin</p>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">{t('knowledge_base.owner_admin')}</p>
                         <p className="text-sm font-bold text-navy-900 truncate">Super Admin</p>
                     </div>
                 </div>
@@ -794,14 +799,14 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc, onD
                     <div className="flex items-center justify-between">
                         <h3 className="font-bold text-navy-900 text-lg flex items-center gap-2">
                             <FolderOpen size={20} className="text-navy-500" />
-                            Documents in Knowledge Base
+                            {t('knowledge_base.docs_in_kb')}
                         </h3>
                         <div className="flex gap-2">
                             <button onClick={onUpload} className="btn bg-white border border-surface-200 text-text-600 px-4 py-2 text-sm hover:bg-surface-50">
-                                <FileText size={16} /> Connect Document
+                                <FileText size={16} /> {t('knowledge_base.connect_document')}
                             </button>
                             <button onClick={onAddDoc} className="btn btn-primary px-4 py-2 text-sm">
-                                <Plus size={16} /> Connect Content
+                                <Plus size={16} /> {t('knowledge_base.connect_content')}
                             </button>
                         </div>
                     </div>
@@ -810,7 +815,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc, onD
                         {kb.documents.length === 0 ? (
                             <div className="p-12 text-center text-text-400">
                                 <FolderOpen size={48} className="mx-auto mb-3 opacity-20" />
-                                <p>No documents connected to this KB yet.</p>
+                                <p>{t('knowledge_base.no_docs_connected')}</p>
                             </div>
                         ) : kb.documents.map((doc, idx) => (
                             <div key={doc.id} className="flex items-center gap-4 p-4 hover:bg-surface-50 transition group">
@@ -836,7 +841,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc, onD
 }
 
 /* ═══════════════════════════════════════════
-   VIEW: ADD DOCS (Replaces old AddDocsModal)
+   VIEW: ADD DOCS
    ═══════════════════════════════════════════ */
 function AddDocsView({ allDocs, existingIds, onBack, onAdd }: {
     allDocs: DocItem[]
@@ -844,6 +849,7 @@ function AddDocsView({ allDocs, existingIds, onBack, onAdd }: {
     onBack: () => void
     onAdd: (docs: DocItem[]) => void
 }) {
+    const { t } = useTranslation()
     const [selected, setSelected] = useState<Set<string>>(new Set())
     const [search, setSearch] = useState('')
     const available = allDocs.filter(d => !existingIds.has(d.id))
@@ -862,38 +868,30 @@ function AddDocsView({ allDocs, existingIds, onBack, onAdd }: {
             <div>
                 <button onClick={onBack}
                     className="flex items-center gap-1.5 text-text-400 hover:text-navy-600 text-sm font-medium transition mb-3">
-                    <ArrowLeft size={14} /> Kembali ke Chat
+                    <ArrowLeft size={14} /> {t('common.back')}
                 </button>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold font-display text-navy-900 flex items-center gap-2">
-                            <Plus size={22} className="text-navy-600" /> Tambah Sumber
-                        </h1>
-                        <p className="text-text-400 text-sm mt-1">Pilih dokumen atau konten untuk ditambahkan ke Knowledge Base ini</p>
-                    </div>
-                    <button onClick={() => { onAdd(allDocs.filter(d => selected.has(d.id))); onBack() }}
-                        disabled={selected.size === 0}
-                        className="btn btn-primary flex items-center gap-2 disabled:opacity-50 px-6 py-2.5">
-                        <Plus size={16} /> Tambah {selected.size > 0 ? `(${selected.size})` : ''}
-                    </button>
-                </div>
+                <h1 className="text-2xl font-bold font-display text-navy-900">{t('knowledge_base.connect_content')}</h1>
+                <p className="text-text-400 text-sm mt-1">{t('knowledge_base.create_new_subtitle')}</p>
             </div>
 
             <div className="card max-w-4xl mx-auto flex flex-col h-[calc(100vh-280px)] overflow-hidden">
-                <div className="p-5 border-b border-surface-200 shrink-0">
-                    <div className="relative">
+                <div className="p-5 border-b border-surface-200 shrink-0 flex items-center justify-between">
+                    <div className="relative w-80">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-300" size={16} />
-                        <input type="text" placeholder="Cari dokumen..."
+                        <input type="text" placeholder={t('knowledge_base.search_docs_placeholder')}
                             value={search} onChange={e => setSearch(e.target.value)}
                             className="pl-10 pr-4 py-3 border border-surface-200 rounded-xl w-full text-[15px] focus:ring-navy-600 focus:border-navy-600 bg-surface-50 transition-all outline-none" />
                     </div>
+                    <span className="text-sm text-text-500 font-medium">
+                        {selected.size} {t('knowledge_base.selected')}
+                    </span>
                 </div>
 
                 <div className="flex-1 overflow-y-auto divide-y divide-surface-100 p-2 scrollbar-thin">
                     {filtered.length === 0 ? (
                         <div className="p-12 text-center text-text-400 text-sm flex flex-col items-center justify-center h-full">
                             <FileText size={48} className="text-surface-300 mb-4 opacity-50" />
-                            <p>Semua dokumen tersedia sudah ditambahkan ke Knowledge Base ini</p>
+                            <p>{t('knowledge_base.no_docs_found')}</p>
                         </div>
                     ) : filtered.map(doc => (
                         <button key={doc.id} onClick={() => toggleDoc(doc.id)}
@@ -906,10 +904,22 @@ function AddDocsView({ allDocs, existingIds, onBack, onAdd }: {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <div className={`font-semibold text-sm truncate transition ${selected.has(doc.id) ? 'text-navy-900' : 'text-text-700'}`}>{doc.title}</div>
-                                <div className="text-[12px] text-text-400 mt-0.5">{doc.division} · <span className="font-medium">{doc.type === 'document' ? 'Dokumen' : 'Konten'}</span></div>
+                                <div className="text-[12px] text-text-400 mt-0.5">{doc.division} · <span className="font-medium">{doc.type === 'document' ? t('knowledge_base.type_document') : t('knowledge_base.type_content')}</span></div>
                             </div>
                         </button>
                     ))}
+                </div>
+                
+                <div className="p-4 border-t border-surface-200 flex items-center gap-3">
+                    <button onClick={onBack}
+                        className="btn bg-white border border-surface-200 text-text-600 px-6 py-2.5 text-sm font-medium hover:bg-surface-50 transition">
+                        {t('common.cancel')}
+                    </button>
+                    <button onClick={() => onAdd(available.filter(d => selected.has(d.id)))}
+                        disabled={selected.size === 0}
+                        className="btn btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50">
+                        <Plus size={16} /> {t('knowledge_base.connect_content')} ({selected.size})
+                    </button>
                 </div>
             </div>
         </div>
@@ -921,14 +931,14 @@ function AddDocsView({ allDocs, existingIds, onBack, onAdd }: {
    ═══════════════════════════════════════════ */
 type View = 'list' | 'create' | 'detail' | 'chat' | 'edit' | 'add-docs'
 
-export default function ContentsPage() {
-    const { organization, role, division } = useCurrentUser()
+export default function KnowledgeBasePage() {
+    const { user, organization, role, division } = useCurrentUser()
+    const { t } = useTranslation()
     const [view, setView] = useState<View>('list')
     const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([])
     const [activeKB, setActiveKB] = useState<KnowledgeBase | null>(null)
     const [allDocs, setAllDocs] = useState<DocItem[]>([])
     const [loading, setLoading] = useState(true)
-    const [editKB, setEditKB] = useState<KnowledgeBase | null>(null)
     const [chatSessions, setChatSessions] = useState<ChatSession[]>([])
     const [kbToDelete, setKbToDelete] = useState<KnowledgeBase | null>(null)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -1054,7 +1064,6 @@ export default function ContentsPage() {
         }
     }
 
-    // Placeholder for chat session handlers
     const handleSaveSession = (session: ChatSession) => {
         setChatSessions(prev => {
             const existingIndex = prev.findIndex(s => s.id === session.id);
@@ -1067,10 +1076,11 @@ export default function ContentsPage() {
         });
     };
 
-    if (loading) {
+    if (!user || !organization) {
         return (
-            <div className="flex items-center justify-center py-20">
-                <Loader2 size={24} className="animate-spin text-navy-400" />
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <Loader2 className="w-10 h-10 text-navy-600 animate-spin" />
+                <p className="text-text-400 font-medium">{t('common.loading')}</p>
             </div>
         )
     }

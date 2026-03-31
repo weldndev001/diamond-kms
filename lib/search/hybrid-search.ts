@@ -65,9 +65,7 @@ async function fullTextSearch(params: {
     crossDivisionEnabled: boolean
 }): Promise<HybridSearchResult[]> {
     const { query, orgId, userRole, divisionId, crossDivisionEnabled } = params
-    const scopedToDiv =
-        userRole === 'STAFF' ||
-        (userRole === 'SUPERVISOR' && !crossDivisionEnabled)
+    const scopedToDiv = !crossDivisionEnabled && (userRole === 'STAFF' || userRole === 'SUPERVISOR')
 
     const words = query.trim().split(/\s+/).filter(w => w.length > 2)
     const exactQuery = query.trim()

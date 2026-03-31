@@ -5,6 +5,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getDocumentsAction, deleteDocumentAction } from '@/lib/actions/document.actions'
 import { getDivisionsAction } from '@/lib/actions/user.actions'
 import { Search, Filter, FileText, MoreVertical, Eye, Trash2, CheckCircle, Clock, Loader2, AlertCircle, FileSpreadsheet, FileArchive, Upload, LayoutGrid, List, ChevronRight } from 'lucide-react'
+import { useTranslation } from '@/hooks/useTranslation'
 import Link from 'next/link'
 
 const getFileIcon = (mimeType: string) => {
@@ -20,15 +21,16 @@ const formatFileSize = (bytes: number) => {
     return (bytes / 1048576).toFixed(1) + ' MB'
 }
 
-const getStatusChip = (doc: any) => {
-    if (doc.is_processed) return <span className="chip bg-success-bg text-success"><CheckCircle size={12} /> Processed</span>
-    if (doc.processing_status === 'processing') return <span className="chip bg-amber-100 text-amber-800"><Loader2 size={12} className="animate-spin" /> Processing</span>
-    if (doc.processing_status === 'failed') return <span className="chip bg-danger-bg text-danger"><AlertCircle size={12} /> Failed</span>
-    return <span className="chip bg-warning-bg text-warning"><Clock size={12} /> Pending</span>
+const getStatusChip = (doc: any, t: any) => {
+    if (doc.is_processed) return <span className="chip bg-success-bg text-success"><CheckCircle size={12} /> {t('documents.status_processed')}</span>
+    if (doc.processing_status === 'processing') return <span className="chip bg-amber-100 text-amber-800"><Loader2 size={12} className="animate-spin" /> {t('documents.status_processing')}</span>
+    if (doc.processing_status === 'failed') return <span className="chip bg-danger-bg text-danger"><AlertCircle size={12} /> {t('documents.status_failed')}</span>
+    return <span className="chip bg-warning-bg text-warning"><Clock size={12} /> {t('documents.status_pending')}</span>
 }
 
 export default function DocumentsPage() {
     const { organization, user, role, division } = useCurrentUser()
+    const { t } = useTranslation()
     const [documents, setDocuments] = useState<any[]>([])
     const [divisions, setDivisions] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -67,10 +69,10 @@ export default function DocumentsPage() {
     }, [documents, organization?.id, filterDiv])
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Delete this document permanently?')) return
+        if (!confirm(t('documents.delete_confirm_permanently'))) return
         const res = await deleteDocumentAction(id)
         if (res.success) loadData()
-        else alert(res.error || 'Failed to delete')
+        else alert(res.error || t('documents.delete_failed'))
     }
 
     const filteredDocs = documents.filter(d =>
@@ -83,12 +85,12 @@ export default function DocumentsPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-end">
                 <div>
-                    <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">Document Management</h1>
-                    <p className="text-sm text-text-500 mt-1">Upload, process, and search organizational documents with AI.</p>
+                    <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">{t('documents.title')}</h1>
+                    <p className="text-sm text-text-500 mt-1">{t('documents.subtitle')}</p>
                 </div>
                 {['SUPER_ADMIN', 'GROUP_ADMIN', 'SUPERVISOR', 'MAINTAINER'].includes(role || '') && (
                     <Link href="/dashboard/documents/upload" className="btn btn-primary">
-                        <Upload size={16} /> Upload Document
+                        <Upload size={16} /> {t('documents.upload_btn')}
                     </Link>
                 )}
             </div>
@@ -99,7 +101,7 @@ export default function DocumentsPage() {
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-300" size={16} />
                         <input
                             type="text"
-                            placeholder="Search documents..."
+                            placeholder={t('documents.search_docs')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="input-field pl-10"
@@ -114,7 +116,7 @@ export default function DocumentsPage() {
                                     onChange={(e) => setFilterDiv(e.target.value)}
                                     className="border border-surface-200 rounded-md p-2 text-sm bg-white focus:ring-navy-600 focus:border-navy-600"
                                 >
-                                    <option value="">All Divisions</option>
+                                    <option value="">{t('documents.all_divisions')}</option>
                                     {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                 </select>
                             </div>
@@ -124,14 +126,14 @@ export default function DocumentsPage() {
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white text-navy-700 shadow-sm' : 'text-text-400 hover:text-text-600'}`}
-                                title="Grid view"
+                                title={t('knowledge_base.grid_view')}
                             >
                                 <LayoutGrid size={16} />
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
                                 className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white text-navy-700 shadow-sm' : 'text-text-400 hover:text-text-600'}`}
-                                title="List view"
+                                title={t('knowledge_base.list_view')}
                             >
                                 <List size={16} />
                             </button>
@@ -143,16 +145,16 @@ export default function DocumentsPage() {
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20">
                             <div className="w-10 h-10 border-4 border-navy-200 border-t-navy-600 rounded-full animate-spin mb-4" />
-                            <p className="text-text-500 font-medium">Loading documents...</p>
+                            <p className="text-text-500 font-medium">{t('documents.loading_docs')}</p>
                         </div>
                     ) : filteredDocs.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-center">
                             <div className="w-16 h-16 bg-surface-200 text-text-300 rounded-full flex items-center justify-center mb-4">
                                 <FileText size={32} />
                             </div>
-                            <h3 className="font-display text-lg font-bold text-navy-900 mb-2">No documents found</h3>
+                            <h3 className="font-display text-lg font-bold text-navy-900 mb-2">{t('documents.no_docs_found')}</h3>
                             <p className="text-text-500 max-w-sm">
-                                {searchTerm ? `No documents match "${searchTerm}"` : 'Upload your first document to get started with AI-powered search.'}
+                                {searchTerm ? `${t('documents.no_docs_match')} "${searchTerm}"` : t('documents.get_started_desc')}
                             </p>
                         </div>
                     ) : viewMode === 'grid' ? (
@@ -185,14 +187,14 @@ export default function DocumentsPage() {
 
                                         <div className="flex flex-wrap gap-2 mt-auto">
                                             <span className="chip bg-surface-100 text-text-700">{formatFileSize(doc.file_size)}</span>
-                                            <span className="chip bg-surface-100 text-text-700">{doc.division?.name || 'General'}</span>
-                                            {getStatusChip(doc)}
+                                            <span className="chip bg-surface-100 text-text-700">{doc.division?.name || t('knowledge_base.group_general')}</span>
+                                            {getStatusChip(doc, t)}
                                         </div>
                                     </div>
 
                                     <div className="border-t border-surface-200 bg-surface-50 p-4 flex justify-between items-center gap-2">
                                         <a href={`/dashboard/documents/${doc.id}`} className="btn btn-primary flex-1 justify-center text-sm">
-                                            <Eye size={14} /> View
+                                            <Eye size={14} /> {t('common.view')}
                                         </a>
                                         {['SUPER_ADMIN', 'GROUP_ADMIN'].includes(role || '') && (
                                             <button
@@ -222,8 +224,8 @@ export default function DocumentsPage() {
                                     </div>
                                     <div className="flex items-center gap-4 text-[11px] text-text-400 shrink-0">
                                         <span className="whitespace-nowrap">{formatFileSize(doc.file_size)}</span>
-                                        <span className="whitespace-nowrap">{doc.division?.name || 'General'}</span>
-                                        {getStatusChip(doc)}
+                                        <span className="whitespace-nowrap">{doc.division?.name || t('knowledge_base.group_general')}</span>
+                                        {getStatusChip(doc, t)}
                                     </div>
                                     <div className="hidden md:flex flex-wrap gap-1 shrink-0 max-w-[200px]">
                                         {doc.ai_tags?.slice(0, 2).map((tag: string, i: number) => (

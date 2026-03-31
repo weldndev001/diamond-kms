@@ -5,23 +5,25 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getContentsAction, deleteContentAction } from '@/lib/actions/content.actions'
 import { getDivisionsAction } from '@/lib/actions/user.actions'
 import { Search, Filter, FileText, Plus, LayoutGrid, List, ChevronRight, Clock, CheckCircle, AlertCircle, Loader2, Eye, Trash2, ClipboardCheck, BookOpen, Edit } from 'lucide-react'
+import { useTranslation } from '@/hooks/useTranslation'
 import Link from 'next/link'
 
-const getStatusBadge = (status: string) => {
+const getStatusBadge = (status: string, t: any) => {
     switch (status) {
         case 'PUBLISHED':
-            return <span className="chip bg-success-bg text-success"><CheckCircle size={12} /> Published</span>
+            return <span className="chip bg-success-bg text-success"><CheckCircle size={12} /> {t('content.status_published')}</span>
         case 'PENDING_APPROVAL':
-            return <span className="chip bg-amber-100 text-amber-800"><Loader2 size={12} /> Pending Approval</span>
+            return <span className="chip bg-amber-100 text-amber-800"><Loader2 size={12} /> {t('content.status_pending_approval')}</span>
         case 'REJECTED':
-            return <span className="chip bg-danger-bg text-danger"><AlertCircle size={12} /> Rejected</span>
+            return <span className="chip bg-danger-bg text-danger"><AlertCircle size={12} /> {t('content.status_rejected')}</span>
         default:
-            return <span className="chip bg-surface-200 text-text-600"><Clock size={12} /> Draft</span>
+            return <span className="chip bg-surface-200 text-text-600"><Clock size={12} /> {t('content.status_draft')}</span>
     }
 }
 
 export default function ContentListPage() {
     const { organization, user, role, division } = useCurrentUser()
+    const { t } = useTranslation()
     const [contents, setContents] = useState<any[]>([])
     const [divisions, setDivisions] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -54,10 +56,10 @@ export default function ContentListPage() {
     useEffect(() => { loadData() }, [organization?.id, filterDiv, division?.id])
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Delete this content permanently?')) return
+        if (!confirm(t('content.delete_confirm'))) return
         const res = await deleteContentAction(id)
         if (res.success) loadData()
-        else alert(res.error || 'Failed to delete')
+        else alert(res.error || t('content.delete_failed'))
     }
 
     const pendingCount = contents.filter(c => c.status === 'PENDING_APPROVAL').length
@@ -72,23 +74,23 @@ export default function ContentListPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-end flex-wrap gap-4">
                 <div>
-                    <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">Manage Content</h1>
-                    <p className="text-sm text-text-500 mt-1">Kelola artikel, SOP, dan konten knowledge base organisasi Anda.</p>
+                    <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">{t('content.title')}</h1>
+                    <p className="text-sm text-text-500 mt-1">{t('content.subtitle')}</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {canApprove && pendingCount > 0 && (
                         <Link href="/dashboard/approvals" className="btn bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition">
-                            <ClipboardCheck size={16} /> Approvals
+                            <ClipboardCheck size={16} /> {t('content.approvals')}
                             <span className="ml-1 bg-amber-500 text-white text-[11px] font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{pendingCount}</span>
                         </Link>
                     )}
                     {canApprove && pendingCount === 0 && (
                         <Link href="/dashboard/approvals" className="btn bg-surface-100 text-text-600 border border-surface-200 hover:bg-surface-200 transition">
-                            <ClipboardCheck size={16} /> Approvals
+                            <ClipboardCheck size={16} /> {t('content.approvals')}
                         </Link>
                     )}
                     <Link href="/dashboard/knowledge-base/create" className="btn btn-primary">
-                        <Plus size={16} /> Create Content
+                        <Plus size={16} /> {t('content.create_btn')}
                     </Link>
                 </div>
             </div>
@@ -99,7 +101,7 @@ export default function ContentListPage() {
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-300" size={16} />
                         <input
                             type="text"
-                            placeholder="Search content by title, category, or author..."
+                            placeholder={t('content.search_placeholder')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="input-field pl-10"
@@ -114,7 +116,7 @@ export default function ContentListPage() {
                                     onChange={(e) => setFilterDiv(e.target.value)}
                                     className="border border-surface-200 rounded-md p-2 text-sm bg-white focus:ring-navy-600 focus:border-navy-600"
                                 >
-                                    <option value="">All Divisions</option>
+                                    <option value="">{t('documents.all_divisions')}</option>
                                     {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                 </select>
                             </div>
@@ -124,14 +126,14 @@ export default function ContentListPage() {
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white text-navy-700 shadow-sm' : 'text-text-400 hover:text-text-600'}`}
-                                title="Grid view"
+                                title={t('knowledge_base.grid_view')}
                             >
                                 <LayoutGrid size={16} />
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
                                 className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white text-navy-700 shadow-sm' : 'text-text-400 hover:text-text-600'}`}
-                                title="List view"
+                                title={t('knowledge_base.list_view')}
                             >
                                 <List size={16} />
                             </button>
@@ -143,20 +145,20 @@ export default function ContentListPage() {
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20">
                             <div className="w-10 h-10 border-4 border-navy-200 border-t-navy-600 rounded-full animate-spin mb-4" />
-                            <p className="text-text-500 font-medium">Loading content...</p>
+                            <p className="text-text-500 font-medium">{t('content.loading_content')}</p>
                         </div>
                     ) : filteredContents.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-center">
                             <div className="w-16 h-16 bg-surface-200 text-text-300 rounded-full flex items-center justify-center mb-4">
                                 <BookOpen size={32} />
                             </div>
-                            <h3 className="font-display text-lg font-bold text-navy-900 mb-2">No content yet</h3>
+                            <h3 className="font-display text-lg font-bold text-navy-900 mb-2">{t('content.no_content_yet')}</h3>
                             <p className="text-text-500 max-w-sm">
-                                {searchTerm ? `No content matches "${searchTerm}"` : 'Create your first content to get started.'}
+                                {searchTerm ? `${t('documents.no_docs_match')} "${searchTerm}"` : t('content.get_started_desc')}
                             </p>
                             {!searchTerm && (
                                 <Link href="/dashboard/knowledge-base/create" className="btn btn-primary mt-4 inline-flex items-center gap-2">
-                                    <Plus size={16} /> Create Content
+                                    <Plus size={16} /> {t('content.create_btn')}
                                 </Link>
                             )}
                         </div>
@@ -170,33 +172,33 @@ export default function ContentListPage() {
                                             <div className="w-10 h-10 bg-navy-100 rounded-xl flex items-center justify-center">
                                                 <BookOpen size={18} className="text-navy-600" />
                                             </div>
-                                            {getStatusBadge(content.status)}
+                                            {getStatusBadge(content.status, t)}
                                         </div>
                                         <h3 className="font-bold font-display text-navy-900 text-[15px] leading-tight mb-1 line-clamp-2" title={content.title}>
                                             {content.title}
                                         </h3>
-                                        <p className="text-[12px] text-text-400 mb-3">by {content.author_name}</p>
+                                        <p className="text-[12px] text-text-400 mb-3">{t('common.by')} {content.author_name}</p>
 
                                         <div className="flex flex-wrap gap-1.5 mb-3">
                                             <span className="text-[11px] font-medium bg-navy-50 text-navy-700 px-2 py-0.5 rounded-full">{content.category}</span>
                                             {content.is_mandatory_read && (
-                                                <span className="text-[11px] font-medium bg-red-50 text-red-700 px-2 py-0.5 rounded-full">Mandatory Read</span>
+                                                <span className="text-[11px] font-medium bg-red-50 text-red-700 px-2 py-0.5 rounded-full">{t('content.mandatory_read')}</span>
                                             )}
                                         </div>
 
                                         <div className="flex flex-wrap gap-2 mt-auto">
                                             <span className="chip bg-surface-100 text-text-700">
-                                                {content.division?.name || 'Global'}
+                                                {content.division?.name || t('content.global')}
                                             </span>
                                             <span className="chip bg-surface-100 text-text-700">
-                                                <Clock size={11} /> {new Date(content.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                <Clock size={11} /> {new Date(content.created_at).toLocaleDateString(t('common.language') === 'Indonesian' ? 'id-ID' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                                             </span>
                                         </div>
                                     </div>
 
                                     <div className="border-t border-surface-200 bg-surface-50 p-4 flex justify-between items-center gap-2">
                                         <Link href={`/dashboard/knowledge-base/${content.id}`} className="btn btn-primary flex-1 justify-center text-sm">
-                                            <Eye size={14} /> View
+                                            <Eye size={14} /> {t('common.view')}
                                         </Link>
                                         {['SUPER_ADMIN', 'GROUP_ADMIN', 'MAINTAINER', 'SUPERVISOR'].includes(role || '') && (
                                             <Link href={`/dashboard/content/${content.id}/edit`}
@@ -230,11 +232,11 @@ export default function ContentListPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h3 className="font-bold text-navy-900 text-sm group-hover:text-navy-700 truncate">{content.title}</h3>
-                                        <p className="text-text-400 text-xs mt-0.5 truncate">by {content.author_name} · {content.category}</p>
+                                        <p className="text-text-400 text-xs mt-0.5 truncate">{t('common.by')} {content.author_name} · {content.category}</p>
                                     </div>
                                     <div className="flex items-center gap-3 text-[11px] text-text-400 shrink-0">
-                                        <span className="whitespace-nowrap">{content.division?.name || 'Global'}</span>
-                                        {getStatusBadge(content.status)}
+                                        <span className="whitespace-nowrap">{content.division?.name || t('content.global')}</span>
+                                        {getStatusBadge(content.status, t)}
                                         <div className="flex items-center gap-2">
                                             {['SUPER_ADMIN', 'GROUP_ADMIN', 'MAINTAINER', 'SUPERVISOR'].includes(role || '') && (
                                                 <Link href={`/dashboard/content/${content.id}/edit`}
@@ -246,7 +248,7 @@ export default function ContentListPage() {
                                                 </Link>
                                             )}
                                             <span className="whitespace-nowrap ml-1">
-                                                {new Date(content.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                                                {new Date(content.created_at).toLocaleDateString(t('common.language') === 'Indonesian' ? 'id-ID' : 'en-US', { day: 'numeric', month: 'short' })}
                                             </span>
                                         </div>
                                     </div>

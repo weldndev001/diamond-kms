@@ -15,9 +15,11 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { ErrorLogsSection } from './ErrorLogsSection'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export default function MaintenancePage() {
     const { organization } = useCurrentUser()
+    const { t } = useTranslation()
     const [flags, setFlags] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [maintenanceMode, setMaintenanceMode] = useState(false)
@@ -129,7 +131,7 @@ export default function MaintenancePage() {
         const file = e.target.files?.[0]
         if (!file) return
 
-        if (!confirm('⚠️ Importing data will add to or overwrite existing data. Continue?')) {
+        if (!confirm(t('common.confirm_delete'))) {
             if (fileInputRef.current) fileInputRef.current.value = ''
             return
         }
@@ -156,12 +158,12 @@ export default function MaintenancePage() {
                 setTimeout(() => setRestoreStatus('idle'), 10000)
             } else {
                 setRestoreStatus('error')
-                alert(`Import failed: ${data.error || 'Unknown error'}`)
+                alert(`${t('maintenance.import_failed')}: ${data.error || 'Unknown error'}`)
                 setTimeout(() => setRestoreStatus('idle'), 3000)
             }
         } catch (err: any) {
             setRestoreStatus('error')
-            alert(`Invalid file: ${err.message}`)
+            alert(`${t('common.error')}: ${err.message}`)
             setTimeout(() => setRestoreStatus('idle'), 3000)
         }
 
@@ -174,17 +176,17 @@ export default function MaintenancePage() {
                 <div>
                     <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight flex items-center gap-2">
                         <Wrench className="text-amber-500" size={28} />
-                        Maintenance Dashboard
+                        {t('maintenance.title')}
                     </h1>
                     <p className="text-sm text-text-500 mt-1">
-                        Manage maintenance mode, feature flags, and database backups.
+                        {t('maintenance.subtitle')}
                     </p>
                 </div>
 
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20">
                         <div className="w-10 h-10 border-4 border-navy-200 border-t-navy-600 rounded-full animate-spin mb-4" />
-                        <p className="text-text-500 font-medium">Loading...</p>
+                        <p className="text-text-500 font-medium">{t('maintenance.loading')}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -197,14 +199,14 @@ export default function MaintenancePage() {
                                             <AlertTriangle size={24} />
                                         </div>
                                         <div>
-                                            <h2 className="font-bold font-display text-navy-900 text-lg">Maintenance Mode</h2>
+                                            <h2 className="font-bold font-display text-navy-900 text-lg">{t('maintenance.mm_title')}</h2>
                                             <p className="text-sm text-text-500 mt-1 max-w-md">
-                                                When active, users will see a maintenance page and cannot access main features.
+                                                {t('maintenance.mm_desc')}
                                             </p>
                                             {maintenanceMode && (
                                                 <div className="mt-3 flex items-center gap-2 text-sm text-warning font-semibold">
                                                     <Clock size={14} />
-                                                    Maintenance Mode ACTIVE
+                                                    {t('maintenance.mm_active')}
                                                 </div>
                                             )}
                                         </div>
@@ -225,7 +227,7 @@ export default function MaintenancePage() {
                                     <div className="mt-4 pt-4 border-t border-warning/20">
                                         <label className="block text-sm font-medium text-text-700 mb-2">
                                             <Bell size={14} className="inline mr-1.5" />
-                                            Message for Users
+                                            {t('maintenance.mm_message_label')}
                                         </label>
                                         <textarea
                                             value={maintenanceMsg}
@@ -244,16 +246,16 @@ export default function MaintenancePage() {
                                         <MonitorDot size={24} />
                                     </div>
                                     <div className="flex-1">
-                                        <h2 className="font-bold font-display text-navy-900 text-lg">Remote Maintenance Access</h2>
+                                        <h2 className="font-bold font-display text-navy-900 text-lg">{t('maintenance.remote_access_title')}</h2>
                                         <p className="text-sm text-text-500 mt-1 max-w-md">
-                                            Access the OTP code generation feature for WELDN_AI technical remote maintenance.
+                                            {t('maintenance.remote_access_desc')}
                                         </p>
                                         <Link 
                                             href="/dashboard/hrd/remote-access"
                                             className="btn btn-primary mt-4 inline-flex items-center gap-2"
                                         >
                                             <KeyRound size={16} />
-                                            Open Remote Access Page
+                                            {t('maintenance.open_remote_page')}
                                         </Link>
                                     </div>
                                 </div>
@@ -263,14 +265,14 @@ export default function MaintenancePage() {
                             <div className="card overflow-hidden">
                                 <div className="p-5 border-b border-surface-200 bg-surface-0 flex justify-between items-center">
                                     <h2 className="font-bold font-display text-navy-900 flex items-center gap-2">
-                                        <Shield size={18} className="text-navy-600" /> Feature Flags
+                                        <Shield size={18} className="text-navy-600" /> {t('maintenance.feature_flags')}
                                     </h2>
                                 </div>
 
                                 <div className="divide-y divide-surface-100">
                                     {flags.filter(f => f.flag_key !== 'maintenance_mode').length === 0 ? (
                                         <div className="p-8 text-center text-text-500">
-                                            No other feature flags found. Add below.
+                                            {t('maintenance.no_flags')}
                                         </div>
                                     ) : (
                                         flags.filter(f => f.flag_key !== 'maintenance_mode').map(flag => (
@@ -278,7 +280,7 @@ export default function MaintenancePage() {
                                                 <div>
                                                     <p className="font-medium text-navy-900 font-mono text-sm">{flag.flag_key}</p>
                                                     <p className="text-xs text-text-300 mt-0.5">
-                                                        Created: {new Date(flag.created_at).toLocaleDateString('en-US')}
+                                                        {t('common.at')}: {new Date(flag.created_at).toLocaleDateString('en-US')}
                                                     </p>
                                                 </div>
                                                 <button
@@ -311,7 +313,7 @@ export default function MaintenancePage() {
                                         disabled={addingFlag || !newFlagKey.trim()}
                                         className="btn btn-primary shrink-0"
                                     >
-                                        <Plus size={16} /> Add Flag
+                                        <Plus size={16} /> {t('maintenance.add_flag')}
                                     </button>
                                 </div>
                             </div>
@@ -325,10 +327,10 @@ export default function MaintenancePage() {
                             {/* Database Backup — Download */}
                             <div className="card p-5 space-y-4">
                                 <h3 className="font-bold font-display text-navy-900 flex items-center gap-2">
-                                    <FileDown size={16} className="text-navy-600" /> Export Database
+                                    <FileDown size={16} className="text-navy-600" /> {t('maintenance.export_db')}
                                 </h3>
                                 <p className="text-sm text-text-500">
-                                    Download all database data as a JSON file (includes chats, leaderboard, documents, etc.).
+                                    {t('maintenance.export_desc')}
                                 </p>
                                 <button
                                     onClick={handleBackup}
@@ -338,19 +340,19 @@ export default function MaintenancePage() {
                                     {backupStatus === 'running' ? (
                                         <>
                                             <Loader2 size={16} className="animate-spin" />
-                                            Downloading...
+                                            {t('maintenance.export_running')}
                                         </>
                                     ) : backupStatus === 'done' ? (
                                         <>
                                             <CheckCircle size={16} />
-                                            Download Complete!
+                                            {t('maintenance.export_done')}
                                         </>
                                     ) : backupStatus === 'error' ? (
-                                        'Export Failed'
+                                        t('maintenance.export_failed')
                                     ) : (
                                         <>
                                             <Download size={16} />
-                                            Download Backup
+                                            {t('maintenance.export_btn')}
                                         </>
                                     )}
                                 </button>
@@ -359,10 +361,10 @@ export default function MaintenancePage() {
                             {/* Database Import */}
                             <div className="card p-5 space-y-4">
                                 <h3 className="font-bold font-display text-navy-900 flex items-center gap-2">
-                                    <FileUp size={16} className="text-navy-600" /> Import Database
+                                    <FileUp size={16} className="text-navy-600" /> {t('maintenance.import_db')}
                                 </h3>
                                 <p className="text-sm text-text-500">
-                                    Upload a JSON backup file to restore data. Existing data will be updated.
+                                    {t('maintenance.import_desc')}
                                 </p>
                                 <input
                                     ref={fileInputRef}
@@ -379,19 +381,19 @@ export default function MaintenancePage() {
                                     {restoreStatus === 'running' ? (
                                         <>
                                             <Loader2 size={16} className="animate-spin" />
-                                            Importing...
+                                            {t('maintenance.import_running')}
                                         </>
                                     ) : restoreStatus === 'done' ? (
                                         <>
                                             <CheckCircle size={16} />
-                                            Import Complete!
+                                            {t('maintenance.import_done')}
                                         </>
                                     ) : restoreStatus === 'error' ? (
-                                        'Import Failed'
+                                        t('maintenance.import_failed')
                                     ) : (
                                         <>
                                             <Upload size={16} />
-                                            Upload & Import
+                                            {t('maintenance.import_btn')}
                                         </>
                                     )}
                                 </button>
@@ -416,14 +418,14 @@ export default function MaintenancePage() {
                             <div className="card p-5 space-y-3">
                                 <h3 className="font-bold font-display text-navy-900 flex items-center justify-between gap-2 text-sm">
                                     <span className="flex items-center gap-2">
-                                        <Database size={14} className="text-navy-600" /> Database Stats
+                                        <Database size={14} className="text-navy-600" /> {t('maintenance.db_stats')}
                                     </span>
                                     {!dbStats && (
                                         <button
                                             onClick={loadDbStats}
                                             className="text-xs font-semibold text-navy-600 hover:text-navy-700 bg-navy-50 hover:bg-navy-100 px-2.5 py-1 rounded transition"
                                         >
-                                            Load Data
+                                            {t('maintenance.load_data')}
                                         </button>
                                     )}
                                 </h3>
@@ -443,7 +445,7 @@ export default function MaintenancePage() {
                                             </div>
                                         ))}
                                         <div className="pt-2 mt-2 border-t border-surface-200 flex justify-between text-xs font-semibold">
-                                            <span className="text-text-700">Total Records</span>
+                                            <span className="text-text-700">{t('maintenance.total_records')}</span>
                                             <span className="text-navy-900 font-mono">{dbStats.totalRecords}</span>
                                         </div>
                                     </div>
@@ -452,17 +454,17 @@ export default function MaintenancePage() {
 
                             {/* Quick Stats */}
                             <div className="card p-5 text-center">
-                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Active Flags</p>
+                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('maintenance.active_flags')}</p>
                                 <p className="text-3xl font-black font-display text-navy-900 mt-2">
                                     {flags.filter(f => f.is_enabled).length}
                                 </p>
-                                <p className="text-xs text-text-300 mt-1">out of {flags.length} total</p>
+                                <p className="text-xs text-text-300 mt-1">{t('maintenance.of')} {flags.length} {t('maintenance.total')}</p>
                             </div>
 
                             <div className="card p-5 text-center">
-                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">System Status</p>
+                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('maintenance.sys_status')}</p>
                                 <p className={`text-lg font-bold mt-2 ${maintenanceMode ? 'text-warning' : 'text-success'}`}>
-                                    {maintenanceMode ? '🔧 Maintenance' : '✅ Operational'}
+                                    {maintenanceMode ? `🔧 ${t('maintenance.status_maintenance')}` : `✅ ${t('maintenance.status_operational')}`}
                                 </p>
                             </div>
                         </div>

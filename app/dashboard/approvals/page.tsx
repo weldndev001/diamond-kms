@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useTranslation } from '@/hooks/useTranslation'
 import { getApprovalQueueAction, reviewApprovalAction } from '@/lib/actions/approval.actions'
 import { CheckCircle, XCircle, Search, Eye, FileText } from 'lucide-react'
 import Link from 'next/link'
@@ -9,6 +10,7 @@ import { RoleGuard } from '@/components/shared/RoleGuard'
 
 export default function ApprovalsPage() {
     const { organization, user, role, division } = useCurrentUser()
+    const { t } = useTranslation()
     const [queues, setQueues] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -35,14 +37,14 @@ export default function ApprovalsPage() {
     }, [organization?.id, division?.id])
 
     const handleApprove = async (id: string) => {
-        if (!user || !confirm('Approve and publish this article?')) return
+        if (!user || !confirm(t('approvals.confirm_approve'))) return
         setProcessingId(id)
 
         const res = await reviewApprovalAction(id, user.id, 'APPROVED')
         if (res.success) {
             loadData()
         } else {
-            alert(res.error || 'Failed to approve content')
+            alert(res.error || t('approvals.approve_failed'))
         }
         setProcessingId(null)
     }
@@ -63,7 +65,7 @@ export default function ApprovalsPage() {
             setIsRejectOpen(false)
             loadData()
         } else {
-            alert(res.error || 'Failed to reject content')
+            alert(res.error || t('approvals.reject_failed'))
         }
         setProcessingId(null)
     }
@@ -78,7 +80,7 @@ export default function ApprovalsPage() {
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold font-display text-navy-900 flex items-center gap-2">
-                        <FileText size={24} className="text-navy-600" /> Content Approval Queue
+                        <FileText size={24} className="text-navy-600" /> {t('approvals.title')}
                     </h1>
                 </div>
 
@@ -88,51 +90,51 @@ export default function ApprovalsPage() {
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-300" size={18} />
                             <input
                                 type="text"
-                                placeholder="Search requested titles/authors..."
+                                placeholder={t('approvals.search_placeholder')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10 pr-4 py-2 border rounded-md w-full focus:ring-navy-600 focus:border-navy-600"
                             />
                         </div>
                         <div className="text-sm font-medium text-text-500 bg-surface-50 px-3 py-1.5 rounded border shadow-sm">
-                            {queues.length} Pending
+                            {queues.length} {t('approvals.pending_count')}
                         </div>
                     </div>
 
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-surface-50 text-text-500 text-sm border-b">
-                                <th className="p-4 font-medium">Article requested</th>
-                                <th className="p-4 font-medium">Division</th>
-                                <th className="p-4 font-medium">Submitted by</th>
-                                <th className="p-4 font-medium">Date</th>
-                                <th className="p-4 font-medium w-48 text-right">Action</th>
+                                <th className="p-4 font-medium">{t('approvals.th_article')}</th>
+                                <th className="p-4 font-medium">{t('approvals.th_division')}</th>
+                                <th className="p-4 font-medium">{t('approvals.th_submitted_by')}</th>
+                                <th className="p-4 font-medium">{t('approvals.th_date')}</th>
+                                <th className="p-4 font-medium w-48 text-right">{t('approvals.th_action')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={5} className="p-8 text-center text-text-500">Loading queue...</td></tr>
+                                <tr><td colSpan={5} className="p-8 text-center text-text-500">{t('approvals.loading')}</td></tr>
                             ) : filteredQueues.length === 0 ? (
                                 <tr><td colSpan={5} className="p-12 text-center text-text-500">
                                     <CheckCircle size={40} className="mx-auto text-green-300 mb-3" />
-                                    All caught up! No pending approvals.
+                                    {t('approvals.empty_title')}
                                 </td></tr>
                             ) : (
                                 filteredQueues.map((q) => (
                                     <tr key={q.id} className="border-b last:border-0 hover:bg-surface-50">
                                         <td className="p-4">
                                             <Link href={`/dashboard/knowledge-base/${q.content_id}`} target="_blank" className="font-medium text-navy-600 hover:underline flex items-center gap-2">
-                                                <Eye size={16} /> {q.content?.title || 'Unknown Title'}
+                                                <Eye size={16} /> {q.content?.title || t('approvals.unknown_title')}
                                             </Link>
                                         </td>
                                         <td className="p-4 text-sm text-text-500">
-                                            {q.content?.division?.name || 'General'}
+                                            {q.content?.division?.name || t('knowledge_base.group_general')}
                                         </td>
                                         <td className="p-4 text-sm text-navy-900 font-medium">
                                             {q.submitter_name}
                                         </td>
                                         <td className="p-4 text-sm text-text-500">
-                                            {new Date(q.submitted_at).toLocaleDateString('en-US')}
+                                            {new Date(q.submitted_at).toLocaleDateString(t('common.language') === 'Indonesian' ? 'id-ID' : 'en-US')}
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex justify-end gap-2">
@@ -141,14 +143,14 @@ export default function ApprovalsPage() {
                                                     disabled={processingId === q.id}
                                                     className="px-3 py-1.5 text-sm text-danger bg-danger-bg hover:bg-danger-bg rounded border border-red-200 transition font-medium flex items-center gap-1"
                                                 >
-                                                    <XCircle size={14} /> Reject
+                                                    <XCircle size={14} /> {t('approvals.reject_btn')}
                                                 </button>
                                                 <button
                                                     onClick={() => handleApprove(q.id)}
                                                     disabled={processingId === q.id}
                                                     className="px-3 py-1.5 text-sm text-green-700 bg-success-bg hover:bg-green-100 rounded border border-green-200 transition font-medium flex items-center gap-1"
                                                 >
-                                                    <CheckCircle size={14} /> Approve
+                                                    <CheckCircle size={14} /> {t('approvals.approve_btn')}
                                                 </button>
                                             </div>
                                         </td>
@@ -164,22 +166,22 @@ export default function ApprovalsPage() {
             {isRejectOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-                        <h2 className="text-xl font-bold font-display mb-1 text-navy-900">Reject Approval</h2>
-                        <p className="text-sm text-text-500 mb-4">You are returning the article "{selectedQueue?.content?.title}" to its author.</p>
+                        <h2 className="text-xl font-bold font-display mb-1 text-navy-900">{t('approvals.modal_reject_title')}</h2>
+                        <p className="text-sm text-text-500 mb-4">{t('approvals.modal_reject_desc').replace('{title}', selectedQueue?.content?.title)}</p>
 
                         <form onSubmit={handleReject}>
-                            <label className="block text-sm font-medium mb-1 text-text-700">Reason for rejection (Optional)</label>
+                            <label className="block text-sm font-medium mb-1 text-text-700">{t('approvals.reason_label')}</label>
                             <textarea
                                 value={rejectNote}
                                 onChange={(e) => setRejectNote(e.target.value)}
                                 className="w-full border-surface-200 border rounded-md p-2.5 h-24 focus:ring-navy-600 focus:border-navy-600"
-                                placeholder="E.g. Please add more details to section 3..."
+                                placeholder={t('approvals.reason_placeholder')}
                             />
 
                             <div className="flex justify-end gap-3 mt-6">
-                                <button type="button" onClick={() => setIsRejectOpen(false)} className="px-4 py-2 text-text-500 hover:bg-surface-100 rounded">Cancel</button>
+                                <button type="button" onClick={() => setIsRejectOpen(false)} className="px-4 py-2 text-text-500 hover:bg-surface-100 rounded">{t('common.cancel')}</button>
                                 <button type="submit" disabled={processingId === selectedQueue?.id} className="btn btn-danger">
-                                    <XCircle size={16} /> Reject Article
+                                    <XCircle size={16} /> {t('approvals.reject_article_btn')}
                                 </button>
                             </div>
                         </form>

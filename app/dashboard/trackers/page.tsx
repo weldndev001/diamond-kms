@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useTranslation } from '@/hooks/useTranslation'
 import { getMandatoryReadStatsAction } from '@/lib/actions/read-tracker.actions'
 import { RoleGuard } from '@/components/shared/RoleGuard'
 import { CheckCircle, BarChart3, Users, Search, BookOpen } from 'lucide-react'
 
 export default function TrackersPage() {
     const { organization } = useCurrentUser()
+    const { t } = useTranslation()
     const [stats, setStats] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -30,14 +32,13 @@ export default function TrackersPage() {
             <div className="space-y-6">
                 <div className="flex justify-between items-center mb-2">
                     <h1 className="text-2xl font-bold font-display text-navy-900 flex items-center gap-2">
-                        <CheckCircle size={24} className="text-navy-600" /> Mandatory Read Tracking
+                        <CheckCircle size={24} className="text-navy-600" /> {t('trackers.title')}
                     </h1>
                 </div>
 
                 <div className="card-sm border p-6 mb-6">
                     <p className="text-text-500">
-                        Monitor employee engagement and compliance for critical knowledge base articles.
-                        Articles marked as <strong>"Mandatory Read"</strong> will appear here along with their completion percentage.
+                        {t('trackers.desc')}
                     </p>
                 </div>
 
@@ -47,7 +48,7 @@ export default function TrackersPage() {
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-300" size={18} />
                             <input
                                 type="text"
-                                placeholder="Search document titles..."
+                                placeholder={t('trackers.search_placeholder')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10 pr-4 py-2 border rounded-md w-full focus:ring-navy-600 focus:border-navy-600"
@@ -57,12 +58,12 @@ export default function TrackersPage() {
 
                     <div className="p-6">
                         {loading ? (
-                            <div className="py-12 text-center text-text-500 animate-pulse">Loading tracker data...</div>
+                            <div className="py-12 text-center text-text-500 animate-pulse">{t('trackers.loading')}</div>
                         ) : filteredStats.length === 0 ? (
                             <div className="py-12 text-center">
                                 <BookOpen size={48} className="mx-auto text-text-300 mb-4" />
-                                <h3 className="text-lg font-bold font-display text-text-700">No Mandatory Articles Found</h3>
-                                <p className="text-text-500 mt-1">Publish an article and check the "Mandatory Read" option to track it here.</p>
+                                <h3 className="text-lg font-bold font-display text-text-700">{t('trackers.empty_title')}</h3>
+                                <p className="text-text-500 mt-1">{t('trackers.empty_desc')}</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -81,7 +82,7 @@ export default function TrackersPage() {
                                         </h3>
 
                                         <p className="text-xs text-text-500 mb-6">
-                                            Published: {new Date(item.published_at).toLocaleDateString('en-US')}
+                                            {t('trackers.published')} {new Date(item.published_at).toLocaleDateString(t('common.locale'))}
                                         </p>
 
                                         <div className="space-y-3">
@@ -89,7 +90,7 @@ export default function TrackersPage() {
                                                 <div className="flex items-center gap-2 text-sm text-text-500">
                                                     <Users size={16} className="text-navy-600" />
                                                     <span className="font-semibold text-navy-900">{item.readCount}</span>
-                                                    / {item.totalTarget} Readers
+                                                    / {item.totalTarget} {t('trackers.readers_count')}
                                                 </div>
                                                 <div className="text-2xl font-black text-navy-600">
                                                     {item.percent}%

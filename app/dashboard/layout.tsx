@@ -15,6 +15,8 @@ import {
 import { NotificationBell } from '@/components/shared/NotificationBell'
 import SmartSearch from '@/components/search/SmartSearch'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
+import { useTranslation } from '@/hooks/useTranslation'
 
 import {
     Dialog,
@@ -88,26 +90,26 @@ function isNavGroup(entry: NavEntry): entry is NavGroup {
 }
 
 // Nav structure per role
-const getNavEntries = (role?: string): NavEntry[] => {
+const getNavEntries = (role: string | undefined, t: (key: string) => string): NavEntry[] => {
     const base: NavEntry[] = [
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'FAQ', href: '/dashboard/faqs' },
-        { label: 'AI Assistant', href: '/dashboard/ai-assistant' },
+        { label: t('common.dashboard'), href: '/dashboard' },
+        { label: t('common.faq'), href: '/dashboard/faqs' },
+        { label: t('common.ai_assistant'), href: '/dashboard/ai-assistant' },
         {
-            label: 'Knowledge Management',
+            label: t('common.knowledge_management'),
             icon: 'Tags',
             children: [
-                { label: 'Kelola Knowledge Base', href: '/dashboard/knowledge-base' },
-                { label: 'Manage Document', href: '/dashboard/documents' },
-                { label: 'Manage Content', href: '/dashboard/content' }
+                { label: t('common.manage_knowledge_base'), href: '/dashboard/knowledge-base' },
+                { label: t('common.manage_document'), href: '/dashboard/documents' },
+                { label: t('common.manage_content'), href: '/dashboard/content' }
             ]
         },
         {
-            label: 'Quiz Management',
+            label: t('common.quiz_management'),
             icon: 'FileQuestion',
             children: [
-                { label: 'Quiz', href: '/dashboard/quizzes' },
-                { label: 'Leaderboard', href: '/dashboard/quizzes?view=leaderboard' },
+                { label: t('common.quiz'), href: '/dashboard/quizzes' },
+                { label: t('common.leaderboard'), href: '/dashboard/quizzes?view=leaderboard' },
             ]
         },
     ]
@@ -116,23 +118,23 @@ const getNavEntries = (role?: string): NavEntry[] => {
         return [
             ...base,
             {
-                label: 'User Management',
+                label: t('common.user_management'),
                 icon: 'Users',
                 children: [
-                    { label: 'Anggota', href: '/dashboard/hrd/users' },
-                    { label: 'Divisi', href: '/dashboard/hrd/users/divisions' },
+                    { label: t('common.members'), href: '/dashboard/hrd/users' },
+                    { label: t('common.divisions'), href: '/dashboard/hrd/users/divisions' },
                 ]
             },
             // Divisions removed as it's now in the User accordion
             {
-                label: 'Settings',
+                label: t('common.settings'),
                 icon: 'Settings',
                 children: [
-                    { label: 'Billing', href: '/dashboard/hrd/billing' },
-                    { label: 'AI Management', href: '/dashboard/hrd/ai' },
-                    { label: 'Maintenance', href: '/dashboard/hrd/maintenance' },
-                    { label: 'Activation', href: '/dashboard/hrd/otp' },
-                    { label: 'Application', href: '/dashboard/hrd/website' },
+                    { label: t('common.billing'), href: '/dashboard/hrd/billing' },
+                    { label: t('common.ai_management'), href: '/dashboard/hrd/ai' },
+                    { label: t('common.maintenance'), href: '/dashboard/hrd/maintenance' },
+                    { label: t('common.activation'), href: '/dashboard/hrd/otp' },
+                    { label: t('common.application'), href: '/dashboard/hrd/website' },
                 ],
             },
         ]
@@ -142,11 +144,11 @@ const getNavEntries = (role?: string): NavEntry[] => {
         return [
             ...base,
             {
-                label: 'User',
+                label: t('common.members'),
                 icon: 'Users',
                 children: [
-                    { label: 'Members', href: '/dashboard/hrd/users' },
-                    { label: 'Divisions', href: '/dashboard/hrd/users/divisions' },
+                    { label: t('common.members'), href: '/dashboard/hrd/users' },
+                    { label: t('common.divisions'), href: '/dashboard/hrd/users/divisions' },
                 ]
             },
         ]
@@ -160,11 +162,11 @@ const getNavEntries = (role?: string): NavEntry[] => {
 
     if (role === 'MAINTAINER') {
         return [
-            { label: 'System Overview', href: '/dashboard/maintenance' },
-            { label: 'Organizations', href: '/dashboard/maintenance/organizations' },
-            { label: 'AI Providers', href: '/dashboard/maintenance/ai-providers' },
-            { label: 'Monitoring', href: '/admin/monitoring' },
-            { label: 'Logs', href: '/dashboard/maintenance/logs' },
+            { label: t('common.system_overview'), href: '/dashboard/maintenance' },
+            { label: t('common.organizations'), href: '/dashboard/maintenance/organizations' },
+            { label: t('common.ai_providers'), href: '/dashboard/maintenance/ai-providers' },
+            { label: t('common.monitoring'), href: '/admin/monitoring' },
+            { label: t('common.logs'), href: '/dashboard/maintenance/logs' },
         ]
     }
 
@@ -245,12 +247,14 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
         }
     }, [isLoading, user, router])
 
+    const { t } = useTranslation()
+
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-surface-50">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-navy-200 border-t-navy-600 rounded-full animate-spin"></div>
-                    <p className="text-navy-700 font-medium">Loading Dashboard...</p>
+                    <p className="text-navy-700 font-medium">{t('common.loading')}</p>
                 </div>
             </div>
         )
@@ -260,17 +264,7 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
         return null
     }
 
-    const navEntries = getNavEntries(role)
-    // TEMPORARY BYPASS
-    if (!navEntries.find(g => 'label' in g && g.label === 'Settings')) {
-        navEntries.push({
-            label: 'Settings',
-            icon: 'Settings',
-            children: [
-                { label: 'AI Management', href: '/dashboard/hrd/ai' },
-            ],
-        })
-    }
+    const navEntries = getNavEntries(role, t)
 
     return (
         <div className="flex h-screen bg-surface-50 overflow-hidden relative">
@@ -282,10 +276,21 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
                 {/* Brand Logo */}
                 <div className="p-[24px_20px]">
                     <div className="font-display text-[18px] font-extrabold text-white flex items-center gap-2">
-                        <span className="text-amber-400 text-[16px] leading-none">◆</span> DIAMOND
+                        {organization?.logo_url ? (
+                            <img 
+                                src={organization.logo_url.startsWith('http') ? organization.logo_url : `/${organization.logo_url}`} 
+                                alt="Logo" 
+                                className="w-8 h-8 object-contain shrink-0" 
+                            />
+                        ) : (
+                            <span className="text-amber-400 text-[16px] leading-none">◆</span>
+                        )}
+                        <span className="truncate">
+                            {organization?.app_name || 'DIAMOND'}
+                        </span>
                     </div>
-                    <div className="text-[10px] text-sidebar-muted mt-1 font-bold tracking-[0.05em] uppercase">
-                        KNOWLEDGE MANAGEMENT
+                    <div className="text-[10px] text-sidebar-muted mt-1 font-bold tracking-[0.05em] uppercase truncate">
+                        {organization?.slogan || 'KNOWLEDGE MANAGEMENT SYSTEM'}
                     </div>
                     {organization?.name && (
                         <div className="text-[11px] text-sidebar-foreground mt-3 font-medium truncate border-t border-white/10 pt-3">
@@ -353,8 +358,8 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
                         {/* Sidebar Toggle */}
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="p-2 text-text-400 hover:text-navy-600 hover:bg-surface-50 rounded-lg transition-all active:scale-95 border border-transparent hover:border-surface-200"
-                            title={isSidebarOpen ? "Hide Menu" : "Show Menu"}
+                             className="p-2 text-text-400 hover:text-navy-600 hover:bg-surface-50 rounded-lg transition-all active:scale-95 border border-transparent hover:border-surface-200"
+                            title={isSidebarOpen ? t('common.hide_menu') : t('common.show_menu')}
                         >
                             {isSidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
                         </button>
@@ -363,7 +368,7 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
 
                         <div className="flex flex-col">
                             <div className="font-semibold text-text-900 text-sm">
-                                {organization?.name || 'Workspace'}
+                                {organization?.name || t('common.workspace')}
                             </div>
                         </div>
                     </div>
@@ -380,7 +385,7 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
                                     <div className="p-4 border-b border-surface-100 dark:border-surface-100 flex items-center justify-between bg-surface-50 dark:bg-surface-50">
                                         <div className="flex items-center gap-2 text-text-900 font-bold font-display">
                                             <Search size={18} className="text-amber-500" />
-                                            Smart Search
+                                            {t('common.smart_search')}
                                         </div>
                                     </div>
                                     <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
@@ -390,6 +395,7 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
                             </DialogContent>
                         </Dialog>
 
+                        <LanguageSwitcher />
                         <ThemeToggle />
                         <NotificationBell userId={user.id} />
                         <Link href="/dashboard/profile" className="flex items-center gap-2 text-sm font-medium text-text-700 hover:text-navy-600 transition-colors">

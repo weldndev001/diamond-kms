@@ -34,7 +34,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang="id" suppressHydrationWarning>
             <body className={`${sora.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-sans bg-surface-50 text-navy-900`}>
                 <NextAuthProvider>
                     <ThemeProvider

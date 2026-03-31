@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useTranslation } from '@/hooks/useTranslation'
 import { getQuizzesAction, deleteQuizAction, updateQuizAction, updateQuizNoteAction } from '@/lib/actions/quiz.actions'
 import { Plus, Search, HelpCircle, Trash2, Clock, CheckCircle, FileQuestion, MessageSquare, AlertCircle, Trophy, Medal, Award, TrendingUp, Sparkles, Pencil, X, LayoutGrid, List, FileText, ChevronDown, Check } from 'lucide-react'
 import Link from 'next/link'
@@ -11,6 +12,7 @@ import { useSearchParams } from 'next/navigation'
 
 export default function QuizzesPage() {
     const { organization, role, division, user } = useCurrentUser()
+    const { t } = useTranslation()
     const searchParams = useSearchParams()
     const view = searchParams.get('view')
     const [quizzes, setQuizzes] = useState<any[]>([])
@@ -51,13 +53,13 @@ export default function QuizzesPage() {
             if (quizRes.success) {
                 setQuizzes(quizRes.data || [])
             } else {
-                setError(quizRes.error || 'Failed to load quizzes')
+                setError(quizRes.error || t('quizzes.error_loading'))
             }
 
             if (leaderRes.success) setLeaders(leaderRes.data || [])
             if (divRes.success) setDivisions(divRes.data || [])
         } catch (err: any) {
-            setError(err.message || 'A system error occurred')
+            setError(err.message || t('common.error'))
         } finally {
             setLoading(false)
         }
@@ -68,12 +70,12 @@ export default function QuizzesPage() {
     }, [organization?.id, selectedDivision, selectedQuiz])
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this quiz?')) return
+        if (!confirm(t('common.confirm_delete'))) return
         const res = await deleteQuizAction(id)
         if (res.success) {
             loadData()
         } else {
-            alert(res.error || 'Failed to delete quiz')
+            alert(res.error || t('common.error'))
         }
     }
 
@@ -86,7 +88,7 @@ export default function QuizzesPage() {
     })
 
     const handleApprove = async (id: string) => {
-        if (!confirm('Approve this quiz for publication?')) return
+        if (!confirm(t('approvals.confirm_approve'))) return
         const res = await updateQuizAction(id, { is_published: true, created_by: user?.id })
         if (res.success) loadData()
     }
@@ -115,7 +117,7 @@ export default function QuizzesPage() {
     };
 
     const handleUpdateQuickNote = async (id: string, newNote: string) => {
-        if (!confirm('Continue with this action?')) return;
+        if (!confirm(t('common.continue'))) return;
         const res = await updateQuizNoteAction(id, newNote);
         if (res.success) {
             loadData();
@@ -138,10 +140,10 @@ export default function QuizzesPage() {
             <div className="flex justify-between items-end">
                 <div>
                     <h1 className="text-[32px] font-black font-display text-text-900 leading-tight tracking-tight">
-                        {activeTab === 'Leaderboard' ? 'Leaderboard' : 'Quiz Management'}
+                        {activeTab === 'Leaderboard' ? t('quizzes.leaderboard_title') : t('quizzes.management_title')}
                     </h1>
                     <p className="text-sm text-text-500 mt-1.5 font-medium">
-                        {activeTab === 'Leaderboard' ? 'Monitor rankings and achievements.' : 'Test your understanding through interactive learning modules.'}
+                        {activeTab === 'Leaderboard' ? t('quizzes.leaderboard_desc') : t('quizzes.quizzes_desc')}
                     </p>
                 </div>
                 {['SUPER_ADMIN', 'GROUP_ADMIN', 'MAINTAINER', 'SUPERVISOR'].includes(role || '') && (
@@ -149,7 +151,7 @@ export default function QuizzesPage() {
                         href="/dashboard/quizzes/create"
                         className="btn btn-primary shadow-xl shadow-navy-600/20 px-6 py-3 rounded-xl hover:scale-[1.02] active:scale-95 transition-all"
                     >
-                        <Plus size={18} /> Create Quiz
+                        <Plus size={18} /> {t('quizzes.create_btn')}
                     </Link>
                 )}
             </div>
@@ -158,10 +160,10 @@ export default function QuizzesPage() {
                 <div className="p-4 bg-danger-bg border border-red-200 dark:border-red-900/30 text-danger rounded-2xl flex items-center gap-3">
                     <AlertCircle size={20} />
                     <div className="flex-1">
-                        <p className="font-bold text-sm">Error Loading Data</p>
+                        <p className="font-bold text-sm">{t('quizzes.error_loading')}</p>
                         <p className="text-xs opacity-80">{error}</p>
                     </div>
-                    <button onClick={() => loadData()} className="btn btn-primary py-1.5 px-4 text-xs rounded-lg">Try Again</button>
+                    <button onClick={() => loadData()} className="btn btn-primary py-1.5 px-4 text-xs rounded-lg">{t('quizzes.try_again')}</button>
                 </div>
             )}
 
@@ -174,7 +176,7 @@ export default function QuizzesPage() {
                                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-text-400 group-focus-within:text-navy-500 transition-colors" size={18} />
                                 <input
                                     type="text"
-                                    placeholder="Search quizzes..."
+                                    placeholder={t('quizzes.search_placeholder')}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="w-full bg-white dark:bg-slate-800 border border-surface-200 dark:border-slate-700 py-3.5 pl-12 pr-4 rounded-2xl outline-none focus:ring-4 focus:ring-navy-600/5 focus:border-navy-500 transition-all shadow-sm text-sm font-medium"
@@ -184,7 +186,7 @@ export default function QuizzesPage() {
                             <div className="relative flex-1 group w-full sm:w-auto">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
                                     <Sparkles className="text-navy-500 w-4 h-4" />
-                                    <span className="text-[10px] font-black uppercase tracking-wider text-text-400 dark:text-slate-500 hidden lg:inline-block">Filter:</span>
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-text-400 dark:text-slate-500 hidden lg:inline-block">{t('quizzes.filter_label')}</span>
                                 </div>
                                 <select
                                     value={selectedDivision}
@@ -192,7 +194,7 @@ export default function QuizzesPage() {
                                     className="w-full bg-white dark:bg-slate-800 border border-surface-200 dark:border-slate-700 py-3.5 pl-12 lg:pl-20 pr-10 rounded-2xl outline-none focus:ring-4 focus:ring-navy-600/5 focus:border-navy-500 dark:focus:border-indigo-500/30 hover:border-navy-400 dark:hover:border-indigo-500/50 transition-all shadow-sm text-sm font-bold text-text-700 dark:text-slate-300 cursor-pointer appearance-none"
                                     disabled={isStaff}
                                 >
-                                    <option value="ALL">All Divisions</option>
+                                    <option value="ALL">{t('quizzes.all_active_div')}</option>
                                     {divisions.map(d => (
                                         <option key={d.id} value={d.id}>{d.name}</option>
                                     ))}
@@ -206,13 +208,13 @@ export default function QuizzesPage() {
                                 onClick={() => setViewMode('grid')}
                                 className={`p-2 rounded-xl transition-all flex items-center gap-2 text-xs font-bold ${viewMode === 'grid' ? 'bg-white dark:bg-navy-600 text-navy-600 dark:text-white shadow-md' : 'text-text-400 hover:text-text-600 hover:bg-surface-200 dark:hover:bg-slate-700'}`}
                             >
-                                <LayoutGrid size={16} /> <span className={viewMode === 'grid' ? 'block' : 'hidden'}>Grid</span>
+                                <LayoutGrid size={16} /> <span className={viewMode === 'grid' ? 'block' : 'hidden'}>{t('quizzes.view_grid')}</span>
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
                                 className={`p-2 rounded-xl transition-all flex items-center gap-2 text-xs font-bold ${viewMode === 'list' ? 'bg-white dark:bg-navy-600 text-navy-600 dark:text-white shadow-md' : 'text-text-400 hover:text-text-600 hover:bg-surface-200 dark:hover:bg-slate-700'}`}
                             >
-                                <List size={16} /> <span className={viewMode === 'list' ? 'block' : 'hidden'}>List</span>
+                                <List size={16} /> <span className={viewMode === 'list' ? 'block' : 'hidden'}>{t('quizzes.view_list')}</span>
                             </button>
                         </div>
                     </div>
@@ -221,18 +223,18 @@ export default function QuizzesPage() {
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-32">
                                 <div className="w-14 h-14 border-4 border-navy-100 border-t-navy-600 rounded-full animate-spin mb-6"></div>
-                                <p className="text-text-400 font-black uppercase tracking-[0.2em] text-[11px]">Syncing Knowledge Base...</p>
+                                <p className="text-text-400 font-black uppercase tracking-[0.2em] text-[11px]">{t('quizzes.syncing')}</p>
                             </div>
                         ) : filteredQuizzes.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-32 text-center">
                                 <div className="w-24 h-24 bg-surface-100 dark:bg-slate-800 text-text-300 dark:text-slate-600 rounded-[40px] flex items-center justify-center mb-8 shadow-inner rotate-12">
                                     <FileQuestion size={48} />
                                 </div>
-                                <h3 className="font-display text-2xl font-black text-text-900 mb-3 tracking-tight">No quiz modules found</h3>
+                                <h3 className="font-display text-2xl font-black text-text-900 mb-3 tracking-tight">{t('quizzes.empty_title')}</h3>
                                 <p className="text-text-500 max-w-sm text-sm leading-relaxed">
                                     {searchTerm
-                                        ? `Modules matching "${searchTerm}" were not found.`
-                                        : "Quizzes published by the training team will automatically appear here."}
+                                        ? t('quizzes.empty_search').replace('{term}', searchTerm)
+                                        : t('quizzes.empty_default')}
                                 </p>
                             </div>
                         ) : (
@@ -257,7 +259,7 @@ export default function QuizzesPage() {
                                                     </div>
                                                     {/* Badge Status */}
                                                     <span className={`text-[10px] font-black px-3 py-1.5 rounded-xl border uppercase tracking-[0.1em] ${q.is_published ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' : 'bg-slate-500/10 text-slate-500 border-slate-500/20'}`}>
-                                                        {q.is_published ? 'PUBLISHED' : 'DRAFT'}
+                                                        {q.is_published ? t('quizzes.status_published') : t('quizzes.status_draft')}
                                                     </span>
                                                 </div>
 
@@ -269,7 +271,7 @@ export default function QuizzesPage() {
                                                         </div>
                                                         <div className="flex-1 pr-4">
                                                             <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.1em] mb-1">
-                                                                Admin Revision Note
+                                                                {t('quizzes.admin_note')}
                                                             </p>
                                                             <p className="text-xs text-amber-900 dark:text-amber-200/90 font-medium leading-relaxed italic">
                                                                 {q.notes}
@@ -281,7 +283,7 @@ export default function QuizzesPage() {
                                                                     onClick={() => handleUpdateQuickNote(q.id, "[DONE] " + q.notes)}
                                                                     className="mt-3 py-1.5 px-3 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider shadow-lg shadow-green-500/20"
                                                                 >
-                                                                    <Check size={12} /> Mark as Done
+                                                                    <Check size={12} /> {t('quizzes.mark_done')}
                                                                 </button>
                                                             )}
                                                         </div>
@@ -295,16 +297,16 @@ export default function QuizzesPage() {
                                                 </h3>
                                                 
                                                 <p className="text-sm text-text-500 dark:text-slate-400 line-clamp-2 mb-6 leading-relaxed font-medium">
-                                                    {q.description || 'Study this material and test your knowledge to earn achievement points.'}
+                                                    {q.description || t('quizzes.default_desc')}
                                                 </p>
 
                                                 <div className="flex flex-wrap gap-2.5">
                                                     <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 rounded-xl text-[11px] font-bold border border-slate-100 dark:border-slate-700/50">
-                                                        <HelpCircle size={14} className="text-navy-500" /> {q._count?.questions || 0} Questions
+                                                        <HelpCircle size={14} className="text-navy-500" /> {q._count?.questions || 0} {t('quizzes.th_questions')}
                                                     </div>
                                                     {q.time_limit_minutes && (
                                                         <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 rounded-xl text-[11px] font-bold border border-slate-100 dark:border-slate-700/50">
-                                                            <Clock size={14} className="text-amber-500" /> {q.time_limit_minutes} Min
+                                                            <Clock size={14} className="text-amber-500" /> {q.time_limit_minutes} {t('quizzes.th_min')}
                                                         </div>
                                                     )}
                                                 </div>
@@ -321,12 +323,12 @@ export default function QuizzesPage() {
                                                                         onClick={() => handleApprove(q.id)}
                                                                         className="flex-1 py-3.5 bg-green-600 hover:bg-green-700 text-white font-black text-[11px] uppercase tracking-[0.15em] rounded-2xl transition-all shadow-lg shadow-green-600/20 active:scale-95 flex items-center justify-center gap-2"
                                                                     >
-                                                                        <CheckCircle size={16} /> PUBLISH
+                                                                        <CheckCircle size={16} /> {t('quizzes.publish_btn')}
                                                                     </button>
                                                                     <button
                                                                         onClick={() => handleAddNote(q.id, q.notes)}
                                                                         className="w-12 h-12 flex items-center justify-center bg-amber-500/20 hover:bg-amber-500/30 text-amber-600 dark:text-amber-400 rounded-2xl border border-amber-500/30 transition-all shrink-0"
-                                                                        title="Give Revision Note"
+                                                                        title={t('quizzes.revision_note_btn')}
                                                                     >
                                                                         <MessageSquare size={18} />
                                                                     </button>
@@ -335,7 +337,7 @@ export default function QuizzesPage() {
                                                                         <button
                                                                             onClick={() => handleUpdateQuickNote(q.id, "")}
                                                                             className="w-12 h-12 flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl border border-red-500/20 transition-all shrink-0"
-                                                                            title="Delete Note"
+                                                                            title={t('quizzes.delete_note_btn')}
                                                                         >
                                                                             <Trash2 size={18} />
                                                                         </button>
@@ -349,20 +351,20 @@ export default function QuizzesPage() {
                                                                     <Link
                                                                         href={`/dashboard/quizzes/create?edit=${q.id}`}
                                                                         className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:scale-110"
-                                                                        title="Edit Module"
+                                                                        title={t('quizzes.edit_module')}
                                                                     >
                                                                         <Pencil size={18} />
                                                                     </Link>
                                                                     <button
                                                                         onClick={() => handleDelete(q.id)}
                                                                         className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:scale-110"
-                                                                        title="Delete"
+                                                                        title={t('common.delete')}
                                                                     >
                                                                         <Trash2 size={18} />
                                                                     </button>
                                                                 </div>
                                                                 <div className="pr-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] opacity-60">
-                                                                    Management
+                                                                    {t('quizzes.management')}
                                                                 </div>
                                                             </div>
                                                         </>
@@ -374,7 +376,7 @@ export default function QuizzesPage() {
                                                                 : 'bg-surface-200 dark:bg-slate-900 text-text-300 dark:text-slate-600 cursor-not-allowed opacity-50'
                                                                 }`}
                                                         >
-                                                            {q.is_published ? '🚀 Start Quiz' : 'Coming Soon'}
+                                                            {q.is_published ? t('quizzes.start_btn') : t('quizzes.coming_soon')}
                                                         </Link>
                                                     )}
                                                 </div>
@@ -394,22 +396,22 @@ export default function QuizzesPage() {
                                                     </h3>
                                                     <div className="flex items-center gap-4">
                                                         <div className="flex items-center gap-1.5 text-[11px] font-bold text-text-400">
-                                                            <HelpCircle size={14} className="text-navy-400" /> {q._count?.questions || 0} Questions
+                                                            <HelpCircle size={14} className="text-navy-400" /> {q._count?.questions || 0} {t('quizzes.th_questions')}
                                                         </div>
                                                         {q.time_limit_minutes && (
                                                             <div className="flex items-center gap-1.5 text-[11px] font-bold text-text-400">
-                                                                <Clock size={14} className="text-amber-400" /> {q.time_limit_minutes} Min
+                                                                <Clock size={14} className="text-amber-400" /> {q.time_limit_minutes} {t('quizzes.th_min')}
                                                             </div>
                                                         )}
                                                         <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-tighter ${q.is_published ? 'bg-green-50 dark:bg-indigo-950/40 text-green-700 dark:text-indigo-300 border-green-200 dark:border-indigo-500/20' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}>
-                                                            {q.is_published ? 'PUBLISHED' : 'DRAFT'}
+                                                            {q.is_published ? t('quizzes.status_published') : t('quizzes.status_draft')}
                                                         </span>
                                                     </div>
                                                     {/* Alert Tampilan List */}
                                                     {q.notes && (
                                                         <div className="mt-2 flex flex-wrap items-center gap-3">
                                                             <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-2">
-                                                                <AlertCircle size={12} /> Revision Note: <span className="italic">{q.notes}</span>
+                                                                <AlertCircle size={12} /> {t('quizzes.rev_note_label')} <span className="italic">{q.notes}</span>
                                                             </div>
                                                             {/* Tombol Tandai Selesai (Hanya untuk Owner) */}
                                                             {user?.id === q.created_by && !q.notes.startsWith("[DONE]") && (
@@ -417,7 +419,7 @@ export default function QuizzesPage() {
                                                                     onClick={() => handleUpdateQuickNote(q.id, "[DONE] " + q.notes)}
                                                                     className="py-1 px-2 bg-green-500/10 hover:bg-green-500 text-green-600 dark:text-green-400 hover:text-white rounded-lg transition-all text-[8px] font-black uppercase tracking-wider border border-green-500/20"
                                                                 >
-                                                                    Mark as Done
+                                                                    {t('quizzes.mark_done')}
                                                                 </button>
                                                             )}
                                                         </div>
@@ -435,13 +437,13 @@ export default function QuizzesPage() {
                                                                         onClick={() => handleApprove(q.id)}
                                                                         className="px-8 h-10 bg-green-600 hover:bg-green-700 text-white font-black text-[10px] uppercase tracking-[0.15em] rounded-xl transition-all shadow-lg shadow-green-600/20 active:scale-95 flex items-center justify-center gap-2 shrink-0"
                                                                     >
-                                                                        <CheckCircle size={14} /> APPROVE
+                                                                        <CheckCircle size={14} /> {t('approvals.approve_btn')}
                                                                     </button>
                                                                     <div className="flex bg-amber-500/10 rounded-xl border border-amber-500/20 p-0.5">
                                                                         <button
                                                                             onClick={() => handleAddNote(q.id, q.notes)}
                                                                             className="w-9 h-9 flex items-center justify-center text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 rounded-lg transition-all"
-                                                                            title="Give Revision Note"
+                                                                            title={t('quizzes.revision_note_btn')}
                                                                         >
                                                                             <MessageSquare size={16} />
                                                                         </button>
@@ -450,7 +452,7 @@ export default function QuizzesPage() {
                                                                             <button
                                                                                 onClick={() => handleUpdateQuickNote(q.id, "")}
                                                                                 className="w-9 h-9 flex items-center justify-center text-red-500 hover:bg-red-500/20 rounded-lg transition-all"
-                                                                                title="Delete Note"
+                                                                                title={t('quizzes.delete_note_btn')}
                                                                             >
                                                                                 <X size={16} />
                                                                             </button>
@@ -468,14 +470,14 @@ export default function QuizzesPage() {
                                                             <Link
                                                                 href={`/dashboard/quizzes/create?edit=${q.id}`}
                                                                 className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
-                                                                title="Edit Module"
+                                                                title={t('quizzes.edit_module')}
                                                             >
                                                                 <Pencil size={18} />
                                                             </Link>
                                                             <button
                                                                 onClick={() => handleDelete(q.id)}
                                                                 className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
-                                                                title="Delete"
+                                                                title={t('common.delete')}
                                                             >
                                                                 <Trash2 size={18} />
                                                             </button>
@@ -487,7 +489,7 @@ export default function QuizzesPage() {
                                                             href={`/dashboard/quizzes/${q.id}`}
                                                             className="px-8 h-10 bg-navy-600 hover:bg-navy-700 text-white font-black text-[10px] uppercase tracking-[0.15em] rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
                                                         >
-                                                            START
+                                                            {t('quizzes.start_short')}
                                                         </Link>
                                                     )
                                                 )}
@@ -508,30 +510,30 @@ export default function QuizzesPage() {
                                 <div className="p-2 bg-navy-50 dark:bg-indigo-950/50 rounded-xl">
                                     <Award size={24} className="text-navy-600 dark:text-indigo-400" />
                                 </div> 
-                                How Points are Earned?
+                                {t('quizzes.how_to_earn')}
                             </h3>
                             <div className="flex-1 p-6 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-inner">
                                 <ul className="text-xs text-text-500 space-y-5 font-bold">
                                     <li className="flex justify-between items-center border-b border-white/50 dark:border-slate-800/50 pb-3">
                                         <div className="flex items-center gap-2">
                                             <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                            <span>Perfect Score (&gt; 90)</span>
+                                            <span>{t('quizzes.perfect_score')}</span>
                                         </div>
-                                        <span className="text-green-600 dark:text-green-400 font-black text-sm">+200 PTS</span>
+                                        <span className="text-green-600 dark:text-green-400 font-black text-sm">+200 {t('quizzes.pts')}</span>
                                     </li>
                                     <li className="flex justify-between items-center border-b border-white/50 dark:border-slate-800/50 pb-3">
                                         <div className="flex items-center gap-2">
                                             <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                                            <span>Standard Score (60-90)</span>
+                                            <span>{t('quizzes.standard_score')}</span>
                                         </div>
-                                        <span className="text-amber-600 dark:text-amber-400 font-black text-sm">+100 PTS</span>
+                                        <span className="text-amber-600 dark:text-amber-400 font-black text-sm">+100 {t('quizzes.pts')}</span>
                                     </li>
                                     <li className="flex justify-between items-center">
                                         <div className="flex items-center gap-2">
                                             <div className="w-1.5 h-1.5 rounded-full bg-navy-500" />
-                                            <span>Read Material</span>
+                                            <span>{t('quizzes.read_material')}</span>
                                         </div>
-                                        <span className="text-navy-600 dark:text-indigo-400 font-black text-sm">+20 PTS</span>
+                                        <span className="text-navy-600 dark:text-indigo-400 font-black text-sm">+20 {t('quizzes.pts')}</span>
                                     </li>
                                 </ul>
                             </div>
@@ -540,12 +542,12 @@ export default function QuizzesPage() {
                         {!loading && user ? (
                             <div className="banner-primary p-10 rounded-[40px] text-white relative overflow-hidden shadow-2xl shadow-navy-900/30 flex flex-col justify-center h-full group">
                                 <div className="relative z-10">
-                                    <h3 className="text-white/60 text-[11px] font-black uppercase tracking-[0.4em] mb-4">Personal Points Radar</h3>
+                                    <h3 className="text-white/60 text-[11px] font-black uppercase tracking-[0.4em] mb-4">{t('quizzes.personal_radar')}</h3>
                                     <div className="flex items-end gap-4">
                                         <span className="text-[80px] font-black leading-none drop-shadow-2xl group-hover:scale-105 transition-transform duration-700">
                                             {leaders.find(l => l.userId === user.id)?.points || 0}
                                         </span>
-                                        <span className="text-white/40 text-xl font-black mb-4 uppercase tracking-tighter">Points</span>
+                                        <span className="text-white/40 text-xl font-black mb-4 uppercase tracking-tighter">{t('quizzes.points_label')}</span>
                                     </div>
                                     <div className="mt-8 flex items-center gap-4">
                                         <div className="h-3 flex-1 bg-white/10 rounded-full overflow-hidden backdrop-blur-xl ring-1 ring-white/10">
@@ -562,7 +564,7 @@ export default function QuizzesPage() {
                         ) : (
                             <div className="card p-8 flex flex-col items-center justify-center bg-surface-50 dark:bg-slate-800 h-full border-dashed border-2 dark:border-slate-700 animate-pulse rounded-[40px]">
                                 <div className="w-12 h-12 border-4 border-navy-100 dark:border-slate-700 border-t-navy-500 dark:border-t-indigo-500 rounded-full animate-spin mb-4"></div>
-                                <p className="text-text-400 text-[11px] font-black uppercase tracking-widest">Synchronizing Leaderboard...</p>
+                                <p className="text-text-400 text-[11px] font-black uppercase tracking-widest">{t('quizzes.syncing_leaderboard')}</p>
                             </div>
                         )}
                     </div>
@@ -571,14 +573,14 @@ export default function QuizzesPage() {
                     <div className="bg-white dark:bg-slate-800 p-8 rounded-[40px] border border-surface-200 dark:border-slate-700 shadow-xl shadow-navy-900/5">
                         <div className="flex flex-col lg:flex-row items-end gap-8">
                             <div className="flex flex-col gap-3 w-full lg:w-72">
-                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-text-400 ml-2">Radar Filter: Division</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-text-400 ml-2">{t('quizzes.radar_filter_div')}</label>
                                 <select
                                     value={selectedDivision}
                                     onChange={(e) => setSelectedDivision(e.target.value)}
                                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 py-3.5 px-5 text-xs font-bold text-text-700 dark:text-slate-300 rounded-2xl outline-none focus:ring-4 focus:ring-navy-600/5 focus:border-navy-500 transition-all cursor-pointer appearance-none"
                                     disabled={isStaff}
                                 >
-                                    <option value="ALL">All Active Divisions</option>
+                                    <option value="ALL">{t('quizzes.all_active_div')}</option>
                                     {divisions.map(d => (
                                         <option key={d.id} value={d.id}>{d.name}</option>
                                     ))}
@@ -586,13 +588,13 @@ export default function QuizzesPage() {
                             </div>
                             
                             <div className="flex flex-col gap-3 w-full lg:w-72">
-                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-text-400 ml-2">Radar Filter: Module</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-text-400 ml-2">{t('quizzes.radar_filter_mod')}</label>
                                 <select
                                     value={selectedQuiz}
                                     onChange={(e) => setSelectedQuiz(e.target.value)}
                                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 py-3.5 px-5 text-xs font-bold text-text-700 dark:text-slate-300 rounded-2xl outline-none focus:ring-4 focus:ring-navy-600/5 focus:border-navy-500 transition-all cursor-pointer appearance-none"
                                 >
-                                    <option value="ALL">All Learning Modules</option>
+                                    <option value="ALL">{t('quizzes.all_learning_mod')}</option>
                                     {quizzes.map(q => (
                                         <option key={q.id} value={q.id}>{q.title}</option>
                                     ))}
@@ -604,7 +606,7 @@ export default function QuizzesPage() {
                                     onClick={() => { setSelectedDivision('ALL'); setSelectedQuiz('ALL') }}
                                     className="w-full lg:w-auto px-8 py-3.5 text-[11px] font-black uppercase tracking-widest text-navy-600 dark:text-indigo-400 hover:bg-navy-50 dark:hover:bg-indigo-950/30 rounded-2xl transition-all border border-transparent hover:border-navy-200 dark:hover:border-indigo-500/30 flex items-center justify-center gap-2 group"
                                 >
-                                    <X size={16} className="group-hover:rotate-90 transition-transform duration-500" /> Reset Parameter
+                                    <X size={16} className="group-hover:rotate-90 transition-transform duration-500" /> {t('quizzes.reset_param')}
                                 </button>
                             </div>
                         </div>
@@ -618,12 +620,12 @@ export default function QuizzesPage() {
                                     <Trophy size={26} className="text-amber-500" />
                                 </div>
                                 <div>
-                                    <h2 className="font-black font-display text-text-900 text-lg leading-tight uppercase tracking-tight">Hall of Fame</h2>
-                                    <p className="text-[10px] font-bold text-text-400 tracking-widest uppercase mt-1">Global Organization Ranking</p>
+                                    <h2 className="font-black font-display text-text-900 text-lg leading-tight uppercase tracking-tight">{t('quizzes.hall_of_fame')}</h2>
+                                    <p className="text-[10px] font-bold text-text-400 tracking-widest uppercase mt-1">{t('quizzes.global_rank')}</p>
                                 </div>
                             </div>
                             <span className="text-[10px] font-black text-navy-600 dark:text-indigo-400 uppercase tracking-widest bg-navy-50 dark:bg-indigo-950/50 px-4 py-2 rounded-xl border border-navy-100 dark:border-indigo-500/20">
-                                {leaders.length} Members Tracked
+                                {leaders.length} {t('quizzes.members_tracked')}
                             </span>
                         </div>
 
@@ -631,11 +633,11 @@ export default function QuizzesPage() {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="text-text-400 text-[10px] font-black uppercase tracking-[0.2em]">
-                                        <th className="p-8 w-24 text-center">RANK</th>
-                                        <th className="p-8">PERFORMER</th>
-                                        <th className="p-8">DOMAIN</th>
-                                        <th className="p-8">TARGET MODULE</th>
-                                        <th className="p-8 text-right">POINTS</th>
+                                        <th className="p-8 w-24 text-center">{t('quizzes.th_rank')}</th>
+                                        <th className="p-8">{t('quizzes.th_performer')}</th>
+                                        <th className="p-8">{t('quizzes.th_domain')}</th>
+                                        <th className="p-8">{t('quizzes.th_module')}</th>
+                                        <th className="p-8 text-right">{t('quizzes.points_label')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-surface-100 dark:divide-slate-700">
@@ -644,7 +646,7 @@ export default function QuizzesPage() {
                                             <td colSpan={5} className="py-24 text-center">
                                                 <div className="flex flex-col items-center gap-4 opacity-30 grayscale">
                                                     <TrendingUp size={60} />
-                                                    <p className="text-sm font-bold italic">No data detected for current radar parameters.</p>
+                                                    <p className="text-sm font-bold italic">{t('quizzes.no_data_radar')}</p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -665,7 +667,7 @@ export default function QuizzesPage() {
                                                             </div>
                                                             <div className="flex flex-col min-w-0">
                                                                 <span className={`text-[15px] font-extrabold truncate ${isMe ? 'text-navy-700 dark:text-indigo-400' : 'text-text-900 group-hover:text-navy-600 dark:group-hover:text-indigo-400 transition-colors'}`}>{leader.name}</span>
-                                                                {isMe && <span className="text-[9px] font-black text-navy-500/80 uppercase tracking-widest mt-1">Current User</span>}
+                                                                {isMe && <span className="text-[9px] font-black text-navy-500/80 uppercase tracking-widest mt-1">{t('quizzes.current_user')}</span>}
                                                             </div>
                                                         </div>
                                                     </td>
@@ -685,7 +687,7 @@ export default function QuizzesPage() {
                                                                 <span className={`text-2xl font-black tabular-nums tracking-tighter ${leader.points >= 80 ? 'text-green-600 dark:text-green-400' : leader.points >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-text-900 dark:text-slate-300'}`}>
                                                                     {leader.points.toLocaleString()}
                                                                 </span>
-                                                                <span className="text-[10px] font-black text-text-300 uppercase tracking-widest">PTS</span>
+                                                                <span className="text-[10px] font-black text-text-300 uppercase tracking-widest">{t('quizzes.pts')}</span>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -717,8 +719,8 @@ export default function QuizzesPage() {
                                     <MessageSquare size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-black text-text-900 dark:text-white tracking-tight">Revision Notes</h3>
-                                    <p className="text-xs text-text-400 font-bold uppercase tracking-widest">Provide feedback for this quiz</p>
+                                    <h3 className="text-xl font-black text-text-900 dark:text-white tracking-tight">{t('quizzes.modal_title')}</h3>
+                                    <p className="text-xs text-text-400 font-bold uppercase tracking-widest">{t('quizzes.modal_subtitle')}</p>
                                 </div>
                             </div>
 
@@ -726,7 +728,7 @@ export default function QuizzesPage() {
                             <textarea
                                 value={noteValue}
                                 onChange={(e) => setNoteValue(e.target.value)}
-                                placeholder="Writer revision reasons or additional instructions here..."
+                                placeholder={t('quizzes.modal_placeholder')}
                                 className="w-full h-40 bg-surface-50 dark:bg-slate-950/50 border border-surface-200 dark:border-slate-800 rounded-2xl p-5 text-sm text-text-900 dark:text-slate-100 placeholder:text-text-300 dark:placeholder:text-slate-600 outline-none focus:border-amber-500/50 focus:ring-4 focus:ring-amber-500/5 transition-all resize-none font-medium"
                                 autoFocus
                             />
@@ -738,7 +740,7 @@ export default function QuizzesPage() {
                                     disabled={isSubmittingNote}
                                     className="py-4 px-6 rounded-2xl border border-surface-200 dark:border-slate-800 text-text-500 dark:text-slate-400 font-black text-[12px] uppercase tracking-widest hover:bg-surface-50 dark:hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50"
                                 >
-                                    Cancel
+                                    {t('common.cancel')}
                                 </button>
                                 <button
                                     onClick={handleSaveNote}
@@ -749,7 +751,7 @@ export default function QuizzesPage() {
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     ) : (
                                         <>
-                                            <CheckCircle size={16} /> Save Note
+                                            <CheckCircle size={16} /> {t('quizzes.save_note')}
                                         </>
                                     )}
                                 </button>

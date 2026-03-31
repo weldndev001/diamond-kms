@@ -41,9 +41,7 @@ export async function semanticSearch(params: {
   const vectorStr = JSON.stringify(queryEmbedding)
 
   // 2. Determine scope based on role (RAG scope rules)
-  const scopedToDiv =
-    userRole === 'STAFF' ||
-    (userRole === 'SUPERVISOR' && !crossDivisionEnabled)
+  const scopedToDiv = !crossDivisionEnabled && (userRole === 'STAFF' || userRole === 'SUPERVISOR')
 
   // 3. Cosine similarity search with pgvector
   // 1 - cosine_distance = similarity (1 = identical, 0 = unrelated)

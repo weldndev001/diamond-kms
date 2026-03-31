@@ -5,9 +5,11 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getFAQsAction, createFAQAction, deleteFAQAction } from '@/lib/actions/faq.actions'
 import { getDivisionsAction } from '@/lib/actions/user.actions'
 import { HelpCircle, Plus, Trash2, Search, ChevronDown, ChevronUp } from 'lucide-react'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export default function FAQsPage() {
     const { organization, user, role } = useCurrentUser()
+    const { t } = useTranslation()
 
     const [faqs, setFaqs] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -40,7 +42,7 @@ export default function FAQsPage() {
         e.preventDefault()
         if (!user || !organization) return
         if (isFull) {
-            alert("FAQ Quota Full (Max 10)")
+            alert(t('faq.limit_full'))
             return
         }
         setSaving(true)
@@ -57,18 +59,18 @@ export default function FAQsPage() {
             setFormData({ question: '', answer: '' })
             loadData()
         } else {
-            alert(res.error || 'Failed to create FAQ')
+            alert(res.error || t('faq.error'))
         }
         setSaving(false)
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Delete this FAQ?')) return
+        if (!confirm(t('faq.delete_confirm'))) return
         const res = await deleteFAQAction(id)
         if (res.success) {
             loadData()
         } else {
-            alert(res.error || 'Failed to delete')
+            alert(res.error || t('common.error'))
         }
     }
 
@@ -85,9 +87,9 @@ export default function FAQsPage() {
                 </div>
                 <div className="relative z-10">
                     <h1 className="text-3xl font-black font-display flex items-center gap-3 mb-2 text-white">
-                        <HelpCircle size={32} /> Help Center & FAQs
+                        <HelpCircle size={32} /> {t('faq.title')}
                     </h1>
-                    <p className="text-white/80 font-medium max-w-lg leading-relaxed">Quick answers to frequently asked questions. Find the information you need instantly.</p>
+                    <p className="text-white/80 font-medium max-w-lg leading-relaxed">{t('faq.subtitle')}</p>
                 </div>
                 {['SUPER_ADMIN', 'GROUP_ADMIN', 'MAINTAINER'].includes(role || '') && (
                     <div className="flex flex-col items-end gap-2">
@@ -98,11 +100,11 @@ export default function FAQsPage() {
                                 ? 'bg-white/5 text-white/40 cursor-not-allowed border-white/10' 
                                 : 'bg-white/20 text-white hover:bg-white/30'}`}
                         >
-                            <Plus size={20} /> Add FAQ
+                            <Plus size={20} /> {t('faq.add_faq')}
                         </button>
                         {isFull && (
                             <span className="text-[10px] font-black text-amber-300 uppercase tracking-widest animate-pulse">
-                                FAQ Limit Full (Max 10)
+                                {t('faq.limit_full')}
                             </span>
                         )}
                     </div>
@@ -112,18 +114,18 @@ export default function FAQsPage() {
             {loading ? (
                 <div className="text-center py-12 flex flex-col items-center gap-4">
                     <div className="w-10 h-10 border-4 border-navy-500/20 border-t-navy-500 rounded-full animate-spin"></div>
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Loading FAQs...</p>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{t('faq.loading')}</p>
                 </div>
             ) : filteredFaqs.length === 0 ? (
                 <div className="text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[32px] py-16 text-slate-400">
                     <HelpCircle size={48} className="mx-auto text-slate-200 dark:text-slate-800 mb-4" />
-                    <p className="font-bold">No FAQs found.</p>
+                    <p className="font-bold">{t('faq.no_faqs')}</p>
                 </div>
             ) : (
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="h-[1px] flex-1 bg-slate-200 dark:bg-slate-800"></div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Global Knowledge Base</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('faq.global_knowledge')}</span>
                         <div className="h-[1px] flex-1 bg-slate-200 dark:bg-slate-800"></div>
                     </div>
                     
@@ -148,7 +150,7 @@ export default function FAQsPage() {
                                             <button
                                                 onClick={() => handleDelete(faq.id)}
                                                 className="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                                                title="Delete FAQ"
+                                                title={t('common.delete')}
                                             >
                                                 <Trash2 size={18} />
                                             </button>
@@ -180,7 +182,7 @@ export default function FAQsPage() {
                                 <div className="w-10 h-10 rounded-xl bg-navy-50 dark:bg-indigo-900/30 flex items-center justify-center text-navy-600 dark:text-indigo-400">
                                     <Plus size={20} />
                                 </div>
-                                Add New FAQ
+                                {t('faq.add_new_faq')}
                             </h2>
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
                                 {faqs.length} / 10
@@ -188,7 +190,7 @@ export default function FAQsPage() {
                         </div>
                         <form onSubmit={handleCreate} className="p-8 space-y-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-black text-slate-500 uppercase tracking-[0.15em] ml-1">Question</label>
+                                <label className="text-xs font-black text-slate-500 uppercase tracking-[0.15em] ml-1">{t('faq.question')}</label>
                                 <input
                                     required
                                     autoFocus
@@ -196,29 +198,29 @@ export default function FAQsPage() {
                                     value={formData.question}
                                     onChange={e => setFormData({ ...formData, question: e.target.value })}
                                     className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 focus:ring-2 focus:ring-navy-500 dark:text-white font-bold"
-                                    placeholder="What do you want to ask?"
+                                    placeholder={t('faq.question_placeholder')}
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-black text-slate-500 uppercase tracking-[0.15em] ml-1">Answer</label>
+                                <label className="text-xs font-black text-slate-500 uppercase tracking-[0.15em] ml-1">{t('faq.answer')}</label>
                                 <textarea
                                     required
                                     value={formData.answer}
                                     onChange={e => setFormData({ ...formData, answer: e.target.value })}
                                     className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 min-h-[140px] focus:ring-2 focus:ring-navy-500 dark:text-white font-medium text-sm leading-relaxed"
-                                    placeholder="Provide a clear and concise answer..."
+                                    placeholder={t('faq.answer_placeholder')}
                                 />
                             </div>
 
                             <div className="flex justify-end gap-3 mt-4 pt-6 border-t border-slate-100 dark:border-slate-800">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 text-slate-500 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 rounded-2xl transition-all">Cancel</button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 text-slate-500 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 rounded-2xl transition-all">{t('common.cancel')}</button>
                                 <button 
                                     type="submit" 
                                     disabled={saving || isFull} 
                                     className="px-8 py-3 bg-navy-600 hover:bg-navy-700 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-navy-600/20 active:scale-95 transition-all disabled:opacity-50"
                                 >
-                                    {saving ? 'Saving...' : 'Save FAQ'}
+                                    {saving ? t('faq.saving') : t('faq.save_faq')}
                                 </button>
                             </div>
                         </form>

@@ -16,9 +16,17 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         <div className="min-h-screen bg-surface-50 flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md fade-in">
                 <div className="flex justify-center mb-6">
-                    <div className="w-14 h-14 bg-navy-900 rounded-xl flex items-center justify-center shadow-md">
-                        <span className="text-amber-400 text-2xl leading-none">◆</span>
-                    </div>
+                    {org?.logo_url ? (
+                        <img 
+                            src={org.logo_url.startsWith('http') ? org.logo_url : `/${org.logo_url}`} 
+                            alt="Logo" 
+                            className="w-16 h-16 object-contain shadow-md" 
+                        />
+                    ) : (
+                        <div className="w-14 h-14 bg-navy-900 rounded-xl flex items-center justify-center shadow-md">
+                            <span className="text-amber-400 text-2xl leading-none">◆</span>
+                        </div>
+                    )}
                 </div>
                 <h2 className="mt-2 text-center text-3xl font-extrabold text-navy-900 font-display">
                     {appName}

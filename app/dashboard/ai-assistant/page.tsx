@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useTranslation } from '@/hooks/useTranslation'
 import {
     MessageSquare, Send, FileText, Loader2, Bot, User,
     Sparkles, Plus, Trash2, FileBarChart, History, PanelLeftOpen, PanelLeftClose, LayoutGrid, List
 } from 'lucide-react'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getKnowledgeBasesAction } from '@/lib/actions/knowledge-base.actions'
 
 interface Message {
@@ -33,10 +34,11 @@ interface ChatSessionItem {
 }
 
 export default function AIAssistantPage() {
+    const { t } = useTranslation()
     // Session state
     const [sessions, setSessions] = useState<ChatSessionItem[]>([])
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
-    const [sessionTitle, setSessionTitle] = useState('New Chat')
+    const [sessionTitle, setSessionTitle] = useState(t('ai_assistant.new_chat'))
     const [loadingSessions, setLoadingSessions] = useState(false)
 
     // Chat state
@@ -96,7 +98,7 @@ export default function AIAssistantPage() {
             if (res.ok) {
                 const data = await res.json()
                 setActiveSessionId(data.session.id)
-                setSessionTitle('New Chat')
+                setSessionTitle(t('ai_assistant.new_chat'))
                 setMessages([])
                 setCitations([])
                 setStreamingText('')
@@ -132,7 +134,7 @@ export default function AIAssistantPage() {
             if (activeSessionId === sessionId) {
                 setActiveSessionId(null)
                 setMessages([])
-                setSessionTitle('New Chat')
+                setSessionTitle(t('ai_assistant.new_chat'))
                 setSessionSummary(null)
             }
         } catch { /* ignore */ }
@@ -192,7 +194,7 @@ export default function AIAssistantPage() {
             })
 
             if (!response.ok) {
-                let errMsg = 'Chat request failed'
+                let errMsg = t('ai_assistant.request_failed')
                 try {
                     const errData = await response.json()
                     errMsg = errData.error || errMsg
@@ -301,19 +303,19 @@ export default function AIAssistantPage() {
                         className="w-full flex items-center justify-center gap-2 bg-gradient-to-br from-navy-600 to-navy-800 dark:from-indigo-600 dark:to-indigo-700 hover:scale-[1.02] active:scale-95 text-white rounded-xl py-3 px-4 transition-all duration-300 shadow-lg shadow-navy-600/20 dark:shadow-indigo-900/20 font-bold text-sm mb-4 border border-white/10"
                     >
                         <Plus size={18} />
-                        New Chat
+                        {t('ai_assistant.new_chat')}
                     </button>
                     <div className="h-px bg-surface-200 dark:bg-slate-800 mb-4" />
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
-                    <p className="px-3 text-[10px] font-black text-text-400 uppercase tracking-[0.2em] mb-2">Recent Chats</p>
+                    <p className="px-3 text-[10px] font-black text-text-400 uppercase tracking-[0.2em] mb-2">{t('ai_assistant.recent_chats')}</p>
                     {loadingSessions ? (
                         <div className="flex justify-center py-4">
                             <Loader2 size={24} className="animate-spin text-navy-400" />
                         </div>
                     ) : sessions.length === 0 ? (
-                        <p className="px-3 text-xs text-text-400 italic py-2">No history found</p>
+                        <p className="px-3 text-xs text-text-400 italic py-2">{t('ai_assistant.no_history')}</p>
                     ) : (
                         sessions.map((s) => (
                             <div
@@ -326,7 +328,7 @@ export default function AIAssistantPage() {
                             >
                                 <div className="flex items-center gap-3 min-w-0">
                                     <MessageSquare size={16} className={activeSessionId === s.id ? 'text-navy-600' : 'text-text-400'} />
-                                    <span className="text-sm font-semibold truncate leading-none translate-y-[-1px]">{s.title || 'Untitled Chat'}</span>
+                                    <span className="text-sm font-semibold truncate leading-none translate-y-[-1px]">{s.title || t('ai_assistant.untitled_chat')}</span>
                                 </div>
                                 <button
                                     onClick={(e) => {
@@ -352,7 +354,7 @@ export default function AIAssistantPage() {
                         <button
                             onClick={() => setIsHistoryOpen(!isHistoryOpen)}
                             className="p-2.5 rounded-xl text-text-500 hover:text-navy-600 hover:bg-surface-100 transition-all active:scale-95 border border-transparent hover:border-surface-200"
-                            title={isHistoryOpen ? "Hide History" : "Show History"}
+                            title={isHistoryOpen ? t('ai_assistant.hide_history') : t('ai_assistant.show_history')}
                         >
                             {isHistoryOpen ? <PanelLeftClose size={22} /> : <PanelLeftOpen size={22} />}
                         </button>
@@ -368,14 +370,14 @@ export default function AIAssistantPage() {
                             </div>
                             <div className="min-w-0">
                                 <h3 className="font-extrabold text-navy-900 text-[14px] truncate uppercase tracking-[0.05em] leading-tight">{sessionTitle}</h3>
-                                <p className="text-[9px] font-bold text-text-400 mt-0.5 tracking-wider hidden sm:block uppercase">AI Smart Assistant (AISA)</p>
+                                <p className="text-[9px] font-bold text-text-400 mt-0.5 tracking-wider hidden sm:block uppercase">{t('ai_assistant.aisa_full')}</p>
                             </div>
                         </div>
 
                         {/* Scope Selector - Premium Styled */}
                         <div className="h-10 w-px bg-surface-200 hidden md:block mx-2" />
                         <div className="hidden md:flex items-center gap-3 group">
-                            <span className="text-[9px] font-black text-text-300 uppercase tracking-[0.2em] group-hover:text-navy-400 transition ml-2">Context:</span>
+                            <span className="text-[9px] font-black text-text-300 uppercase tracking-[0.2em] group-hover:text-navy-400 transition ml-2">{t('ai_assistant.context_label')}</span>
                             <div className="relative">
                                 <select
                                     value={selectedContext}
@@ -409,7 +411,7 @@ export default function AIAssistantPage() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]"></span>
                         </div>
-                        <span className="opacity-70">Focusing on</span>
+                        <span className="opacity-70">{t('ai_assistant.focusing_on')}</span>
                         <span className="text-indigo-300 font-extrabold">
                             {selectedContext === 'Global' ? 'Global' : (knowledgeBases.find(k => k.id === selectedContext)?.name || 'Knowledge Base')}
                         </span>
@@ -423,16 +425,16 @@ export default function AIAssistantPage() {
                             <div className="w-20 h-20 bg-navy-light rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Bot size={40} className="text-navy-600" />
                             </div>
-                            <h3 className="font-bold font-display text-navy-900 text-xl mb-2">Hello! 👋</h3>
+                            <h3 className="font-bold font-display text-navy-900 text-xl mb-2">{t('ai_assistant.welcome_title')}</h3>
                             <p className="text-sm max-w-md mx-auto">
-                                Ask anything about your company documents. AI will search for answers across all available knowledge bases.
+                                {t('ai_assistant.welcome_desc')}
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg mx-auto mt-6">
                                 {[
-                                    'What is the main content of the latest document?',
-                                    'Explain the procedures in the SOP',
-                                    'Summarize company policies',
-                                    'Compare the last two documents'
+                                    t('ai_assistant.suggestion_1'),
+                                    t('ai_assistant.suggestion_2'),
+                                    t('ai_assistant.suggestion_3'),
+                                    t('ai_assistant.suggestion_4')
                                 ].map((suggestion, i) => (
                                     <button
                                         key={i}
@@ -485,7 +487,7 @@ export default function AIAssistantPage() {
                                     <span className="w-2 h-2 bg-navy-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                                     <span className="w-2 h-2 bg-navy-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                 </div>
-                                <span className="text-sm text-text-500">Thinking...</span>
+                                <span className="text-sm text-text-500">{t('ai_assistant.thinking')}</span>
                             </div>
                         </div>
                     )}
@@ -507,7 +509,7 @@ export default function AIAssistantPage() {
                     {citations.length > 0 && !isStreaming && (
                         <div className="space-y-2 ml-11">
                             <p className="text-xs font-semibold text-text-400 uppercase tracking-wider">
-                                Reference Sources
+                                {t('ai_assistant.reference_sources')}
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {citations.slice(0, 6).map((c, i) => {
@@ -535,7 +537,7 @@ export default function AIAssistantPage() {
                                                         </span>
                                                         <span className="text-text-300">&bull;</span>
                                                         <span className="text-[10px] font-black text-navy-500 uppercase tracking-tighter">
-                                                            {isArticle ? `SEC ${c.pageStart}` : `PG ${c.pageStart}`}
+                                                            {isArticle ? `${t('ai_assistant.sec')} ${c.pageStart}` : `${t('ai_assistant.pg')} ${c.pageStart}`}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -559,7 +561,7 @@ export default function AIAssistantPage() {
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 disabled={isStreaming}
-                                placeholder="Ask anything to AISA Intelligence..."
+                                placeholder={t('ai_assistant.input_placeholder')}
                                 className="flex-1 bg-transparent translate-y-[1px] outline-none text-[15px] font-medium placeholder:text-text-300"
                             />
                             <button
@@ -571,7 +573,7 @@ export default function AIAssistantPage() {
                             </button>
                         </div>
                         <p className="text-center text-[9px] font-black text-text-300 mt-4 uppercase tracking-[0.2em] opacity-60">
-                            AISA AI can make mistakes. Cross-check with official sources.
+                            {t('ai_assistant.disclaimer')}
                         </p>
                     </div>
                 </div>

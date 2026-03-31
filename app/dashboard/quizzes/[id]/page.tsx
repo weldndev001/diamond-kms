@@ -7,7 +7,10 @@ import { getQuizByIdAction, submitQuizResultAction } from '@/lib/actions/quiz.ac
 import { ArrowLeft, Clock, CheckCircle, Send } from 'lucide-react'
 import Link from 'next/link'
 
+import { useTranslation } from '@/hooks/useTranslation'
+ 
 export default function TakeQuizPage() {
+    const { t } = useTranslation()
     const params = useParams()
     const router = useRouter()
     const { user } = useCurrentUser()
@@ -31,12 +34,12 @@ export default function TakeQuizPage() {
                         setTimeLeft(res.data.time_limit_minutes * 60)
                     }
                 } else {
-                    setError(res.error || 'Failed to load quiz')
+                    setError(res.error || t('quizzes_take.load_failed'))
                 }
                 setLoading(false)
             })
         }
-    }, [params.id])
+    }, [params.id, t])
 
     useEffect(() => {
         if (timeLeft === null || timeLeft <= 0 || result) return
@@ -104,7 +107,7 @@ export default function TakeQuizPage() {
         if (res.success) {
             setResult({ score, correctCount, total: quiz.questions.length })
         } else {
-            alert(res.error || 'Failed to submit quiz results.')
+            alert(res.error || t('quizzes_take.submit_failed'))
         }
         setSubmitting(false)
     }
@@ -118,7 +121,7 @@ export default function TakeQuizPage() {
     if (loading) return (
         <div className="flex flex-col items-center justify-center py-32">
             <div className="w-14 h-14 border-4 border-navy-100 border-t-navy-600 rounded-full animate-spin mb-6"></div>
-            <p className="text-text-400 font-black uppercase tracking-[0.2em] text-[11px]">Loading Quiz...</p>
+            <p className="text-text-400 font-black uppercase tracking-[0.2em] text-[11px]">{t('quizzes_take.loading_quiz')}</p>
         </div>
     )
     if (error || !quiz) return (
@@ -126,12 +129,12 @@ export default function TakeQuizPage() {
             <div className="w-20 h-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Send size={32} className="rotate-45" />
             </div>
-            <h2 className="text-2xl font-black text-text-900 dark:text-white mb-2">Quiz Not Found</h2>
+            <h2 className="text-2xl font-black text-text-900 dark:text-white mb-2">{t('quizzes_take.quiz_not_found')}</h2>
             <p className="text-text-500 dark:text-slate-400 mb-8 max-w-sm mx-auto">
-                {error || 'The quiz you are looking for is not available or a technical error occurred.'}
+                {error || t('quizzes_take.quiz_not_found_desc')}
             </p>
             <Link href="/dashboard/quizzes" className="btn btn-primary px-8 py-3 rounded-2xl">
-                Back to Quizzes
+                {t('quizzes_take.back_to_quizzes')}
             </Link>
         </div>
     )
@@ -148,7 +151,7 @@ export default function TakeQuizPage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute bottom-6 left-8">
-                        <span className="bg-indigo-500 text-white text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest shadow-lg mb-2 inline-block">Training Module</span>
+                        <span className="bg-indigo-500 text-white text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest shadow-lg mb-2 inline-block">{t('quizzes_take.training_module')}</span>
                         <h2 className="text-white text-3xl font-black font-display tracking-tight drop-shadow-md">{quiz.title}</h2>
                     </div>
                 </div>
@@ -181,25 +184,24 @@ export default function TakeQuizPage() {
                     <div className="w-20 h-20 mx-auto bg-green-100 text-success rounded-full flex items-center justify-center">
                         <CheckCircle size={40} />
                     </div>
-                    <h2 className="text-3xl font-bold font-display text-navy-900">Quiz Completed!</h2>
+                    <h2 className="text-3xl font-bold font-display text-navy-900">{t('quizzes_take.quiz_completed')}</h2>
                     <p className="text-lg text-text-500">
-                        You scored <span className="font-bold font-display text-navy-600 text-2xl mx-1">{result.score}%</span>
-                        ({result.correctCount} out of {result.total} correct)
+                        {t('quizzes_take.score_label', { score: result.score.toString(), correct: result.correctCount.toString(), total: result.total.toString() })}
                     </p>
 
                     {result.score >= 60 ? (
                         <p className="text-success font-medium bg-success-bg p-3 rounded-lg inline-block">
-                            🎉 Excellent! You have been awarded {Math.floor(result.score / 10) * 10} Leaderboard Points.
+                            {t('quizzes_take.excellent_msg', { pts: (Math.floor(result.score / 10) * 10).toString() })}
                         </p>
                     ) : (
                         <p className="text-orange-600 font-medium bg-orange-50 p-3 rounded-lg inline-block">
-                            💡 You might want to review the materials and try again later.
+                            {t('quizzes_take.review_msg')}
                         </p>
                     )}
 
                     <div className="pt-6 border-t mt-6">
                         <Link href="/dashboard/quizzes" className="inline-block px-6 py-2.5 bg-navy-900 text-white rounded hover:bg-navy-900 transition font-medium">
-                            Return to Quizzes
+                            {t('quizzes_take.return_btn')}
                         </Link>
                     </div>
                 </div>
@@ -211,7 +213,7 @@ export default function TakeQuizPage() {
                             
                             <h3 className="font-bold text-xl text-navy-900 dark:text-white mb-6 tracking-tight leading-relaxed">
                                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-navy-50 dark:bg-navy-900/50 text-navy-600 dark:text-navy-400 text-sm font-black mr-3 border border-navy-100 dark:border-navy-500/20">{i + 1}</span>
-                                {q.question_text || "See Image Below:"}
+                                {q.question_text || t('quizzes_take.see_image')}
                             </h3>
 
                             {q.image && (
@@ -261,7 +263,7 @@ export default function TakeQuizPage() {
                                             required
                                             value={answers[q.id] || ''}
                                             onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                                            placeholder="Type your answer here..."
+                                            placeholder={t('quizzes_take.essay_placeholder')}
                                             className="w-full min-h-[120px] p-6 rounded-2xl border-2 border-surface-100 dark:border-slate-800 focus:border-navy-600 bg-white dark:bg-slate-900/50 text-text-900 dark:text-white outline-none transition-all font-medium text-lg resize-none"
                                         />
                                         <div className="absolute top-4 right-4 text-text-300 group-hover/essay:text-navy-400 transition-colors">
@@ -279,9 +281,9 @@ export default function TakeQuizPage() {
                             disabled={submitting || Object.keys(answers).length < quiz.questions.length}
                             className="inline-flex items-center gap-2 px-8 py-4 bg-navy-900 dark:bg-navy-600 text-white rounded-2xl hover:bg-navy-800 dark:hover:bg-navy-500 transition-all font-black uppercase tracking-widest text-sm shadow-xl hover:shadow-2xl hover:-translate-y-1 disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none"
                         >
-                            {submitting ? 'Submitting...' : (
+                            {submitting ? t('quizzes_take.submitting') : (
                                 <>
-                                    <span>Submit Answers</span>
+                                    <span>{t('quizzes_take.submit_btn')}</span>
                                     <Send size={18} />
                                 </>
                             )}

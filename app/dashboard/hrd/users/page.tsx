@@ -5,10 +5,12 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { RoleGuard } from '@/components/shared/RoleGuard'
 import { getUsersAction } from '@/lib/actions/user.actions'
 import { Search, Plus, UserPlus } from 'lucide-react'
+import { useTranslation } from '@/hooks/useTranslation'
 import Link from 'next/link'
 
 export default function UsersPage() {
     const { organization, role } = useCurrentUser()
+    const { t } = useTranslation()
     const [users, setUsers] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
@@ -36,14 +38,14 @@ export default function UsersPage() {
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-2xl font-bold font-display text-navy-900">User Management</h1>
-                        <p className="text-sm text-text-500 mt-1">Manage team members and your organization's divisions.</p>
+                        <h1 className="text-2xl font-bold font-display text-navy-900">{t('users.title')}</h1>
+                        <p className="text-sm text-text-500 mt-1">{t('users.subtitle')}</p>
                     </div>
                     <Link
                         href="/dashboard/hrd/users/new"
                         className="btn btn-primary flex flex-row items-center gap-2"
                     >
-                        <UserPlus size={18} /> Create User
+                        <UserPlus size={18} /> {t('users.create_btn')}
                     </Link>
                 </div>
 
@@ -55,32 +57,32 @@ export default function UsersPage() {
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-300" size={18} />
                             <input
                                 type="text"
-                                placeholder="Search users..."
+                                placeholder={t('users.search_placeholder')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10 pr-4 py-2 border rounded-md w-full focus:ring-navy-600 focus:border-navy-600 outline-none"
                             />
                         </div>
                         <div className="text-sm text-text-500">
-                            Total: {users.length} users
+                            {t('users.total_users')}: {users.length} {t('common.members')}
                         </div>
                     </div>
 
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-surface-50 text-text-500 text-sm">
-                                <th className="p-4 font-medium border-b">Name</th>
-                                <th className="p-4 font-medium border-b">Role</th>
-                                <th className="p-4 font-medium border-b">Division</th>
-                                <th className="p-4 font-medium border-b">Status</th>
-                                <th className="p-4 font-medium border-b w-32">Actions</th>
+                                <th className="p-4 font-medium border-b">{t('users.label_name')}</th>
+                                <th className="p-4 font-medium border-b">{t('users.label_role')}</th>
+                                <th className="p-4 font-medium border-b">{t('users.label_division')}</th>
+                                <th className="p-4 font-medium border-b">{t('users.label_status')}</th>
+                                <th className="p-4 font-medium border-b w-32">{t('common.actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={5} className="p-8 text-center text-text-500">Loading...</td></tr>
+                                <tr><td colSpan={5} className="p-8 text-center text-text-500">{t('common.loading')}</td></tr>
                             ) : filteredUsers.length === 0 ? (
-                                <tr><td colSpan={5} className="p-8 text-center text-text-500">No users found.</td></tr>
+                                <tr><td colSpan={5} className="p-8 text-center text-text-500">{t('users.no_users')}</td></tr>
                             ) : (
                                 filteredUsers.map((u) => (
                                     <tr key={u.id} className="border-b last:border-none hover:bg-surface-50">
@@ -99,7 +101,7 @@ export default function UsersPage() {
                                         <td className="p-4">
                                             <div className="flex items-center gap-2">
                                                 <span className={`w-2 h-2 rounded-full ${u.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                                <span className="text-sm text-text-500">{u.is_active ? 'Active' : 'Inactive'}</span>
+                                                <span className="text-sm text-text-500">{u.is_active ? t('users.status_active') : t('users.status_inactive')}</span>
                                             </div>
                                         </td>
                                         <td className="p-4">
@@ -107,7 +109,7 @@ export default function UsersPage() {
                                                 href={`/dashboard/hrd/users/${u.id}/edit`}
                                                 className="text-navy-600 hover:text-navy-700 hover:underline text-sm font-medium transition-colors"
                                             >
-                                                Edit
+                                                {t('users.edit_btn')}
                                             </Link>
                                         </td>
                                     </tr>

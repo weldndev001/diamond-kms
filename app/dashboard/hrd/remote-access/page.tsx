@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useTranslation } from '@/hooks/useTranslation'
 import { RoleGuard } from '@/components/shared/RoleGuard'
 import {
     MonitorDot, KeyRound, Clock, Copy, CheckCircle, 
@@ -10,6 +11,7 @@ import {
 
 export default function RemoteAccessPage() {
     const { user } = useCurrentUser()
+    const { t } = useTranslation()
     
     // OTP state
     const [remoteOtp, setRemoteOtp] = useState<string | null>(null)
@@ -65,11 +67,10 @@ export default function RemoteAccessPage() {
                 <div>
                     <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight flex items-center gap-3">
                         <MonitorDot className="text-amber-500" size={32} />
-                        Remote Maintenance Access
+                        {t('remote_access.title')}
                     </h1>
                     <p className="text-sm text-text-500 mt-2 max-w-2xl">
-                        Use this page to provide temporary login access to the WELDN_AI technical team. 
-                        This OTP allows technicians to perform remote system maintenance securely.
+                        {t('remote_access.subtitle')}
                     </p>
                 </div>
 
@@ -82,8 +83,8 @@ export default function RemoteAccessPage() {
                                     <KeyRound size={24} />
                                 </div>
                                 <div>
-                                    <h2 className="font-bold text-navy-900 text-lg">Generate Maintenance OTP</h2>
-                                    <p className="text-sm text-text-400">One-time access code with limited duration</p>
+                                    <h2 className="font-bold text-navy-900 text-lg">{t('remote_access.gen_otp_title')}</h2>
+                                    <p className="text-sm text-text-400">{t('remote_access.gen_otp_subtitle')}</p>
                                 </div>
                             </div>
 
@@ -93,7 +94,7 @@ export default function RemoteAccessPage() {
                                         <div className="flex flex-col items-center">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <div className={`w-2 h-2 rounded-full animate-pulse ${otpExpiry > 300 ? 'bg-green-500' : 'bg-red-500'}`} />
-                                                <span className="text-xs font-bold text-text-400 uppercase tracking-widest">OTP Active Now</span>
+                                                <span className="text-xs font-bold text-text-400 uppercase tracking-widest">{t('remote_access.otp_active')}</span>
                                             </div>
                                             
                                             <div className="flex items-center gap-4 group">
@@ -109,7 +110,7 @@ export default function RemoteAccessPage() {
                                                             ? 'bg-green-100 border-green-400 text-green-600' 
                                                             : 'bg-white border-surface-200 text-text-400 hover:border-amber-400 hover:text-amber-500'
                                                     }`}
-                                                    title="Copy Code"
+                                                    title={t('remote_access.copy_code')}
                                                 >
                                                     {otpCopied ? <CheckCircle size={28} /> : <Copy size={28} />}
                                                 </button>
@@ -118,7 +119,7 @@ export default function RemoteAccessPage() {
 
                                         <div className="max-w-md mx-auto space-y-3">
                                             <div className="flex items-center justify-between text-xs font-bold px-1">
-                                                <span className="text-text-400">TIME REMAINING</span>
+                                                <span className="text-text-400">{t('remote_access.time_remaining')}</span>
                                                 <span className={otpExpiry > 300 ? 'text-green-600' : 'text-red-500'}>
                                                     {formatTime(otpExpiry)}
                                                 </span>
@@ -140,14 +141,14 @@ export default function RemoteAccessPage() {
                                                 className="px-4 py-2 text-sm font-bold text-navy-600 bg-navy-50 hover:bg-navy-100 rounded-xl transition flex items-center gap-2"
                                             >
                                                 <RefreshCw size={14} className={isGenerating ? 'animate-spin' : ''} />
-                                                Regenerate
+                                                {t('remote_access.regenerate')}
                                             </button>
                                             <button
                                                 onClick={() => { setRemoteOtp(null); setOtpExpiry(0) }}
                                                 className="px-4 py-2 text-sm font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition flex items-center gap-2"
                                             >
                                                 <XCircle size={14} />
-                                                Cancel Session
+                                                {t('remote_access.cancel_session')}
                                             </button>
                                         </div>
                                     </div>
@@ -157,9 +158,9 @@ export default function RemoteAccessPage() {
                                             <ShieldCheck size={40} className="text-amber-500" />
                                         </div>
                                         <div className="space-y-2">
-                                            <h3 className="font-bold text-navy-900">No OTP generated yet</h3>
+                                            <h3 className="font-bold text-navy-900">{t('remote_access.no_otp_title')}</h3>
                                             <p className="text-sm text-text-400 max-w-xs mx-auto">
-                                                Click the button below to generate a new remote maintenance access code.
+                                                {t('remote_access.no_otp_desc')}
                                             </p>
                                         </div>
                                         <button
@@ -172,7 +173,7 @@ export default function RemoteAccessPage() {
                                             ) : (
                                                 <KeyRound size={24} />
                                             )}
-                                            Generate OTP Now
+                                            {t('remote_access.gen_otp_btn')}
                                         </button>
                                     </div>
                                 )}
@@ -181,11 +182,8 @@ export default function RemoteAccessPage() {
                             <div className="mt-8 flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-2xl">
                                 <AlertTriangle size={20} className="text-amber-600 shrink-0 mt-0.5" />
                                 <div className="text-xs text-amber-800 leading-relaxed font-medium">
-                                    <strong className="block mb-1">SECURITY WARNING:</strong>
-                                    This OTP code provides full administrative access to the system remotely. 
-                                    Give this code <strong>only</strong> to official WELDN_AI personnel you know 
-                                    through official communication channels. The code will expire and cannot be used again 
-                                    after the 30-minute time limit.
+                                    <strong className="block mb-1">{t('remote_access.security_warning_title')}</strong>
+                                    {t('remote_access.security_warning_desc')}
                                 </div>
                             </div>
                         </div>
@@ -195,44 +193,44 @@ export default function RemoteAccessPage() {
                     <div className="space-y-6">
                         <div className="card p-6 space-y-4">
                             <h3 className="font-bold text-navy-900 flex items-center gap-2 text-sm">
-                                <Clock size={16} className="text-navy-500" /> History & Sessions
+                                <Clock size={16} className="text-navy-500" /> {t('remote_access.history_title')}
                             </h3>
                             <div className="text-xs text-text-500 space-y-3">
                                 <div className="flex items-center justify-between py-2 border-b border-surface-100">
-                                    <span>Last Status</span>
-                                    <span className="font-bold text-green-600">Cleanup Complete</span>
+                                    <span>{t('remote_access.last_status')}</span>
+                                    <span className="font-bold text-green-600">{t('remote_access.cleanup_complete')}</span>
                                 </div>
                                 <div className="flex items-center justify-between py-2 border-b border-surface-100">
-                                    <span>Requesting User</span>
+                                    <span>{t('remote_access.requesting_user')}</span>
                                     <span className="font-bold text-navy-700">{user?.full_name?.split(' ')[0]}</span>
                                 </div>
                                 <div className="flex items-center justify-between py-2">
-                                    <span>Method</span>
-                                    <span className="font-bold text-navy-700">Remote Protocol v2.4</span>
+                                    <span>{t('remote_access.method')}</span>
+                                    <span className="font-bold text-navy-700">{t('remote_access.remote_protocol')}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div className="card p-6 bg-navy-900 text-white space-y-4">
                             <h3 className="font-bold flex items-center gap-2 text-sm text-amber-400">
-                                <ShieldCheck size={16} /> How to Use
+                                <ShieldCheck size={16} /> {t('remote_access.how_to_use')}
                             </h3>
                             <ul className="text-[11px] text-navy-200 space-y-3">
                                 <li className="flex gap-3">
                                     <span className="w-5 h-5 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold text-amber-500 shrink-0">1</span>
-                                    <span>Click the generate button to create a 6-digit code.</span>
+                                    <span>{t('remote_access.step_1')}</span>
                                 </li>
                                 <li className="flex gap-3">
                                     <span className="w-5 h-5 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold text-amber-500 shrink-0">2</span>
-                                    <span>Copy the code and send it to the technical support team.</span>
+                                    <span>{t('remote_access.step_2')}</span>
                                 </li>
                                 <li className="flex gap-3">
                                     <span className="w-5 h-5 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold text-amber-500 shrink-0">3</span>
-                                    <span>Keep this page open while the maintenance session is in progress.</span>
+                                    <span>{t('remote_access.step_3')}</span>
                                 </li>
                                 <li className="flex gap-3">
                                     <span className="w-5 h-5 rounded-full bg-navy-800 flex items-center justify-center text-[10px] font-bold text-amber-500 shrink-0">4</span>
-                                    <span>The session will automatically end when the time expires or if you cancel it.</span>
+                                    <span>{t('remote_access.step_4')}</span>
                                 </li>
                             </ul>
                         </div>

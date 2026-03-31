@@ -11,9 +11,11 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { TiptapEditor } from '@/components/editor/TiptapEditor'
 import { uploadFileAction } from '@/lib/actions/storage.actions'
-import { ImageCropper } from '@/components/shared/ImageCropper'
+import ImageCropper from '@/components/shared/ImageCropper'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export default function CreateQuizPage() {
+    const { t } = useTranslation()
     const router = useRouter()
     const searchParams = useSearchParams()
     const editId = searchParams.get('edit')
@@ -85,11 +87,11 @@ export default function CreateQuizPage() {
                         }))
                     }
                 } else {
-                    setStatus({ type: 'error', msg: res.error || 'Failed to fetch quiz data.' })
+                    setStatus({ type: 'error', msg: res.error || t('quizzes_create.fetch_failed') })
                 }
             })
         }
-    }, [organization?.id, editId])
+    }, [organization?.id, editId, t])
 
     const handleAddQuestion = () => {
         setQuestions([...questions, { question_text: '', question_type: 'MULTIPLE_CHOICE', options: ['', '', '', ''], correct_answer: '', image: null }])
@@ -193,7 +195,7 @@ export default function CreateQuizPage() {
             setHeaderImage(res.publicUrl!)
         } catch (error) {
             console.error('Header image upload failed:', error)
-            setStatus({ type: 'error', msg: 'Failed to upload header image' })
+            setStatus({ type: 'error', msg: t('quizzes_create.save_failed') })
         } finally {
             setIsUploadingHeader(false)
             setTempImage(null)
@@ -207,16 +209,16 @@ export default function CreateQuizPage() {
         // Validation
         for (let i = 0; i < questions.length; i++) {
             if (!questions[i].question_text.trim()) {
-                setStatus({ type: 'error', msg: `Question text #${i + 1} cannot be empty.` })
+                setStatus({ type: 'error', msg: t('quizzes_create.validation_text_empty', { num: (i + 1).toString() }) })
                 return
             }
             if (!questions[i].correct_answer) {
-                setStatus({ type: 'error', msg: `Question #${i + 1} must have a correct answer selected.` })
+                setStatus({ type: 'error', msg: t('quizzes_create.validation_correct_empty', { num: (i + 1).toString() }) })
                 return
             }
         }
 
-        setStatus({ type: 'loading', msg: 'Saving quiz...' })
+        setStatus({ type: 'loading', msg: t('quizzes_create.saving') })
 
         const rawIsPublished = typeof overridePublish === 'boolean' ? overridePublish : isPublished
         const finalIsPublished = isSupervisor ? false : rawIsPublished
@@ -244,12 +246,12 @@ export default function CreateQuizPage() {
             : await createQuizAction(quizData)
 
         if (res.success) {
-            setStatus({ type: 'success', msg: editId ? 'Quiz updated successfully' : 'Quiz created successfully' })
+            setStatus({ type: 'success', msg: editId ? t('quizzes_create.update_success') : t('quizzes_create.create_success') })
             setTimeout(() => {
                 router.push('/dashboard/quizzes')
             }, 1000)
         } else {
-            setStatus({ type: 'error', msg: res.error || 'Failed to save quiz' })
+            setStatus({ type: 'error', msg: res.error || t('quizzes_create.save_failed') })
         }
     }
 
@@ -259,16 +261,19 @@ export default function CreateQuizPage() {
                 <Link href="/dashboard/quizzes" className="p-2 text-text-500 hover:text-navy-900 dark:hover:text-slate-100 hover:bg-surface-100 dark:hover:bg-slate-800 rounded-full transition">
                     <ArrowLeft size={20} />
                 </Link>
-                <h1 className="text-2xl font-bold font-display text-navy-900 dark:text-slate-100">{editId ? 'Edit Quiz' : 'Create New Quiz'}</h1>
+                <h1 className="text-2xl font-bold font-display text-navy-900 dark:text-slate-100">{editId ? t('quizzes_create.edit_title') : t('quizzes_create.create_title')}</h1>
             </div>
 
             <div className="card p-6 dark:bg-surface-0 dark:border-surface-100">
                 {tempImage && (
                     <ImageCropper
                         image={tempImage}
-                        isOpen={isCropperOpen}
-                        onClose={() => setIsCropperOpen(false)}
+                        onCancel={() => {
+                            setIsCropperOpen(false)
+                            setTempImage(null)
+                        }}
                         onCropComplete={handleCropComplete}
+                        aspect={3 / 1}
                     />
                 )}
 
@@ -285,68 +290,68 @@ export default function CreateQuizPage() {
                     {/* General Settings */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 border rounded-3xl bg-surface-50 dark:bg-slate-800/40 border-surface-200 dark:border-slate-700/50 shadow-inner">
                         <div className="space-y-4 col-span-full">
-                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">Quiz Information</label>
+                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">{t('quizzes_create.quiz_info')}</label>
                             
                             <div className="space-y-2">
-                                <label className="block text-[11px] font-bold text-text-400 uppercase tracking-wider ml-1">Quiz Header Image</label>
+                                <label className="block text-[11px] font-bold text-text-400 uppercase tracking-wider ml-1">{t('quizzes_create.header_image')}</label>
                                 <div className="relative group">
                                     <div className={`w-full h-40 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden bg-white dark:bg-slate-900 ${headerImage ? 'border-indigo-200' : 'border-surface-200 dark:border-slate-700 hover:border-indigo-400'}`}>
                                         {headerImage ? (
                                             <>
                                                 <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                                     <button type="button" onClick={() => document.getElementById('header-upload')?.click()} className="p-2 bg-white text-navy-900 rounded-lg hover:bg-surface-50 transition shadow-lg flex items-center gap-2 text-xs font-bold">
-                                                        <ImageIcon size={14} /> Change Image
+                                                        <ImageIcon size={14} /> {t('quizzes_create.change_image')}
                                                     </button>
                                                     <button type="button" onClick={() => setHeaderImage(null)} className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-lg flex items-center gap-2 text-xs font-bold">
-                                                        <X size={14} /> Remove
+                                                        <X size={14} /> {t('common.delete')}
                                                     </button>
                                                 </div>
                                             </>
                                         ) : (
                                             <button type="button" onClick={() => document.getElementById('header-upload')?.click()} disabled={isUploadingHeader} className="flex flex-col items-center gap-2 text-text-400 hover:text-indigo-500 transition-colors">
                                                 {isUploadingHeader ? <Loader2 className="animate-spin" size={32} /> : <ImageIcon size={32} />}
-                                                <span className="text-xs font-bold uppercase tracking-widest">{isUploadingHeader ? 'Uploading...' : 'Upload Header Image'}</span>
+                                                <span className="text-xs font-bold uppercase tracking-widest">{isUploadingHeader ? t('quizzes_create.uploading') : t('quizzes_create.upload_header')}</span>
                                             </button>
                                         )}
-                                        <input id="header-upload" type="file" className="hidden" accept="image/*" onChange={handleHeaderImageUpload} />
+                                         <input id="header-upload" type="file" className="hidden" accept="image/*" onChange={handleHeaderImageUpload} />
                                     </div>
-                                    <p className="text-[10px] text-text-400 mt-1.5 ml-1 italic">Recommended size: 1200x400px</p>
+                                    <p className="text-[10px] text-text-400 mt-1.5 ml-1 italic">{t('quizzes_create.recommended_size')}</p>
                                 </div>
                             </div>
-
+ 
                             <div className="space-y-2">
-                                <label className="block text-[11px] font-bold text-text-400 uppercase tracking-wider ml-1">Title *</label>
+                                <label className="block text-[11px] font-bold text-text-400 uppercase tracking-wider ml-1">{t('quizzes_create.title_label')}</label>
                                 <input
                                     required
                                     type="text"
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                     className="w-full bg-white dark:bg-slate-900 border border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 rounded-2xl p-3.5 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all font-medium"
-                                    placeholder="e.g. Employee Security Awareness 2026"
+                                    placeholder={t('quizzes_create.title_placeholder')}
                                 />
                             </div>
-
+ 
                             <div className="space-y-2">
-                                <label className="block text-[11px] font-bold text-text-400 uppercase tracking-wider ml-1">Rich Description (supports media)</label>
+                                <label className="block text-[11px] font-bold text-text-400 uppercase tracking-wider ml-1">{t('quizzes_create.desc_label')}</label>
                                 <TiptapEditor 
                                     content={description} 
                                     onChange={setDescription} 
                                     orgId={organization?.id} 
                                 />
-                                <p className="text-[11px] text-text-400 mt-1.5 ml-1">Add context, instructions, or images to help participants understand the quiz.</p>
+                                <p className="text-[11px] text-text-400 mt-1.5 ml-1">{t('quizzes_create.desc_help')}</p>
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">Division (Target Audience) *</label>
+                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">{t('quizzes_create.division_label')}</label>
                             <select
                                 required
                                 value={divisionId}
                                 onChange={(e) => setDivisionId(e.target.value)}
                                 className="w-full bg-white dark:bg-slate-900 border border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 rounded-2xl p-3.5 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all font-bold appearance-none cursor-pointer"
                             >
-                                <option value="" disabled>Select Division...</option>
+                                <option value="" disabled>{t('quizzes_create.select_division')}</option>
                                 {divisions.map(d => (
                                     <option key={d.id} value={d.id}>{d.name}</option>
                                 ))}
@@ -354,29 +359,29 @@ export default function CreateQuizPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">Linked Knowledge Base</label>
+                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">{t('quizzes_create.kb_label')}</label>
                             <select
                                 value={contentId}
                                 onChange={(e) => setContentId(e.target.value)}
                                 className="w-full bg-white dark:bg-slate-900 border border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 rounded-2xl p-3.5 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all font-bold appearance-none cursor-pointer"
                             >
-                                <option value="">None (Standalone Quiz)</option>
+                                <option value="">{t('quizzes_create.standalone')}</option>
                                 {contents.map(c => (
                                     <option key={c.id} value={c.id}>[{c.category}] {c.title}</option>
                                 ))}
                             </select>
-                            <p className="text-[11px] text-text-400 font-medium ml-1">Link this quiz to an existing Knowledge Base.</p>
+                            <p className="text-[11px] text-text-400 font-medium ml-1">{t('quizzes_create.kb_help')}</p>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">Time Limit (Minutes)</label>
+                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">{t('quizzes_create.time_limit_label')}</label>
                             <input
                                 type="number"
                                 min="1"
                                 value={timeLimit}
                                 onChange={(e) => setTimeLimit(e.target.value ? Number(e.target.value) : '')}
                                 className="w-full bg-white dark:bg-slate-900 border border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 rounded-2xl p-3.5 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all font-medium"
-                                placeholder="e.g. 15 (Leave empty for no limit)"
+                                placeholder={t('quizzes_create.time_limit_placeholder')}
                             />
                         </div>
 
@@ -391,7 +396,7 @@ export default function CreateQuizPage() {
                                             className="w-5 h-5 rounded-lg border-surface-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 dark:bg-slate-900 transition-all cursor-pointer"
                                         />
                                     </div>
-                                    <span className="text-sm font-bold text-text-700 dark:text-slate-300 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">Publish Immediately</span>
+                                    <span className="text-sm font-bold text-text-700 dark:text-slate-300 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">{t('quizzes_create.publish_immediately')}</span>
                                 </label>
                             </div>
                         )}
@@ -400,7 +405,7 @@ export default function CreateQuizPage() {
                      {/* Question Builder */}
                     <div className="space-y-8 pt-4">
                         <div className="flex justify-between items-center border-b border-surface-200 dark:border-slate-700 pb-5">
-                            <h2 className="text-2xl font-black font-display text-navy-900 dark:text-slate-100 tracking-tight">Quiz Questions</h2>
+                            <h2 className="text-2xl font-black font-display text-navy-900 dark:text-slate-100 tracking-tight">{t('quizzes_create.questions_title')}</h2>
                         </div>
 
                         {questions.map((q: any, qIndex: number) => (
@@ -411,7 +416,7 @@ export default function CreateQuizPage() {
                                         type="button"
                                         onClick={() => handleRemoveQuestion(qIndex)}
                                         className="absolute top-6 right-6 p-2 text-text-300 hover:text-danger hover:bg-danger/5 rounded-xl transition"
-                                        title="Remove Question"
+                                        title={t('quizzes_create.remove_question')}
                                     >
                                         <Trash size={20} />
                                     </button>
@@ -419,7 +424,7 @@ export default function CreateQuizPage() {
 
                                 <div className="space-y-6">
                                     <div className="flex items-center gap-3">
-                                        <span className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-black uppercase tracking-widest border border-indigo-100 dark:border-indigo-500/20">Question {qIndex + 1}</span>
+                                        <span className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-black uppercase tracking-widest border border-indigo-100 dark:border-indigo-500/20">{t('quizzes_create.question_label')} {qIndex + 1}</span>
                                         
                                         {/* TOMBOL ADD IMAGE */}
                                         <button 
@@ -428,7 +433,7 @@ export default function CreateQuizPage() {
                                             className="flex items-center gap-2 px-3 py-1.5 bg-surface-100 dark:bg-slate-700 hover:bg-surface-200 dark:hover:bg-slate-600 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 rounded-lg transition-all border border-indigo-100 dark:border-indigo-500/10"
                                         >
                                             <ImageIcon size={14} />
-                                            {q.image ? 'Change Image' : 'Add Image'}
+                                            {q.image ? t('quizzes_create.change_image') : t('quizzes_create.add_image')}
                                         </button>
 
                                         {/* Input File Tersembunyi */}
@@ -456,7 +461,7 @@ export default function CreateQuizPage() {
                                                 type="button"
                                                 onClick={() => handleQuestionChange(qIndex, 'image', null)}
                                                 className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 hover:scale-110 transition-all border-2 border-white dark:border-slate-800"
-                                                title="Remove Image"
+                                                title={t('quizzes_create.remove_image')}
                                             >
                                                 <X size={12} />
                                             </button>
@@ -469,7 +474,7 @@ export default function CreateQuizPage() {
                                         value={q.question_text}
                                         onChange={(e) => handleQuestionChange(qIndex, 'question_text', e.target.value)}
                                         className="w-full bg-transparent border-b-2 border-surface-200 dark:border-slate-700 py-3 outline-none focus:border-indigo-500 dark:focus:border-indigo-400 font-bold text-lg dark:text-slate-100 transition-colors"
-                                        placeholder="Write your question here..."
+                                        placeholder={t('quizzes_create.question_placeholder')}
                                     />
 
                                     <div className="flex flex-wrap gap-4 pt-2">
@@ -478,9 +483,9 @@ export default function CreateQuizPage() {
                                                 type="radio" 
                                                 checked={q.question_type === 'MULTIPLE_CHOICE'} 
                                                 onChange={() => handleQuestionChange(qIndex, 'question_type', 'MULTIPLE_CHOICE')}
-                                                className="w-4 h-4 text-indigo-600 border-surface-300 focus:ring-indigo-500"
+                                                 className="w-4 h-4 text-indigo-600 border-surface-300 focus:ring-indigo-500"
                                             />
-                                            <span className={`text-sm font-bold ${q.question_type === 'MULTIPLE_CHOICE' ? 'text-indigo-600' : 'text-text-400'}`}>Pilihan Ganda</span>
+                                            <span className={`text-sm font-bold ${q.question_type === 'MULTIPLE_CHOICE' ? 'text-indigo-600' : 'text-text-400'}`}>{t('quizzes_create.multiple_choice')}</span>
                                         </label>
                                         <label className="flex items-center gap-2 cursor-pointer group">
                                             <input 
@@ -489,7 +494,7 @@ export default function CreateQuizPage() {
                                                 onChange={() => handleQuestionChange(qIndex, 'question_type', 'ESSAY')}
                                                 className="w-4 h-4 text-indigo-600 border-surface-300 focus:ring-indigo-500"
                                             />
-                                            <span className={`text-sm font-bold ${q.question_type === 'ESSAY' ? 'text-indigo-600' : 'text-text-400'}`}>Isian (Essay)</span>
+                                            <span className={`text-sm font-bold ${q.question_type === 'ESSAY' ? 'text-indigo-600' : 'text-text-400'}`}>{t('quizzes_create.essay')}</span>
                                         </label>
                                     </div>
 
@@ -522,17 +527,17 @@ export default function CreateQuizPage() {
                                                                     }}
                                                                     className={`w-full rounded-2xl p-3.5 text-sm outline-none transition-all duration-300 border font-bold ${
                                                                         q.correct_answer === optIndex.toString()
-                                                                            ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-700 dark:text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.1)]' 
+                                                                             ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-700 dark:text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.1)]' 
                                                                             : 'bg-white dark:bg-slate-900 border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/5'
                                                                     }`}
-                                                                    placeholder={`Answer Option ${optIndex + 1}`}
+                                                                    placeholder={`${t('quizzes_create.option_placeholder')} ${optIndex + 1}`}
                                                                 />
                                                                 {q.options.length > 2 && (
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => handleRemoveOption(qIndex, optIndex)}
                                                                         className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-text-300 hover:text-danger opacity-0 group-hover/input:opacity-100 transition-opacity"
-                                                                        title="Remove Option"
+                                                                        title={t('quizzes_create.remove_option')}
                                                                     >
                                                                         <X size={14} />
                                                                     </button>
@@ -543,31 +548,31 @@ export default function CreateQuizPage() {
                                                 ))}
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleAddOption(qIndex)}
+                                                     onClick={() => handleAddOption(qIndex)}
                                                     className="flex items-center justify-center gap-2 p-3.5 border-2 border-dashed border-surface-200 dark:border-slate-700 rounded-2xl text-text-400 hover:text-indigo-500 hover:border-indigo-200 transition-all font-bold text-sm"
                                                 >
-                                                    <PlusCircle size={16} /> Add Option
+                                                    <PlusCircle size={16} /> {t('quizzes_create.add_option')}
                                                 </button>
                                             </div>
                                             <p className="text-[11px] text-text-400 font-medium flex items-center gap-2 px-1">
-                                                <Sparkles size={14} className="text-indigo-500" /> Fill in all options and mark the radio button for the correct answer.
+                                                <Sparkles size={14} className="text-indigo-500" /> {t('quizzes_create.mc_help')}
                                             </p>
                                         </>
                                     ) : (
                                         <div className="space-y-4 pt-2">
                                             <div className="space-y-2">
-                                                <label className="block text-[11px] font-bold text-text-400 uppercase tracking-wider ml-1">Correct Answer (Exact Match)</label>
+                                                <label className="block text-[11px] font-bold text-text-400 uppercase tracking-wider ml-1">{t('quizzes_create.correct_answer_label')}</label>
                                                 <input
                                                     required
                                                     type="text"
                                                     value={q.correct_answer}
-                                                    onChange={(e) => handleQuestionChange(qIndex, 'correct_answer', e.target.value)}
+                                                     onChange={(e) => handleQuestionChange(qIndex, 'correct_answer', e.target.value)}
                                                     className="w-full bg-white dark:bg-slate-900 border border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 rounded-2xl p-3.5 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all font-bold"
                                                     placeholder="e.g. Paris"
                                                 />
                                             </div>
                                             <p className="text-[11px] text-text-400 font-medium flex items-center gap-2 px-1">
-                                                <Sparkles size={14} className="text-indigo-500" /> The participant's answer will be compared to this text (case-insensitive).
+                                                <Sparkles size={14} className="text-indigo-500" /> {t('quizzes_create.essay_help')}
                                             </p>
                                         </div>
                                     )}
@@ -580,7 +585,7 @@ export default function CreateQuizPage() {
                             onClick={handleAddQuestion}
                             className="w-full py-4 border-2 border-dashed border-surface-200 dark:border-surface-100 rounded-lg text-text-500 dark:text-text-500 hover:text-navy-600 dark:hover:text-navy-400 hover:border-blue-400 dark:hover:border-navy-600 hover:bg-navy-50 dark:hover:bg-surface-0 transition flex items-center justify-center gap-2 font-medium"
                         >
-                            <PlusCircle size={20} /> Add Another Question
+                            <PlusCircle size={20} /> {t('quizzes_create.add_another_question')}
                         </button>
                     </div>
 
@@ -589,18 +594,18 @@ export default function CreateQuizPage() {
                             href="/dashboard/quizzes"
                             className="px-6 py-2.5 border border-surface-200 text-text-700 rounded-md hover:bg-surface-50 font-medium transition"
                         >
-                            Cancel
+                            {t('common.cancel')}
                         </Link>
                         {isKadiv ? (
                             <>
                                 <button
                                     type="button"
                                     onClick={(e) => handleSubmit(e as any, false)}
-                                    disabled={status.type === 'loading'}
+                                     disabled={status.type === 'loading'}
                                     className="px-6 py-2.5 border border-navy-600 text-navy-600 rounded-md hover:bg-navy-50 font-medium transition flex items-center gap-2"
                                 >
                                     <Save size={18} />
-                                    Save
+                                    {t('quizzes_create.save')}
                                 </button>
                                 <button
                                     type="button"
@@ -609,7 +614,7 @@ export default function CreateQuizPage() {
                                     className="btn btn-primary"
                                 >
                                     <Send size={18} />
-                                    Publish
+                                    {t('quizzes_create.publish')}
                                 </button>
                             </>
                         ) : (
@@ -619,7 +624,7 @@ export default function CreateQuizPage() {
                                 className="btn btn-primary"
                             >
                                 <Save size={18} />
-                                {editId ? 'Update Draft' : 'Save Draft'}
+                                {editId ? t('quizzes_create.update_draft') : t('quizzes_create.save_draft')}
                             </button>
                         )}
                     </div>

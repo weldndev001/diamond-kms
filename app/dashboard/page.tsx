@@ -9,6 +9,7 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getMandatoryReadStatsAction } from '@/lib/actions/read-tracker.actions'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface DashboardStats {
     totalDocuments: number
@@ -25,6 +26,7 @@ interface DashboardStats {
 
 export default function DashboardPage() {
     const { user, role, organization, isLoading } = useCurrentUser()
+    const { t } = useTranslation()
     const router = useRouter()
     const [stats, setStats] = useState<DashboardStats | null>(null)
     const [trackerStats, setTrackerStats] = useState<any[]>([])
@@ -59,7 +61,7 @@ export default function DashboardPage() {
         return (
             <div className="flex flex-col items-center justify-center py-20">
                 <div className="w-10 h-10 border-4 border-navy-200 border-t-navy-600 rounded-full animate-spin mb-4" />
-                <p className="text-text-500 font-medium">Loading dashboard...</p>
+                <p className="text-text-500 font-medium">{t('common.loading')}</p>
             </div>
         )
     }
@@ -72,11 +74,11 @@ export default function DashboardPage() {
 
     const getRoleLabel = () => {
         switch (role) {
-            case 'SUPER_ADMIN': return 'Dashboard'
-            case 'GROUP_ADMIN': return 'Divisional Dashboard'
-            case 'SUPERVISOR': return 'Supervisor Dashboard'
-            case 'STAFF': return 'Staff Dashboard'
-            default: return 'Dashboard'
+            case 'SUPER_ADMIN': return t('dashboard.title')
+            case 'GROUP_ADMIN': return t('dashboard.divisional_title')
+            case 'SUPERVISOR': return t('dashboard.supervisor_title')
+            case 'STAFF': return t('dashboard.staff_title')
+            default: return t('dashboard.title')
         }
     }
 
@@ -88,8 +90,8 @@ export default function DashboardPage() {
                     {getRoleLabel()}
                 </h1>
                 <p className="text-sm text-text-500 mt-1">
-                    Welcome, <span className="font-semibold text-navy-700">{user.full_name}</span>
-                    {organization?.name && <> at <span className="font-semibold">{organization.name}</span></>}
+                    {t('common.welcome')}, <span className="font-semibold text-navy-700">{user.full_name}</span>
+                    {organization?.name && <> {t('common.at')} <span className="font-semibold">{organization.name}</span></>}
                 </p>
             </div>
 
@@ -102,14 +104,14 @@ export default function DashboardPage() {
                     <div className="relative z-10">
                         <div className="flex items-center gap-2 text-navy-200 text-sm font-medium uppercase tracking-wider mb-3">
                             <Activity size={16} />
-                            Reading Tracker
+                            {t('dashboard.reading_tracker')}
                         </div>
                         <div className="flex items-end gap-4">
                             <div className="text-5xl font-black font-display">
                                 {stats.readingTracker.rate}%
                             </div>
                             <div className="text-navy-200 mb-1.5 text-sm">
-                                understanding rate
+                                {t('dashboard.understanding_rate')}
                             </div>
                         </div>
                         <div className="mt-4 w-full bg-white/20 rounded-full h-2.5">
@@ -119,7 +121,7 @@ export default function DashboardPage() {
                             />
                         </div>
                         <p className="text-navy-300 text-xs mt-2">
-                            {stats.readingTracker.confirmed} of {stats.readingTracker.expected} mandatory reads confirmed
+                            {stats.readingTracker.confirmed} {t('dashboard.of')} {stats.readingTracker.expected} {t('dashboard.mandatory_confirmed')}
                         </p>
                     </div>
                 </div>
@@ -134,7 +136,7 @@ export default function DashboardPage() {
                             <FileText size={24} />
                         </div>
                         <div>
-                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Documents</p>
+                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('dashboard.total_documents')}</p>
                             <p className="text-3xl font-black font-display text-text-900 mt-0.5">
                                 {stats?.totalDocuments ?? 0}
                             </p>
@@ -149,7 +151,7 @@ export default function DashboardPage() {
                             <Tags size={24} />
                         </div>
                         <div>
-                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Articles</p>
+                            <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('dashboard.total_articles')}</p>
                             <p className="text-3xl font-black font-display text-text-900 mt-0.5">
                                 {stats?.totalContents ?? 0}
                             </p>
@@ -165,7 +167,7 @@ export default function DashboardPage() {
                                 <Network size={24} />
                             </div>
                             <div>
-                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Divisions</p>
+                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('dashboard.total_divisions')}</p>
                                 <p className="text-3xl font-black font-display text-text-900 mt-0.5">
                                     {stats?.totalDivisions ?? 0}
                                 </p>
@@ -182,7 +184,7 @@ export default function DashboardPage() {
                                 <Users size={24} />
                             </div>
                             <div>
-                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">Members</p>
+                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('dashboard.total_members')}</p>
                                 <p className="text-3xl font-black font-display text-text-900 mt-0.5">
                                     {stats?.totalMembers ?? 0}
                                 </p>
@@ -196,14 +198,14 @@ export default function DashboardPage() {
             {(isHRD || isKadivOrSupervisor) && trackerStats.length > 0 && (
                 <div className="space-y-4">
                     <h2 className="text-xl font-bold font-display text-navy-900 flex items-center gap-2">
-                        <CheckCircle size={20} className="text-navy-600" /> Mandatory Read Tracking
+                        <CheckCircle size={20} className="text-navy-600" /> {t('dashboard.mandatory_read_tracking')}
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {trackerStats.slice(0, 3).map((item) => (
                             <div key={item.id} className="card p-5">
                                 <h3 className="font-bold font-display text-text-900 text-sm mb-3 line-clamp-1">{item.title}</h3>
                                 <div className="flex justify-between items-end mb-2">
-                                    <span className="text-xs text-text-500">{item.readCount}/{item.totalTarget} Readers</span>
+                                    <span className="text-xs text-text-500">{item.readCount}/{item.totalTarget} {t('dashboard.readers')}</span>
                                     <span className="text-lg font-black text-navy-600">{item.percent}%</span>
                                 </div>
                                 <div className="w-full bg-surface-100 rounded-full h-1.5 overflow-hidden">
@@ -217,7 +219,7 @@ export default function DashboardPage() {
                     </div>
                     {trackerStats.length > 3 && (
                         <Link href="/dashboard/trackers" className="text-sm font-medium text-navy-600 hover:text-navy-700 block text-right mt-2">
-                            View all →
+                            {t('common.view_all')} →
                         </Link>
                     )}
                 </div>
@@ -227,24 +229,24 @@ export default function DashboardPage() {
             <div className="card p-6">
                 <h2 className="font-bold font-display text-navy-900 text-lg mb-4 flex items-center gap-2">
                     <BarChart3 size={18} className="text-navy-600" />
-                    Quick Access
+                    {t('dashboard.quick_access')}
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <Link href="/dashboard/documents" className="p-4 bg-surface-50 border border-surface-200 rounded-xl text-center hover:bg-navy-light hover:border-navy-300 transition">
                         <FileText size={20} className="mx-auto text-navy-600 mb-2" />
-                        <span className="text-sm font-medium text-text-900">Manage Document</span>
+                        <span className="text-sm font-medium text-text-900">{t('common.manage_document')}</span>
                     </Link>
                     <Link href="/dashboard/knowledge-base" className="p-4 bg-surface-50 border border-surface-200 rounded-xl text-center hover:bg-navy-light hover:border-navy-300 transition">
                         <Tags size={20} className="mx-auto text-amber-600 mb-2" />
-                        <span className="text-sm font-medium text-text-900">Knowledge Base</span>
+                        <span className="text-sm font-medium text-text-900">{t('common.knowledge_management')}</span>
                     </Link>
                     <Link href="/dashboard/ai-assistant" className="p-4 bg-surface-50 border border-surface-200 rounded-xl text-center hover:bg-navy-light hover:border-navy-300 transition">
                         <TrendingUp size={20} className="mx-auto text-green-600 mb-2" />
-                        <span className="text-sm font-medium text-text-900">AI Assistant</span>
+                        <span className="text-sm font-medium text-text-900">{t('common.ai_assistant')}</span>
                     </Link>
                     <Link href="/dashboard/leaderboard" className="p-4 bg-surface-50 border border-surface-200 rounded-xl text-center hover:bg-navy-light hover:border-navy-300 transition">
                         <Activity size={20} className="mx-auto text-purple-600 mb-2" />
-                        <span className="text-sm font-medium text-text-900">Employee Quizzes</span>
+                        <span className="text-sm font-medium text-text-900">{t('dashboard.employee_quizzes')}</span>
                     </Link>
                 </div>
             </div>

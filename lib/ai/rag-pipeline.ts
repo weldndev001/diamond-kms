@@ -49,9 +49,7 @@ export async function ragQuery(
     } = params
 
     // ── STEP 1: Scope filter based on role ──────────────────────
-    const scopedToDiv =
-        userRole === 'STAFF' ||
-        (userRole === 'SUPERVISOR' && !crossDivisionEnabled)
+    const scopedToDiv = !crossDivisionEnabled && (userRole === 'STAFF' || userRole === 'SUPERVISOR')
 
     const ai = await getAIServiceForOrg(orgId)
 
