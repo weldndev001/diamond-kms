@@ -286,11 +286,11 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
                             <span className="text-amber-400 text-[16px] leading-none">◆</span>
                         )}
                         <span className="truncate">
-                            {organization?.app_name || 'DIAMOND'}
+                            {organization?.app_name || 'DIAMOND KMS'}
                         </span>
                     </div>
                     <div className="text-[10px] text-sidebar-muted mt-1 font-bold tracking-[0.05em] uppercase truncate">
-                        {organization?.slogan || 'KNOWLEDGE MANAGEMENT SYSTEM'}
+                        {organization?.slogan || 'AI POWERED KNOWLEDGE MANAGEMENT SYSTEM'}
                     </div>
                     {organization?.name && (
                         <div className="text-[11px] text-sidebar-foreground mt-3 font-medium truncate border-t border-white/10 pt-3">
