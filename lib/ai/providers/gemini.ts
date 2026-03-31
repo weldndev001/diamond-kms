@@ -4,10 +4,11 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import type { AIService, DocumentMetadata } from '../types'
 import { logger } from '@/lib/logging/redact'
 import { withRetry } from '../utils'
+import { env } from '@/lib/env'
 
 export class GeminiService implements AIService {
     readonly providerName = 'google-gemini'
-    readonly embeddingModel = 'text-embedding-004'
+    readonly embeddingModel = 'embedding-001'
 
     private genAI: GoogleGenerativeAI
     private chatModel: string
@@ -36,9 +37,11 @@ export class GeminiService implements AIService {
             const model = this.genAI.getGenerativeModel({
                 model: this.chatModel,
                 generationConfig: {
-                    maxOutputTokens: options?.maxTokens ?? 2048,
+                    maxOutputTokens: options?.maxTokens ?? parseInt(env.AI_MAX_TOKENS || '2048', 10),
                     responseMimeType: options?.jsonMode ? 'application/json' : 'text/plain',
-                    temperature: 0.7,
+                    temperature: parseFloat(env.AI_TEMPERATURE || '0.7'),
+                    topP: parseFloat(env.AI_TOP_P || '0.9'),
+                    topK: parseInt(env.AI_TOP_K || '40', 10),
                     frequencyPenalty: 0.5,
                     presencePenalty: 0.1,
                 },
@@ -62,7 +65,9 @@ export class GeminiService implements AIService {
             model: this.chatModel,
             systemInstruction: systemPrompt,
             generationConfig: {
-                temperature: 0.7,
+                temperature: parseFloat(env.AI_TEMPERATURE || '0.7'),
+                topP: parseFloat(env.AI_TOP_P || '0.9'),
+                topK: parseInt(env.AI_TOP_K || '40', 10),
                 frequencyPenalty: 0.5,
                 presencePenalty: 0.1,
             },

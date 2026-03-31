@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { getDocumentByIdAction } from '@/lib/actions/document.actions'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import {
@@ -18,6 +18,7 @@ interface ChatMessage {
 
 export default function DocumentDetailPage() {
     const params = useParams()
+    const searchParams = useSearchParams()
     const { role } = useCurrentUser()
     const [doc, setDoc] = useState<any>(null)
     const [loading, setLoading] = useState(true)
@@ -569,11 +570,25 @@ export default function DocumentDetailPage() {
                                     </div>
                                 </div>
                             ) : pdfUrl ? (
-                                <iframe
-                                    src={`${pdfUrl}#toolbar=1&navpanes=0`}
-                                    className="w-full h-full border-0"
-                                    title="PDF Viewer"
-                                />
+                                (() => {
+                                    const pageParam = searchParams.get('page')
+                                    const searchParam = searchParams.get('search')
+                                    const pdfHashParams = new URLSearchParams()
+                                    pdfHashParams.set('toolbar', '1')
+                                    pdfHashParams.set('navpanes', '0')
+                                    if (pageParam) pdfHashParams.set('page', pageParam)
+                                    if (searchParam) pdfHashParams.set('search', searchParam)
+                                    // Ensure quote marks for exact phrase search in PDF viewers
+                                    const searchSuffix = searchParam ? `&search="${encodeURIComponent(searchParam)}"` : ''
+                                    
+                                    return (
+                                        <iframe
+                                            src={`${pdfUrl}#toolbar=1&navpanes=0${pageParam ? `&page=${pageParam}` : ''}${searchSuffix}`}
+                                            className="w-full h-full border-0"
+                                            title="PDF Viewer"
+                                        />
+                                    )
+                                })()
                             ) : (
                                 <div className="flex items-center justify-center h-full">
                                     <div className="text-center space-y-2">
