@@ -30,23 +30,21 @@ const getIconForLabel = (label: string) => {
         case 'FAQs / Help': return <Bot size={16} />
         case 'Manage Knowledge Base':
         case 'Kelola Knowledge Base':
-        case 'Search & Ask AI':
         case 'Cari & Tanya AI':
+        case 'Search & Ask AI':
         case 'AI Assistant': return <Sparkles size={16} />
         case 'Knowledge Base': return <Tags size={16} />
+        case 'Content':
         case 'Manage Content':
-        case 'Manage Articles':
-        case 'Document':
-        case 'Documents':
-        case 'Manage Documents': return <FileText size={16} />
-        case 'Quiz Management':
+        case 'Kelola Konten':
+        case 'Dokumen':
+        case 'Manage Document':
+        case 'Documents': return <FileText size={16} />
+        case 'Quizzes':
         case 'Quiz':
-        case 'Staff Understanding':
-        case 'Pemahaman Pegawai':
-        case 'Employee Assessment': return <FileQuestion size={16} />
+        case 'Pemahaman Pegawai': return <FileQuestion size={16} />
         case 'User':
         case 'Users':
-        case 'Members':
         case 'Anggota': return <Users size={16} />
         case 'Organization Settings':
         case 'Organization': return <Settings size={16} />
@@ -99,7 +97,7 @@ const getNavEntries = (role?: string): NavEntry[] => {
             label: 'Knowledge Management',
             icon: 'Tags',
             children: [
-                { label: 'Manage Knowledge Base', href: '/dashboard/knowledge-base' },
+                { label: 'Kelola Knowledge Base', href: '/dashboard/knowledge-base' },
                 { label: 'Manage Document', href: '/dashboard/documents' },
                 { label: 'Manage Content', href: '/dashboard/content' }
             ]
@@ -121,8 +119,8 @@ const getNavEntries = (role?: string): NavEntry[] => {
                 label: 'User Management',
                 icon: 'Users',
                 children: [
-                    { label: 'Members', href: '/dashboard/hrd/users' },
-                    { label: 'Divisions', href: '/dashboard/hrd/users/divisions' },
+                    { label: 'Anggota', href: '/dashboard/hrd/users' },
+                    { label: 'Divisi', href: '/dashboard/hrd/users/divisions' },
                 ]
             },
             // Divisions removed as it's now in the User accordion
@@ -190,11 +188,10 @@ function SidebarGroup({ group, pathname, searchParams }: { group: NavGroup; path
         <div>
             <button
                 onClick={() => setOpen(!open)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
-                    hasActiveChild
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${hasActiveChild
                         ? 'bg-navy-600/30 text-white'
                         : 'text-surface-300 hover:text-white hover:bg-white/5'
-                }`}
+                    }`}
             >
                 <span className="flex items-center gap-2">
                     <span className={hasActiveChild ? 'text-navy-400' : 'text-white/80'}>
@@ -217,11 +214,10 @@ function SidebarGroup({ group, pathname, searchParams }: { group: NavGroup; path
                             <Link
                                 key={child.href}
                                 href={child.href}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${
-                                    isActive
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${isActive
                                         ? 'bg-navy-600/20'
                                         : 'hover:bg-white/5'
-                                }`}
+                                    }`}
                             >
                                 <span className={isActive ? 'text-amber-400' : 'text-white'}>
                                     {getIconForLabel(child.label)}
@@ -265,14 +261,23 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
     }
 
     const navEntries = getNavEntries(role)
+    // TEMPORARY BYPASS
+    if (!navEntries.find(g => 'label' in g && g.label === 'Settings')) {
+        navEntries.push({
+            label: 'Settings',
+            icon: 'Settings',
+            children: [
+                { label: 'AI Management', href: '/dashboard/hrd/ai' },
+            ],
+        })
+    }
 
     return (
         <div className="flex h-screen bg-surface-50 overflow-hidden relative">
             {/* Sidebar */}
-            <aside 
-                className={`bg-navy-sidebar border-r border-white/5 flex flex-col hidden md:flex shrink-0 transition-all duration-300 ease-in-out overflow-hidden shadow-2xl z-20 ${
-                    isSidebarOpen ? 'w-[280px] opacity-100' : 'w-0 opacity-0 pointer-events-none'
-                }`}
+            <aside
+                className={`bg-navy-sidebar border-r border-white/5 flex flex-col hidden md:flex shrink-0 transition-all duration-300 ease-in-out overflow-hidden shadow-2xl z-20 ${isSidebarOpen ? 'w-[280px] opacity-100' : 'w-0 opacity-0 pointer-events-none'
+                    }`}
             >
                 {/* Brand Logo */}
                 <div className="p-[24px_20px]">
@@ -297,7 +302,7 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
                         }
                         const item = entry as NavItem
                         const [itemPath, itemQuery] = item.href.split('?')
-                        const isActive = itemQuery 
+                        const isActive = itemQuery
                             ? (pathname === itemPath && searchParams.toString().includes(itemQuery))
                             : (pathname === itemPath && !searchParams.toString())
 

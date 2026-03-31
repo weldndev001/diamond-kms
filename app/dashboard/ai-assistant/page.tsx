@@ -5,6 +5,8 @@ import {
     MessageSquare, Send, FileText, Loader2, Bot, User,
     Sparkles, Plus, Trash2, FileBarChart, History, PanelLeftOpen, PanelLeftClose, LayoutGrid, List
 } from 'lucide-react'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { getKnowledgeBasesAction } from '@/lib/actions/knowledge-base.actions'
 
 interface Message {
     role: 'user' | 'assistant'
@@ -47,8 +49,9 @@ export default function AIAssistantPage() {
     const [summaryLoading, setSummaryLoading] = useState(false)
     const [sessionSummary, setSessionSummary] = useState<string | null>(null)
     const [selectedContext, setSelectedContext] = useState('Global')
+    const [knowledgeBases, setKnowledgeBases] = useState<any[]>([])
     const [isHistoryOpen, setIsHistoryOpen] = useState(true)
-    const contexts = ['Global', 'Employee SOP', 'Technical Guide', 'Security Policy']
+    const { organization } = useCurrentUser()
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     const scrollToBottom = useCallback(() => {
@@ -59,10 +62,21 @@ export default function AIAssistantPage() {
         scrollToBottom()
     }, [messages, streamingText, scrollToBottom])
 
-    // Load sessions on mount
+    // Load sessions and KBs on mount
     useEffect(() => {
         loadSessions()
     }, [])
+
+    useEffect(() => {
+        if (organization?.id) {
+            loadKBs(organization.id)
+        }
+    }, [organization?.id])
+
+    const loadKBs = async (orgId: string) => {
+        const kbs = await getKnowledgeBasesAction(orgId)
+        setKnowledgeBases(kbs)
+    }
 
     const loadSessions = async () => {
         setLoadingSessions(true)
@@ -173,6 +187,7 @@ export default function AIAssistantPage() {
                     question,
                     history: messages.slice(-6),
                     sessionId: currentSessionId,
+                    knowledgeBaseId: selectedContext !== 'Global' ? selectedContext : undefined,
                 }),
             })
 
@@ -367,8 +382,9 @@ export default function AIAssistantPage() {
                                     onChange={(e) => setSelectedContext(e.target.value)}
                                     className="appearance-none bg-surface-50 dark:bg-surface-0 border border-surface-200 dark:border-surface-100 text-xs font-black rounded-xl pl-4 pr-10 py-2.5 focus:outline-none focus:ring-4 focus:ring-navy-600/10 text-navy-800 dark:text-navy-800 cursor-pointer hover:border-navy-400/50 hover:bg-white dark:hover:bg-navy-700 transition-all shadow-sm"
                                 >
-                                    {contexts.map(ctx => (
-                                        <option key={ctx} value={ctx}>{ctx}</option>
+                                    <option value="Global">Global Context</option>
+                                    {knowledgeBases.map(kb => (
+                                        <option key={kb.id} value={kb.id}>{kb.name}</option>
                                     ))}
                                 </select>
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-navy-400">
@@ -394,7 +410,9 @@ export default function AIAssistantPage() {
                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]"></span>
                         </div>
                         <span className="opacity-70">Focusing on</span>
-                        <span className="text-indigo-300 font-extrabold">{selectedContext}</span>
+                        <span className="text-indigo-300 font-extrabold">
+                            {selectedContext === 'Global' ? 'Global' : (knowledgeBases.find(k => k.id === selectedContext)?.name || 'Knowledge Base')}
+                        </span>
                     </div>
                 </div>
 

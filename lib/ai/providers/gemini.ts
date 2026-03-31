@@ -12,7 +12,8 @@ export class GeminiService implements AIService {
     private genAI: GoogleGenerativeAI
     private chatModel: string
 
-    constructor(apiKey: string, chatModel = 'gemini-2.5-flash') {
+    constructor(apiKey: string, chatModel: string = 'gemini-2.5-flash') {
+        console.log(`\n🚨 [GEMINI-FACTORY] Creating GeminiService instance! Model: ${chatModel}`)
         this.genAI = new GoogleGenerativeAI(apiKey)
         this.chatModel = chatModel
     }
@@ -80,7 +81,9 @@ export class GeminiService implements AIService {
     ): Promise<DocumentMetadata> {
         const model = this.genAI.getGenerativeModel({ model: this.chatModel })
 
-        const PROMPT = `Analyze this document and return ONLY valid JSON (no markdown fences):
+        const PROMPT = `Analyze this document and return ONLY valid JSON (no markdown fences). 
+    IMPORTANT: DO NOT USE ANY MARKDOWN OR STARS (no **, no *). USE PLAIN TEXT ONLY. 
+    For lists, use numbered format (1., 2., 3.) or letters (a., b.) instead of bullet points.
 {
   "title": "concise document title in the document's language (max 80 chars)",
   "summary": "2-3 paragraph summary (max 200 words)",

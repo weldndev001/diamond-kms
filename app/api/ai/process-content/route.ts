@@ -124,6 +124,15 @@ async function processContentInBackground(contentId: string, content: any) {
                     const currentProgress = 40 + Math.floor((processedChunks / totalChunks) * 40)
                     const embMsg = `Membuat vektor embeddings (Bagian ${processedChunks + 1}/${totalChunks})...`
 
+                    // Check if cancelled
+                    const currentContent = await prisma.content.findUnique({
+                        where: { id: contentId },
+                        select: { processing_status: true }
+                    })
+                    if (currentContent?.processing_status === 'failed') {
+                        throw new Error('Proses dihentikan oleh pengguna.')
+                    }
+
                     // Only send progress updates for every 3rd chunk to avoid overwhelming the client/DB
                     if (processedChunks === 0 || processedChunks === totalChunks - 1 || processedChunks % 3 === 0) {
                         await updateProcessingLog(contentId, 'processing', embMsg, currentProgress)
@@ -131,12 +140,17 @@ async function processContentInBackground(contentId: string, content: any) {
 
                     const embedding = await ai.generateEmbedding(chunk.content)
                     const embeddingString = `[${embedding.join(',')}]`
-                    await prisma.$executeRaw`
-                        INSERT INTO content_chunks
-                        (id, content_id, chunk_index, content, embedding, token_count, created_at)
-                        VALUES
-                        (gen_random_uuid()::text, ${contentId}, ${chunk.chunkIndex}, ${chunk.content}, CAST(${embeddingString} AS vector), ${chunk.tokenCount}, NOW())
-                    `
+                    try {
+                        await prisma.$executeRaw`
+                            INSERT INTO content_chunks
+                            (id, content_id, chunk_index, content, embedding, token_count, created_at)
+                            VALUES
+                            (gen_random_uuid()::text, ${contentId}, ${chunk.chunkIndex}, ${chunk.content}, CAST(${embeddingString} AS vector), ${chunk.tokenCount}, NOW())
+                        `
+                    } catch (dbErr: any) {
+                        console.error(`❌ [PROCESS] DB Insert FAILED for Article chunk ${i}:`, dbErr.message)
+                        throw new Error(`Database Error: ${dbErr.message}`)
+                    }
                     processedChunks++
                 })
             )

@@ -1,0 +1,28 @@
+[2026-03-27T09:58:04.199Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-27T10:02:01.665Z] [PROCESS-BG] STARTED for 8f8e7033-4fb7-43e3-889c-c9baff285212
+[2026-03-27T10:02:02.541Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-27T10:02:02.603Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-27T10:02:02.704Z] Got AI service: ollama-olla
+[2026-03-27T10:02:02.706Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-27T10:02:45.383Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-27T10:03:45.834Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-27T10:04:49.865Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-27T10:04:57.036Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-27T10:04:57.037Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-30T08:55:53.794Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-30T08:56:05.853Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-30T08:56:05.854Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-30T08:57:16.298Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-30T08:57:20.208Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-30T08:57:20.209Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-30T09:20:17.311Z] [PROCESS-BG] STARTED for b867c89b-1ba5-4edd-a7c3-40af98a2d1a0
+[2026-03-30T09:20:17.926Z] Calling getAIServiceForOrg for ff9720c0-3306-4834-9add-f3750276ce80
+[2026-03-30T09:20:17.966Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-30T09:20:18.017Z] Got AI service: ollama-olla
+[2026-03-30T09:20:18.018Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-30T09:20:45.608Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-30T09:33:58.128Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-30T09:34:10.638Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-03-30T09:38:53.156Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-30T09:39:02.583Z] [AI-FACTORY] FULL CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-03-30T09:39:02.584Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf

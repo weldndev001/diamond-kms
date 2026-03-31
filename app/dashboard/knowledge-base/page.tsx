@@ -4,6 +4,14 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getContentsAction } from '@/lib/actions/content.actions'
 import {
+    getKnowledgeBasesAction,
+    createKnowledgeBaseAction,
+    addSourcesToKBAction,
+    removeSourceFromKBAction,
+    getKBChatSessionsAction,
+    deleteKnowledgeBaseAction
+} from '@/lib/actions/knowledge-base.actions'
+import {
     Plus, Search, MessageSquare, FileText, Bot, User, Send, Loader2,
     ArrowLeft, X, Check, BookOpen, File, ChevronRight, Sparkles,
     Trash2, Tags, FolderOpen, Clock, Users as UsersIcon,
@@ -45,47 +53,8 @@ interface ChatSession {
 }
 
 /* ═══════════════════════════════════════════
-   MOCK DATA  (frontend-only, replaced later)
+   MOCK DATA  (chat only)
    ═══════════════════════════════════════════ */
-const MOCK_KBS: KnowledgeBase[] = [
-    {
-        id: 'kb-1',
-        name: 'Operational SOP',
-        description: 'Collection of SOPs and daily work procedures',
-        documents: [
-            { id: 'd1', title: 'Goods Receipt SOP', type: 'document', division: 'Warehouse' },
-            { id: 'd2', title: 'Quality Check Procedure', type: 'document', division: 'QC' },
-            { id: 'c1', title: 'Work Safety Guide', type: 'content', division: 'HR' },
-        ],
-        created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-        messageCount: 24,
-    },
-    {
-        id: 'kb-2',
-        name: 'HR Policy',
-        description: 'Leave rules, salary, and employee management',
-        documents: [
-            { id: 'd3', title: 'Annual Leave Guide', type: 'document', division: 'HR' },
-            { id: 'c2', title: 'Remuneration Policy 2025', type: 'content', division: 'HR' },
-        ],
-        created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-        messageCount: 8,
-    },
-    {
-        id: 'kb-3',
-        name: 'Product & Marketing',
-        description: 'Product information, pricing, and marketing strategy',
-        documents: [
-            { id: 'd4', title: 'Product Catalog 2025', type: 'document', division: 'Marketing' },
-            { id: 'c3', title: 'Digital Marketing Strategy', type: 'content', division: 'Marketing' },
-            { id: 'c4', title: 'Latest Product FAQ', type: 'content', division: 'Marketing' },
-            { id: 'd5', title: 'Official Price List', type: 'document', division: 'Sales' },
-        ],
-        created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-        messageCount: 42,
-    },
-]
-
 const MOCK_RESPONSES: Record<string, string> = {
     default: 'Based on the documents available in this knowledge base, here is the explanation:\n\n1. **Main Information**: The data you asked for is listed in several related documents.\n\n2. **Procedure Details**: The steps that need to be followed have been explained in detail in the relevant SOP.\n\n3. **Important Note**: Make sure to always refer to the latest version of this document for the most accurate information.\n\nIs there anything else specific you would like to know?',
 }
@@ -93,10 +62,11 @@ const MOCK_RESPONSES: Record<string, string> = {
 /* ═══════════════════════════════════════════
    VIEW: KB LIST
    ═══════════════════════════════════════════ */
-function KBListView({ knowledgeBases, onSelect, onCreate }: {
+function KBListView({ knowledgeBases, onSelect, onCreate, onDelete }: {
     knowledgeBases: KnowledgeBase[]
     onSelect: (kb: KnowledgeBase) => void
     onCreate: () => void
+    onDelete: (kb: KnowledgeBase) => void
 }) {
     const [search, setSearch] = useState('')
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -165,7 +135,14 @@ function KBListView({ knowledgeBases, onSelect, onCreate }: {
                                 <div className="w-10 h-10 bg-navy-100 rounded-xl flex items-center justify-center group-hover:bg-navy-200 transition">
                                     <BookOpen size={18} className="text-navy-600" />
                                 </div>
-                                <ChevronRight size={16} className="text-text-300 group-hover:text-navy-600 transition mt-1" />
+                                <div className="flex items-center gap-2">
+                                    <button onClick={(e) => { e.stopPropagation(); onDelete(kb); }}
+                                        className="p-1.5 text-text-300 hover:text-danger hover:bg-danger-bg rounded-lg transition"
+                                        title="Delete Knowledge Base">
+                                        <Trash2 size={15} />
+                                    </button>
+                                    <ChevronRight size={16} className="text-text-300 group-hover:text-navy-600 transition mt-1" />
+                                </div>
                             </div>
                             <h3 className="font-bold text-navy-900 text-[15px] mb-1 group-hover:text-navy-700">{kb.name}</h3>
                             <p className="text-text-400 text-xs mb-3 line-clamp-2">{kb.description}</p>
@@ -228,7 +205,14 @@ function KBListView({ knowledgeBases, onSelect, onCreate }: {
                                     <span className="text-[10px] px-2 py-0.5 bg-surface-100 text-text-500 rounded-full">+{kb.documents.length - 2}</span>
                                 )}
                             </div>
-                            <ChevronRight size={16} className="text-text-300 group-hover:text-navy-600 transition shrink-0" />
+                             <div className="flex items-center gap-2">
+                                <button onClick={(e) => { e.stopPropagation(); onDelete(kb); }}
+                                    className="p-2 text-text-300 hover:text-danger hover:bg-danger-bg rounded-lg transition"
+                                    title="Delete Knowledge Base">
+                                    <Trash2 size={16} />
+                                </button>
+                                <ChevronRight size={16} className="text-text-300 group-hover:text-navy-600 transition shrink-0" />
+                            </div>
                         </button>
                     ))}
                 </div>
@@ -416,17 +400,88 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
     const sendMessage = async () => {
         const q = input.trim()
         if (!q || isTyping) return
-        setMessages(prev => [...prev, { role: 'user', content: q }])
+        
+        const newHistory = [...messages, { role: 'user' as const, content: q }]
+        setMessages(newHistory)
         setInput('')
         setIsTyping(true)
 
-        // Simulate AI response
-        await new Promise(r => setTimeout(r, 1500 + Math.random() * 1500))
+        try {
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question: q,
+                    history: messages,
+                    knowledgeBaseId: kb.id
+                })
+            })
 
-        const response = `Based on **${kb.documents.length} sources** in the knowledge base "${kb.name}":\n\n${q.toLowerCase().includes('sop') ? 'The SOP you referred to is already defined in the relevant documents. Here is the summary:\n\n1. **Initial Step**: Ensure all preparations are done according to procedure.\n2. **Execution**: Follow each written step sequentially.\n3. **Documentation**: Record every work result in the available forms.' : 'The information you asked for can be found in the following documents:\n\n• **' + kb.documents[0]?.title + '** — Explains the core policies.\n' + (kb.documents[1] ? '• **' + kb.documents[1].title + '** — Provides detailed implementation procedures.\n' : '') + '\nNeed more details from a specific document?'}`
+            if (!res.ok) throw new Error('API Error: ' + res.status)
 
-        setMessages(prev => [...prev, { role: 'assistant', content: response }])
-        setIsTyping(false)
+            const reader = res.body?.getReader()
+            const decoder = new TextDecoder()
+            let aiText = ''
+
+            setMessages([...newHistory, { role: 'assistant' as const, content: '' }])
+
+            if (reader) {
+                let buffer = ''
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) break
+                    
+                    buffer += decoder.decode(value, { stream: true })
+                    const lines = buffer.split('\n')
+                    buffer = lines.pop() || '' // Keep the last incomplete line in buffer
+
+                    for (const line of lines) {
+                        if (line.startsWith('event: error')) {
+                            const dataLine = lines[lines.indexOf(line) + 1]
+                            if (dataLine?.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(dataLine.slice(6))
+                                    setMessages(prev => {
+                                        const next = [...prev]
+                                        next[next.length - 1] = { role: 'assistant', content: data.message || 'Error occurred' }
+                                        return next
+                                    })
+                                } catch (e) {}
+                            }
+                        }
+
+                        if (line.startsWith('data: ')) {
+                            const dataStr = line.slice(6)
+                            if (!dataStr || dataStr === '[DONE]') continue
+                            try {
+                                const data = JSON.parse(dataStr)
+                                if (data.text) {
+                                    aiText += data.text
+                                    setMessages(prev => {
+                                        const next = [...prev]
+                                        next[next.length - 1] = { role: 'assistant', content: aiText }
+                                        return next
+                                    })
+                                }
+                                if (data.citations) {
+                                    // Handle citations if needed in UI
+                                    console.log('Citations received:', data.citations)
+                                }
+                            } catch (e) { /* ignore parse errors */ }
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Chat error:', error)
+            setMessages(prev => {
+                const next = [...prev]
+                next[next.length - 1] = { role: 'assistant', content: 'Terjadi kesalahan saat memproses pertanyaan Anda.' }
+                return next
+            })
+        } finally {
+            setIsTyping(false)
+        }
     }
 
     return (
@@ -656,13 +711,14 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onSaveSes
 /* ═══════════════════════════════════════════
    VIEW: KB DETAIL
    ═══════════════════════════════════════════ */
-function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc }: {
+function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc, onDelete }: {
     kb: KnowledgeBase
     onBack: () => void
     onChat: () => void
     onAddDoc: () => void
     onUpload: () => void
     onRemoveDoc: (id: string) => void
+    onDelete: (kb: KnowledgeBase) => void
 }) {
     return (
         <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -677,11 +733,18 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc }: {
                         <h1 className="text-3xl font-bold font-display text-navy-900">{kb.name}</h1>
                         <p className="text-text-500 mt-2 max-w-2xl">{kb.description}</p>
                     </div>
-                    <button onClick={onChat}
-                        className="btn btn-primary px-8 py-3 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition duration-300 flex items-center gap-3">
-                        <Sparkles size={20} />
-                        <span className="text-lg">Chat with AISA</span>
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => onDelete(kb)}
+                            className="p-3 border border-surface-200 text-text-400 hover:text-danger hover:bg-danger-bg rounded-xl transition shadow-sm"
+                            title="Delete Knowledge Base">
+                            <Trash2 size={20} />
+                        </button>
+                        <button onClick={onChat}
+                            className="btn btn-primary px-8 py-3 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition duration-300 flex items-center gap-3">
+                            <Sparkles size={20} />
+                            <span className="text-lg">Chat with AISA</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -861,18 +924,43 @@ type View = 'list' | 'create' | 'detail' | 'chat' | 'edit' | 'add-docs'
 export default function ContentsPage() {
     const { organization, role, division } = useCurrentUser()
     const [view, setView] = useState<View>('list')
-    const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>(MOCK_KBS)
+    const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([])
     const [activeKB, setActiveKB] = useState<KnowledgeBase | null>(null)
     const [allDocs, setAllDocs] = useState<DocItem[]>([])
     const [loading, setLoading] = useState(true)
     const [editKB, setEditKB] = useState<KnowledgeBase | null>(null)
     const [chatSessions, setChatSessions] = useState<ChatSession[]>([])
+    const [kbToDelete, setKbToDelete] = useState<KnowledgeBase | null>(null)
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+
+    const handleDeleteKB = async () => {
+        if (!kbToDelete) return
+        setIsDeleting(true)
+        const res = await deleteKnowledgeBaseAction(kbToDelete.id)
+        if (res.success) {
+            setKnowledgeBases(prev => prev.filter(kb => kb.id !== kbToDelete.id))
+            setShowDeleteModal(false)
+            setKbToDelete(null)
+            if (activeKB?.id === kbToDelete.id) {
+                setView('list')
+                setActiveKB(null)
+            }
+        } else {
+            alert('Gagal menghapus knowledge base: ' + (res as any).error)
+        }
+        setIsDeleting(false)
+    }
 
     // Load real documents & contents
     useEffect(() => {
         async function load() {
             if (!organization?.id) return
             try {
+                // Fetch Knowledge Bases
+                const kbs = await getKnowledgeBasesAction(organization.id)
+                setKnowledgeBases(kbs)
+
                 const isAdmin = role === 'SUPER_ADMIN' || role === 'MAINTAINER'
                 const divFilter = !isAdmin ? division?.id : undefined
                 const res = await getContentsAction(organization.id, divFilter)
@@ -888,7 +976,7 @@ export default function ContentsPage() {
                     : []
 
                 // Also fetch documents
-                const docRes = await fetch(`/api/documents?org_id=${organization.id}${divFilter ? `&division_id=${divFilter}` : ''}`)
+                const docRes = await fetch(`/api/documents?orgId=${organization.id}${divFilter ? `&divisionId=${divFilter}` : ''}`)
                 let documents: DocItem[] = []
                 if (docRes.ok) {
                     const docData = await docRes.json()
@@ -909,33 +997,61 @@ export default function ContentsPage() {
     }, [organization?.id, division?.id, role])
 
     // Handlers
-    const handleSelectKB = (kb: KnowledgeBase) => {
+    const handleSelectKB = async (kb: KnowledgeBase) => {
         setActiveKB(kb)
         setView('detail')
+        // Preload sessions in background
+        const sessions = await getKBChatSessionsAction(kb.id)
+        setChatSessions(sessions)
     }
 
-    const handleCreateKB = (kb: KnowledgeBase) => {
-        setKnowledgeBases(prev => [kb, ...prev])
-        setActiveKB(kb)
-        setView('detail')
+    const handleCreateKB = async (kb: KnowledgeBase) => {
+        if (!organization?.id) return
+        const res = await createKnowledgeBaseAction(
+            organization.id,
+            kb.name,
+            kb.description,
+            kb.documents.map(d => ({ id: d.id, type: d.type }))
+        )
+        if (res.success && res.kbId) {
+            const newKb = { ...kb, id: res.kbId }
+            setKnowledgeBases(prev => [newKb, ...prev])
+            setActiveKB(newKb)
+            setView('detail')
+        } else {
+            alert('Gagal membuat knowledge base')
+        }
     }
 
-    const handleAddDocs = (docs: DocItem[]) => {
+    const handleAddDocs = async (docs: DocItem[]) => {
         if (!activeKB) return
-        const updated = { ...activeKB, documents: [...activeKB.documents, ...docs] }
-        setActiveKB(updated)
-        setKnowledgeBases(prev => prev.map(kb => kb.id === updated.id ? updated : kb))
+        const res = await addSourcesToKBAction(
+            activeKB.id,
+            docs.map(d => ({ id: d.id, type: d.type }))
+        )
+        if (res.success) {
+            const updated = { ...activeKB, documents: [...activeKB.documents, ...docs] }
+            setActiveKB(updated)
+            setKnowledgeBases(prev => prev.map(kb => kb.id === updated.id ? updated : kb))
+        } else {
+            alert('Gagal menambahkan dokumen')
+        }
     }
 
-    const handleRemoveDoc = (docId: string) => {
+    const handleRemoveDoc = async (docId: string) => {
         if (!activeKB) return
         if (activeKB.documents.length <= 1) {
             alert('Knowledge base harus memiliki minimal 1 sumber')
             return
         }
-        const updated = { ...activeKB, documents: activeKB.documents.filter(d => d.id !== docId) }
-        setActiveKB(updated)
-        setKnowledgeBases(prev => prev.map(kb => kb.id === updated.id ? updated : kb))
+        const res = await removeSourceFromKBAction(activeKB.id, docId)
+        if (res.success) {
+            const updated = { ...activeKB, documents: activeKB.documents.filter(d => d.id !== docId) }
+            setActiveKB(updated)
+            setKnowledgeBases(prev => prev.map(kb => kb.id === updated.id ? updated : kb))
+        } else {
+            alert('Gagal menghapus dokumen')
+        }
     }
 
     // Placeholder for chat session handlers
@@ -966,6 +1082,7 @@ export default function ContentsPage() {
                     knowledgeBases={knowledgeBases}
                     onSelect={handleSelectKB}
                     onCreate={() => setView('create')}
+                    onDelete={(kb) => { setKbToDelete(kb); setShowDeleteModal(true); }}
                 />
             )}
             {view === 'create' && (
@@ -983,6 +1100,7 @@ export default function ContentsPage() {
                     onAddDoc={() => setView('add-docs')}
                     onUpload={() => setView('add-docs')}
                     onRemoveDoc={handleRemoveDoc}
+                    onDelete={(kb) => { setKbToDelete(kb); setShowDeleteModal(true); }}
                 />
             )}
             {view === 'chat' && activeKB && (
@@ -1007,6 +1125,36 @@ export default function ContentsPage() {
                         setView('detail');
                     }}
                 />
+            )}
+
+            {/* DELETE CONFIRMATION MODAL */}
+            {showDeleteModal && kbToDelete && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-navy-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="p-6 text-center">
+                            <div className="w-16 h-16 bg-danger-bg rounded-2xl flex items-center justify-center mb-4 mx-auto text-danger">
+                                <Trash2 size={32} />
+                            </div>
+                            <h2 className="text-xl font-bold text-navy-900 mb-2">Hapus Knowledge Base?</h2>
+                            <p className="text-text-500 text-sm">
+                                Anda akan menghapus <strong>{kbToDelete.name}</strong>. Tindakan ini tidak dapat dibatalkan dan semua riwayat chat di dalamnya akan hilang.
+                            </p>
+                        </div>
+                        <div className="bg-surface-50 p-4 border-t border-surface-200 flex gap-3">
+                            <button onClick={() => { setShowDeleteModal(false); setKbToDelete(null); }}
+                                disabled={isDeleting}
+                                className="flex-1 py-2.5 px-4 border border-surface-200 text-text-600 font-semibold rounded-xl hover:bg-white transition text-sm disabled:opacity-50">
+                                Batal
+                            </button>
+                            <button onClick={handleDeleteKB}
+                                disabled={isDeleting}
+                                className="flex-1 py-2.5 px-4 bg-danger text-white font-semibold rounded-xl hover:bg-danger/90 transition shadow-sm text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+                                {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                                {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </>
     )

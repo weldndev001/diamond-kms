@@ -70,6 +70,8 @@ export async function POST(req: NextRequest) {
 }
 
 async function processDocumentInBackground(documentId: string, document: any) {
+    const fs = await import('fs')
+    fs.appendFileSync('ai-debug.log', `[${new Date().toISOString()}] [PROCESS-BG] STARTED for ${documentId}\n`)
     console.log(`\n🔄 [PROCESS] Starting background processing for ${documentId} (${document.file_name})`)
     try {
         await updateProcessingLog(documentId, 'processing', 'Memulai pemrosesan dokumen...', 5)
@@ -143,7 +145,11 @@ async function processDocumentInBackground(documentId: string, document: any) {
         sendEvent('progress', { step: 'metadata', message: msg3, progress: 30 })
         await updateProcessingLog(documentId, 'processing', msg3, 30)
 
+        const fs = await import('fs')
+        fs.appendFileSync('ai-debug.log', `[${new Date().toISOString()}] Calling getAIServiceForOrg for ${document.organization_id}\n`)
         const ai = await getAIServiceForOrg(document.organization_id)
+        await updateProcessingLog(documentId, 'processing', `Menggunakan provider AI: ${ai.providerName} (${ai.embeddingModel})`, 35)
+        fs.appendFileSync('ai-debug.log', `[${new Date().toISOString()}] Got AI service: ${ai.providerName}\n`)
         console.log(`✅ [PROCESS] Got AI service: ${ai.providerName}, embedding: ${ai.embeddingModel}`)
 
         // STEP 4: Generate metadata (title, summary, tags)
@@ -196,6 +202,15 @@ async function processDocumentInBackground(documentId: string, document: any) {
                     const currentProgress = 50 + Math.floor((processedChunks / totalChunks) * 40)
                     const embMsg = `Membuat vektor embeddings (Bagian ${processedChunks + 1}/${totalChunks})...`
 
+                    // Check if cancelled
+                    const currentDoc = await prisma.document.findUnique({
+                        where: { id: documentId },
+                        select: { processing_status: true }
+                    })
+                    if (currentDoc?.processing_status === 'failed') {
+                        throw new Error('Proses dihentikan oleh pengguna.')
+                    }
+
                     // Only send progress updates for every 3rd chunk to avoid overwhelming the client/DB
                     if (processedChunks === 0 || processedChunks === totalChunks - 1 || processedChunks % 3 === 0) {
                         sendEvent('progress', { step: 'embedding', message: embMsg, progress: currentProgress })
@@ -204,12 +219,17 @@ async function processDocumentInBackground(documentId: string, document: any) {
 
                     const embedding = await ai.generateEmbedding(chunk.content)
                     const embeddingString = `[${embedding.join(',')}]`
-                    await prisma.$executeRaw`
-                        INSERT INTO document_chunks
-                        (id, document_id, chunk_index, content, embedding, token_count, page_number, page_end, created_at)
-                        VALUES
-                        (gen_random_uuid()::text, ${documentId}, ${chunk.chunkIndex}, ${chunk.content}, CAST(${embeddingString} AS vector), ${chunk.tokenCount}, ${chunk.pageStart}, ${chunk.pageEnd}, NOW())
-                    `
+                    try {
+                        await prisma.$executeRaw`
+                            INSERT INTO document_chunks
+                            (id, document_id, chunk_index, content, embedding, token_count, page_number, page_end, created_at)
+                            VALUES
+                            (gen_random_uuid()::text, ${documentId}, ${chunk.chunkIndex}, ${chunk.content}, CAST(${embeddingString} AS vector), ${chunk.tokenCount}, ${chunk.pageStart}, ${chunk.pageEnd}, NOW())
+                        `
+                    } catch (dbErr: any) {
+                        console.error(`❌ [PROCESS] DB Insert FAILED for chunk ${i}:`, dbErr.message)
+                        throw new Error(`Database Error: ${dbErr.message}`)
+                    }
                     processedChunks++
                 })
             )

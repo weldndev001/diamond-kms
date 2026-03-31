@@ -35,6 +35,7 @@ model Organization {
   subscriptions   Subscription[]
   invoices        Invoice[]
   ai_usage_logs   AIUsageLog[]
+  knowledge_bases KnowledgeBase[]
 
   @@map("organizations")
 }
@@ -142,12 +143,41 @@ model Document {
   @@map("documents")
 }
 
+model KnowledgeBase {
+  id              String   @id @default(uuid())
+  organization_id String
+  name            String
+  description     String?  @db.Text
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now()) @updatedAt
+
+  organization  Organization          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  documents     KnowledgeBaseSource[]
+  chat_sessions ChatSession[]
+
+  @@index([organization_id])
+  @@map("knowledge_bases")
+}
+
+model KnowledgeBaseSource {
+  id                String   @id @default(uuid())
+  knowledge_base_id String
+  source_id         String // Can be document_id or content_id
+  source_type       String // 'document' | 'content'
+  created_at        DateTime @default(now())
+
+  knowledge_base KnowledgeBase @relation(fields: [knowledge_base_id], references: [id], onDelete: Cascade)
+
+  @@unique([knowledge_base_id, source_id, source_type])
+  @@map("knowledge_base_sources")
+}
+
 model DocumentChunk {
   id          String                      @id @default(uuid())
   document_id String
   chunk_index Int
   content     String                      @db.Text
-  // embedding   Unsupported("vector(1024)")?
+  embedding     Unsupported("vector")?
   token_count Int
   page_number Int?
   page_end    Int?
@@ -448,21 +478,24 @@ model AIUsageLog {
 }
 
 model ChatSession {
-  id              String        @id @default(uuid())
-  user_id         String
-  organization_id String
-  title           String        @default("New Chat")
-  summary         String?       @db.Text
-  document_id     String?
-  content_id      String?
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @default(now()) @updatedAt
+  id                String        @id @default(uuid())
+  user_id           String
+  organization_id   String
+  title             String        @default("New Chat")
+  summary           String?       @db.Text
+  document_id       String?
+  content_id        String?
+  knowledge_base_id String?
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @default(now()) @updatedAt
 
-  user     User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  messages ChatMessage[]
+  user           User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  messages       ChatMessage[]
+  knowledge_base KnowledgeBase? @relation(fields: [knowledge_base_id], references: [id], onDelete: SetNull)
 
   @@index([user_id])
   @@index([organization_id])
+  @@index([knowledge_base_id])
   @@map("chat_sessions")
 }
 
@@ -485,7 +518,7 @@ model ContentChunk {
   content_id  String
   chunk_index Int
   content     String                      @db.Text
-  // embedding   Unsupported("vector(1024)")?
+  embedding     Unsupported("vector")?
   token_count Int
   created_at  DateTime                    @default(now())
 

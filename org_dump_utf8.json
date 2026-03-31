@@ -1,0 +1,13 @@
+[
+  {
+    "id": "ff9720c0-3306-4834-9add-f3750276ce80",
+    "name": "Diamond KMS Corp",
+    "ai_provider_config": {
+      "endpoint": "https://llm01.weldn.ai/olla/openai/v1",
+      "provider": "self_hosted",
+      "chatModel": "Qwen3.5-4B-Q4_K_M-unsloth.gguf",
+      "embedModel": "nomic-embed-text",
+      "autoSummaryChat": false
+    }
+  }
+]
