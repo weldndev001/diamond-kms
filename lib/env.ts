@@ -20,6 +20,12 @@ export const env = {
 
     // AI Providers
     GEMINI_API_KEY: getEnv('GEMINI_API_KEY'),
+    AI_SIMILARITY_THRESHOLD: getEnv('AI_SIMILARITY_THRESHOLD') || '0.40',
+    AI_TEMPERATURE: getEnv('AI_TEMPERATURE') || '0.7',
+    AI_TOP_P: getEnv('AI_TOP_P') || '0.9',
+    AI_TOP_K: getEnv('AI_TOP_K') || '40',
+    AI_REPETITION_PENALTY: getEnv('AI_REPETITION_PENALTY') || '1.15',
+    AI_MAX_TOKENS: getEnv('AI_MAX_TOKENS') || '2048',
 
     // Security
     CRON_SECRET: getEnv('CRON_SECRET'),

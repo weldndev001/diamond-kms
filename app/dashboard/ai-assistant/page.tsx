@@ -12,6 +12,7 @@ import { getKnowledgeBasesAction } from '@/lib/actions/knowledge-base.actions'
 interface Message {
     role: 'user' | 'assistant'
     content: string
+    citations?: Citation[]
 }
 
 interface Citation {
@@ -63,6 +64,55 @@ export default function AIAssistantPage() {
     useEffect(() => {
         scrollToBottom()
     }, [messages, streamingText, scrollToBottom])
+
+    const renderCitations = (citationList: Citation[]) => {
+        if (!citationList || citationList.length === 0) return null
+        return (
+            <div className="mt-4 pt-3 border-t border-surface-200 dark:border-slate-700/50">
+                <p className="text-[10px] font-bold text-text-400 uppercase tracking-wider mb-2">
+                    {t('ai_assistant.reference_sources')}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {citationList.slice(0, 4).map((c, i) => {
+                        const isArticle = c.sourceType === 'ARTICLE'
+                        const cleanText = c.chunkContent.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim()
+                        const searchSnippet = cleanText.substring(0, 35)
+                        const encodedKeyword = encodeURIComponent(searchSnippet)
+
+                        const href = isArticle
+                            ? `/dashboard/knowledge-base/${c.documentId}#:~:text=${encodedKeyword}`
+                            : `/dashboard/documents/${c.documentId}?page=${c.pageStart}&search=${encodedKeyword}`
+                        
+                        return (
+                            <a
+                                key={i}
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group flex flex-col justify-center bg-white dark:bg-slate-800 border border-surface-200 dark:border-slate-700 rounded-lg p-2.5 hover:border-navy-400 dark:hover:border-navy-400 shadow-sm hover:shadow transition-all"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 ${isArticle ? 'bg-amber-100 text-amber-600' : 'bg-navy-100 dark:bg-navy-900 text-navy-600 dark:text-navy-400'}`}>
+                                        <FileText size={12} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="font-bold text-navy-900 dark:text-white text-[11px] truncate group-hover:text-navy-700 dark:group-hover:text-navy-300">
+                                            {c.documentTitle}
+                                        </p>
+                                        <div className="flex items-center gap-1 mt-0.5">
+                                            <span className="text-[9px] font-black text-navy-500 dark:text-navy-400 uppercase tracking-tighter">
+                                                {isArticle ? `Bagian ${c.pageStart}` : `Hal. ${c.pageStart}`}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        )
+                    })}
+                </div>
+            </div>
+        )
+    }
 
     // Load sessions and KBs on mount
     useEffect(() => {
@@ -120,6 +170,7 @@ export default function AIAssistantPage() {
                     data.session.messages.map((m: any) => ({
                         role: m.role as 'user' | 'assistant',
                         content: m.content,
+                        citations: m.citations ? (typeof m.citations === 'string' ? JSON.parse(m.citations) : m.citations) : undefined
                     }))
                 )
                 setCitations([])
@@ -235,7 +286,7 @@ export default function AIAssistantPage() {
                             } else if (currentEvent === 'done') {
                                 setMessages((prev) => [
                                     ...prev,
-                                    { role: 'assistant', content: fullResponse },
+                                    { role: 'assistant', content: fullResponse, citations: receivedCitations.length > 0 ? receivedCitations : undefined },
                                 ])
                                 setStreamingText('')
                             } else if (currentEvent === 'title_updated' && json.title) {
@@ -466,6 +517,7 @@ export default function AIAssistantPage() {
                                     }`}
                             >
                                 <p className="whitespace-pre-wrap">{msg.content}</p>
+                                {msg.role === 'assistant' && renderCitations(msg.citations || [])}
                             </div>
                             {msg.role === 'user' && (
                                 <div className="w-10 h-10 bg-surface-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1 border border-surface-200 shadow-sm transition-transform active:scale-90 overflow-hidden">
@@ -498,56 +550,16 @@ export default function AIAssistantPage() {
                             <div className="w-8 h-8 bg-navy-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                                 <Bot size={16} className="text-navy-600" />
                             </div>
-                            <div className="bg-surface-100 text-text-900 rounded-2xl px-5 py-3 max-w-[70%] text-sm leading-relaxed border border-surface-200">
-                                <p className="whitespace-pre-wrap">{streamingText}</p>
-                                <span className="animate-pulse text-navy-400">▊</span>
+                            <div className="bg-surface-100 text-text-900 rounded-2xl px-5 py-4 max-w-[70%] text-[15px] leading-relaxed border border-surface-200 shadow-sm">
+                                <p className="whitespace-pre-wrap inline">{streamingText}</p>
+                                <span className="animate-pulse text-navy-400 ml-1">▊</span>
+                                
+                                {renderCitations(citations)}
                             </div>
                         </div>
                     )}
 
-                    {/* Citations */}
-                    {citations.length > 0 && !isStreaming && (
-                        <div className="space-y-2 ml-11">
-                            <p className="text-xs font-semibold text-text-400 uppercase tracking-wider">
-                                {t('ai_assistant.reference_sources')}
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {citations.slice(0, 6).map((c, i) => {
-                                    const isArticle = c.sourceType === 'ARTICLE'
-                                    const href = isArticle
-                                        ? `/dashboard/knowledge-base/${c.documentId}`
-                                        : `/dashboard/documents/${c.documentId}`
-                                    return (
-                                        <a
-                                            key={i}
-                                            href={href}
-                                            className="group block bg-surface-0 border border-surface-200 rounded-xl p-4 hover:border-navy-400 hover:bg-navy-50/30 transition-all duration-300 shadow-sm hover:shadow-md"
-                                        >
-                                            <div className="flex items-start gap-3">
-                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isArticle ? 'bg-amber-100 text-amber-600' : 'bg-navy-100 text-navy-600'}`}>
-                                                    <FileText size={16} />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="font-bold text-navy-900 text-[13px] truncate group-hover:text-navy-700">
-                                                        {c.documentTitle}
-                                                    </p>
-                                                    <div className="flex items-center gap-1.5 mt-1">
-                                                        <span className="text-[10px] font-bold text-text-400 truncate max-w-[80px]">
-                                                            {c.divisionName}
-                                                        </span>
-                                                        <span className="text-text-300">&bull;</span>
-                                                        <span className="text-[10px] font-black text-navy-500 uppercase tracking-tighter">
-                                                            {isArticle ? `${t('ai_assistant.sec')} ${c.pageStart}` : `${t('ai_assistant.pg')} ${c.pageStart}`}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    )}
+                    {/* Note: Citations are now rendered directly inside assistant message bubbles using renderCitations helper. */}
 
                     <div ref={messagesEndRef} />
                 </div>

@@ -4,6 +4,7 @@ import OpenAI from 'openai'
 import type { AIService, DocumentMetadata } from '../types'
 import { logger } from '@/lib/logging/redact'
 import { withRetry } from '../utils'
+import { env } from '@/lib/env'
 
 export interface OpenAICompatConfig {
     baseURL: string      // 'https://openrouter.ai/api/v1' or Olla endpoint
@@ -71,13 +72,15 @@ export class OpenAICompatService implements AIService {
 
             const requestBody: any = {
                 model: this.chatModel,
-                max_tokens: options?.maxTokens ?? 2048,
+                max_tokens: options?.maxTokens ?? parseInt(env.AI_MAX_TOKENS || '2048', 10),
                 response_format: options?.jsonMode ? { type: 'json_object' } : undefined,
                 messages,
-                temperature: 0.7,
+                temperature: parseFloat(env.AI_TEMPERATURE || '0.7'),
+                top_p: parseFloat(env.AI_TOP_P || '0.9'),
+                // top_k: parseInt(env.AI_TOP_K || '40', 10), // Optional in standard OpenAI, but works in ollama/openrouter
                 frequency_penalty: 0.5,
                 presence_penalty: 0.1,
-                repetition_penalty: 1.15,
+                repetition_penalty: parseFloat(env.AI_REPETITION_PENALTY || '1.15'),
             }
 
             try {
@@ -104,10 +107,11 @@ export class OpenAICompatService implements AIService {
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: prompt },
             ],
-            temperature: 0.7,
+            temperature: parseFloat(env.AI_TEMPERATURE || '0.7'),
+            top_p: parseFloat(env.AI_TOP_P || '0.9'),
             frequency_penalty: 0.5,
             presence_penalty: 0.1,
-            repetition_penalty: 1.15,
+            repetition_penalty: parseFloat(env.AI_REPETITION_PENALTY || '1.15'),
         }
 
         const stream = await this.client.chat.completions.create(

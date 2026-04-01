@@ -13,48 +13,60 @@ import { appendFileSync } from 'fs'
 import { join } from 'path'
 
 export function getAIService(config: AIProviderConfig): AIService {
-    const logMsg = `[${new Date().toISOString()}] [AI-FACTORY] FULL CONFIG: ${JSON.stringify(config)}\n`
+    const logMsg = `[${new Date().toISOString()}] [AI-FACTORY] BASE CONFIG: ${JSON.stringify(config)}\n`
     appendFileSync(join(process.cwd(), 'ai-debug.log'), logMsg)
     
-    switch (config.provider) {
+    const provider = process.env.AI_PROVIDER || config.provider || 'managed'
+
+    switch (provider) {
         case 'managed': {
-            const key = env.GEMINI_API_KEY
-            if (!key) throw new Error('GEMINI_API_KEY not configured')
-            return new GeminiService(key, config.chatModel ?? 'gemini-2.5-flash')
+            const key = process.env.AI_API_KEY || env.GEMINI_API_KEY
+            if (!key) throw new Error('Managed Auth Key not configured via ENV or DB')
+            return new GeminiService(key, process.env.AI_CHAT_MODEL || config.chatModel || 'gemini-2.5-flash')
         }
 
         case 'byok': {
-            if (!config.encryptedKey) throw new Error('API key not configured for BYOK')
-            const byokKey = decrypt(config.encryptedKey)
+            const rawKey = process.env.AI_API_KEY || (config.encryptedKey ? decrypt(config.encryptedKey) : '')
+            if (!rawKey) throw new Error('API key not configured for BYOK in ENV or DB')
             // Auto-detect: OpenAI keys start with 'sk-'
-            if (byokKey.startsWith('sk-')) {
+            if (rawKey.startsWith('sk-')) {
                 return new OpenAICompatService({
-                    baseURL: 'https://api.openai.com/v1',
-                    apiKey: byokKey,
-                    chatModel: config.chatModel ?? 'gpt-4o-mini',
-                    embedModel: config.embedModel ?? 'text-embedding-3-small',
+                    baseURL: process.env.AI_ENDPOINT || 'https://api.openai.com/v1',
+                    apiKey: rawKey,
+                    chatModel: process.env.AI_CHAT_MODEL || config.chatModel || 'gpt-4o-mini',
+                    embedModel: process.env.AI_EMBED_MODEL || config.embedModel || 'text-embedding-3-small',
                     providerName: 'openai',
                 })
             } else {
-                return new GeminiService(byokKey, config.chatModel ?? 'gemini-2.5-flash')
+                return new GeminiService(rawKey, process.env.AI_CHAT_MODEL || config.chatModel || 'gemini-2.5-flash')
             }
         }
 
         case 'self_hosted': {
             // Ollama often doesn't need an API key, so we make it optional
-            const apiKey = config.encryptedKey ? decrypt(config.encryptedKey) : 'ollama-dummy-key'
+            const apiKey = process.env.AI_API_KEY || (config.encryptedKey ? decrypt(config.encryptedKey) : 'ollama-dummy-key')
 
-            return new OpenAICompatService({
-                baseURL: config.endpoint ?? OLLA_DEFAULT,
+            const service = new OpenAICompatService({
+                baseURL: process.env.AI_ENDPOINT || config.endpoint || OLLA_DEFAULT,
                 apiKey,
-                chatModel: config.chatModel ?? 'llama3.3:70b',
-                embedModel: config.embedModel ?? 'nomic-embed-text',
-                providerName: 'ollama-olla',
+                chatModel: process.env.AI_CHAT_MODEL || config.chatModel || 'llama3.3:70b',
+                embedModel: process.env.AI_EMBED_MODEL || config.embedModel || 'nomic-embed-text',
+                providerName: 'ollama-self-hosted',
             })
+
+            // Hybrid Injection: Use Gemini ONLY for embeddings
+            if (process.env.AI_HYBRID_EMBED === 'true' && env.GEMINI_API_KEY) {
+                console.log("[AI-FACTORY] HYBRID MODE AKTIF: Chat via Olla, Embedding via Google Gemini!")
+                const gemini = new GeminiService(env.GEMINI_API_KEY)
+                Object.defineProperty(service, 'embeddingModel', { value: gemini.embeddingModel, writable: true })
+                service.generateEmbedding = async (text: string) => gemini.generateEmbedding(text)
+            }
+
+            return service
         }
 
         default: {
-            throw new Error(`[AI-FACTORY] Provider '${config.provider}' tidak dikenali.`)
+            throw new Error(`[AI-FACTORY] Provider '${provider}' tidak dikenali.`)
         }
     }
 }

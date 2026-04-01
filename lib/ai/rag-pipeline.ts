@@ -4,6 +4,8 @@
 import prisma from '@/lib/prisma'
 import { getAIServiceForOrg } from '@/lib/ai/get-ai-service'
 import type { Role } from '@prisma/client'
+import aiPrompts from '@/ai-prompts.json'
+import { env } from '@/lib/env'
 
 export interface ChatMessage {
     role: 'user' | 'assistant'
@@ -58,13 +60,20 @@ export async function ragQuery(
     let embeddingFailed = false
 
     try {
-        // ── STEP 2: Embed the question ──────────────────────────────
-        const questionEmbedding = await ai.generateEmbedding(question)
-        const vectorStr = JSON.stringify(questionEmbedding)
+        // --- CHIT-CHAT INTERCEPTOR ---
+        // If the user's input is just a short conversational response, 
+        // skip the expensive embedding search and return no citations.
+        const chitChatRegex = /^(ya|tidak|oke|ok|baik|sip|mantap|keren|halo|hai|hi|thanks|makasih|terima kasih|terimakasih|oh begitu|oh begitu ya|oh gitu|ouh begitu|ouh begitu ya|okelah|siap|ngerti|paham)[\s\.\,\!\?]*$/i;
+        if (chitChatRegex.test(question.trim())) {
+            // Skip search
+        } else {
+            // ── STEP 2: Embed the question ──────────────────────────────
+            const questionEmbedding = await ai.generateEmbedding(question)
+            const vectorStr = JSON.stringify(questionEmbedding)
 
-        // ── STEP 3: Cosine similarity search — top 8 chunks (Documents + Articles) ─────────
-        const docDivFilter = scopedToDiv ? `AND d.division_id = '${divisionId}'` : ''
-        const contentDivFilter = scopedToDiv ? `AND (c.division_id = '${divisionId}' OR c.division_id IS NULL)` : ''
+            // ── STEP 3: Cosine similarity search — top 8 chunks (Documents + Articles) ─────────
+            const docDivFilter = scopedToDiv ? `AND d.division_id = '${divisionId}'` : ''
+            const contentDivFilter = scopedToDiv ? `AND (c.division_id = '${divisionId}' OR c.division_id IS NULL)` : ''
         
         const docKBJoin = knowledgeBaseId ? `JOIN knowledge_base_sources kbs ON kbs.source_id = d.id AND kbs.source_type = 'document' AND kbs.knowledge_base_id = '${knowledgeBaseId}'` : ''
         const contentKBJoin = knowledgeBaseId ? `JOIN knowledge_base_sources kbs2 ON kbs2.source_id = c.id AND kbs2.source_type = 'content' AND kbs2.knowledge_base_id = '${knowledgeBaseId}'` : ''
@@ -147,8 +156,11 @@ export async function ragQuery(
             orgId
         )
 
-        // Filter out chunks with very low similarity (e.g., < 0.3)
-        relevantChunks = relevantChunks.filter(c => c.similarity > 0.3)
+            // Filter out chunks with low similarity. 
+            // Controlled via ENV to allow easy fine-tuning without restarting.
+            const threshold = Number(env.AI_SIMILARITY_THRESHOLD) || 0.40
+            relevantChunks = relevantChunks.filter(c => c.similarity > threshold)
+        }
     } catch (error) {
         console.warn('⚠️ [RAG] Embedding generation or vector search failed. Proceeding as general chat.', error?.toString())
         embeddingFailed = true
@@ -167,43 +179,17 @@ export async function ragQuery(
         .join('\n\n---\n\n')
 
     // ── STEP 5: Build system prompt ─────────────────────────────
-    let systemPrompt = `Anda adalah asisten AI cerdas, luwes, dan ramah untuk karyawan di organisasi ini.`
+    let systemPrompt = ''
 
     if (knowledgeBaseId) {
         // STRICT MODE for Knowledge Base
-        systemPrompt = `Halo! Saya AISA, asisten pintar Anda. 
-Tugas saya adalah membantu Anda memahami isi Knowledge Base ini dengan cara yang ramah dan mudah dimengerti.
-
-ATURAN MAIN (WAJIB):
-1. JAWABLAH SECARA ULTRA-SINGKAT, PADAT, DAN JELAS. Langsung pada inti jawaban.
-2. JANGAN PERNAH GUNAKAN SIMBOL BINTANG (**) ATAU MARKDOWN APAPUN. Gunakan TEKS BIASA polos (Plain Text).
-3. Gunakan bahasa Indonesia yang BAIK, BENAR, DAN MUDAH DIMENGERTI. Tetap ramah seperti asisten profesional, tapi hindari bahasa gaul/slang yang tidak baku.
-4. Jika user bertanya "intinya", "kesimpulannya", atau sejenisnya, berikan ringkasan dalam 1-2 kalimat yang sangat jelas.
-5. JANGAN mengulang pertanyaan user atau memberikan pendahuluan yang panjang lebar.
-6. Tetap cantumkan sumber di akhir kalimat (format: [Sumber N]).
-
-KONTEKS DOKUMEN:
-${context || 'Daftar dokumen kosong. Beritahu user untuk menambahkan dokumen ke Knowledge Base ini.'}`
+        systemPrompt = `${aiPrompts.aisa.strict_mode}\n${context || 'Daftar dokumen kosong. Beritahu user untuk menambahkan dokumen ke Knowledge Base ini.'}`
     } else if (context.trim()) {
         // Flexible mode for general documents
-        systemPrompt += `\n\nTugas saya adalah membantu Anda menjawab pertanyaan berdasarkan dokumen yang ada. 
-
-Aturan:
-1. JAWABLAH DENGAN SANGAT RINGKAS DAN JELAS. 
-2. JANGAN PERNAH GUNAKAN SIMBOL BINTANG (**). Gunakan TEKS BIASA polos.
-3. Gunakan bahasa yang ramah dan profesional. Hindari slang atau kata-kata yang membingungkan.
-4. Jika diminta "intinya", berikan 1 kalimat kesimpulan yang paling penting.
-
-KONTEKS DOKUMEN:
-${context}`
+        systemPrompt = `${aiPrompts.aisa.flexible_mode}\n${context}`
     } else {
         // General Assistant mode
-        systemPrompt += `\n\nSaat ini tidak ada konteks dokumen internal spesifik yang ditemukan. 
-Aturan:
-1. Anda bebas menjawab pertanyaan umum atau merespons sapaan menggunakan pengetahuan Anda.
-2. JANGAN berkata "Informasi tidak ditemukan" kecuali ditanya file spesifik.
-3. JAWABLAH SECARA ULTRA-SINGKAT DAN JELAS dalam bahasa Indonesia yang baik dan ramah.
-4. JANGAN PERNAH GUNAKAN SIMBOL BINTANG (**). Gunakan TEKS BIASA polos (Plain Text).`
+        systemPrompt = aiPrompts.aisa.general_mode
     }
 
     // ── STEP 6: Build prompt from history + new question ────────
