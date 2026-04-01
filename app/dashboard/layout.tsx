@@ -27,46 +27,59 @@ import {
 // Icon mapping function
 const getIconForLabel = (label: string) => {
     switch (label) {
-        case 'Dashboard': return <Home size={16} />
+        case 'Dashboard':
+        case 'Dasbor': return <Home size={16} />
         case 'FAQ':
+        case 'Tanya Jawab':
         case 'FAQs / Help': return <Bot size={16} />
         case 'Manage Knowledge Base':
-        case 'Kelola Knowledge Base':
+        case 'Kelola Basis Pengetahuan':
         case 'Cari & Tanya AI':
         case 'Search & Ask AI':
-        case 'AI Assistant': return <Sparkles size={16} />
-        case 'Knowledge Base': return <Tags size={16} />
+        case 'AI Assistant':
+        case 'Asisten AI': return <Sparkles size={16} />
+        case 'Knowledge Base':
+        case 'Basis Pengetahuan': return <Tags size={16} />
         case 'Content':
         case 'Manage Content':
         case 'Kelola Konten':
         case 'Dokumen':
         case 'Manage Document':
+        case 'Kelola Dokumen':
         case 'Documents': return <FileText size={16} />
         case 'Quizzes':
         case 'Quiz':
+        case 'Kuis':
         case 'Pemahaman Pegawai': return <FileQuestion size={16} />
         case 'User':
         case 'Users':
         case 'Anggota': return <Users size={16} />
         case 'Organization Settings':
+        case 'Pengaturan Organisasi':
         case 'Organization': return <Settings size={16} />
         case 'OTP':
-        case 'Activation': return <KeyRound size={16} />
+        case 'Activation':
+        case 'Aktivasi': return <KeyRound size={16} />
         case 'Remote Access':
         case 'Akses Remote': return <MonitorDot size={16} />
         case 'Divisions':
         case 'Division':
         case 'Divisi': return <Network size={16} />
-        case 'Leaderboard': return <Award size={16} />
-        case 'Group':
-        case 'Divisions': return <Network size={16} />
-        case 'Billing': return <CreditCard size={16} />
-        case 'AI Management': return <Sparkles size={16} />
-        case 'System Overview': return <Shield size={16} />
-        case 'Organizations': return <FolderTree size={16} />
-        case 'Logs': return <Activity size={16} />
+        case 'Leaderboard':
+        case 'Papan Peringkat': return <Award size={16} />
+        case 'Billing':
+        case 'Tagihan': return <CreditCard size={16} />
+        case 'AI Management':
+        case 'Manajemen AI': return <Sparkles size={16} />
+        case 'System Overview':
+        case 'Ikhtisar Sistem': return <Shield size={16} />
+        case 'Organizations':
+        case 'Organisasi': return <FolderTree size={16} />
+        case 'Logs':
+        case 'Log': return <Activity size={16} />
         case 'Application':
         case 'Website':
+        case 'Aplikasi':
         case 'Website & System': return <Globe size={16} />
         default: return <FileText size={16} />
     }

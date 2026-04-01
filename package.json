@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start -p 7000",
     "lint": "eslint",
-    "postinstall": "npx prisma generate"
+    "postinstall": "npx prisma generate",
+    "fingerprint": "ts-node scripts/get-fingerprint.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

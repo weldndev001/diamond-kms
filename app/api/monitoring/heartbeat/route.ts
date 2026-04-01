@@ -6,7 +6,7 @@ import prisma from '@/lib/prisma'
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { instance_key, client_name, ...data } = body
+        const { instance_key, client_name, app_version, ...data } = body
 
         if (!instance_key || !client_name) {
             return NextResponse.json(
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
             create: {
                 instance_key,
                 client_name,
-                app_version: data.version ?? '1.0.0',
+                app_version: app_version ?? '1.0.0',
                 status,
                 last_heartbeat: new Date(),
                 // System
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
             },
             update: {
                 client_name,
-                app_version: data.version ?? undefined,
+                app_version: app_version ?? undefined,
                 status,
                 last_heartbeat: new Date(),
                 // System

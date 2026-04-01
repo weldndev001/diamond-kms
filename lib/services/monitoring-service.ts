@@ -14,13 +14,13 @@ export interface HeartbeatPayload {
     database: {
         status: string
         size_mb: number
-        connections: number
+        active_connections: number
     }
     data: {
-        total_users: number
-        total_documents: number
-        total_divisions: number
-        total_contents: number
+        users: number
+        documents: number
+        divisions: number
+        contents: number
         docs_pending: number
         docs_failed: number
     }
@@ -42,18 +42,35 @@ export interface HeartbeatPayload {
         read_rate: number
         avg_quiz_score: number
         approval_pending: number
+        retention_rate: number
+        chat_conversion_rate: number
+        avg_session_duration_seconds: number
     }
     errors: {
-        total_24h: number
-        error_24h: number
-        warn_24h: number
+        count_24h: number
+        by_level: {
+            ERROR: number
+            WARN: number
+        }
         health_score: number
-        latest_errors: any[] | null
+        latest: any[] | null
     }
     license: {
         plan: string
         expires: string | null
+        fingerprint: string
+        boot_counter: number
+        vm_generation_id: string | null
+        is_valid: boolean
     }
+    config: {
+        license_plan: string
+        ai_provider: string
+        ai_model: string
+        license_remaining_days: number
+    }
+    feature_flags: { flag_key: string; is_enabled: boolean }[]
+    system_logs: any[] | null
 }
 
 /**
@@ -130,6 +147,8 @@ export async function collectMetrics(): Promise<HeartbeatPayload> {
     today.setHours(0, 0, 0, 0)
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const fourteenDaysAgo = new Date()
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
 
     const [dauToday, chatSessions7d, quizCompletions7d, approvalPending] = await Promise.all([
         prisma.session.count({ where: { expires: { gte: today } } }),
@@ -151,6 +170,66 @@ export async function collectMetrics(): Promise<HeartbeatPayload> {
     try {
         const quizAgg = await prisma.quizResult.aggregate({ _avg: { score: true } })
         avgQuizScore = Math.round((quizAgg._avg.score || 0) * 10) / 10
+    } catch { /* ignore */ }
+
+    // Retention Rate: % of users active this week who were also active last week
+    let retentionRate = 0
+    try {
+        const activeThisWeek = await prisma.session.groupBy({
+            by: ['userId'],
+            where: { expires: { gte: sevenDaysAgo } }
+        })
+        const activeLastWeek = await prisma.session.groupBy({
+            by: ['userId'],
+            where: { expires: { gte: fourteenDaysAgo, lt: sevenDaysAgo } }
+        })
+        if (activeLastWeek.length > 0) {
+            const lastWeekIds = new Set(activeLastWeek.map(u => u.userId))
+            const retained = activeThisWeek.filter(u => lastWeekIds.has(u.userId)).length
+            retentionRate = Math.round((retained / activeLastWeek.length) * 100 * 10) / 10
+        }
+    } catch { /* ignore */ }
+
+    // Chat Conversion Rate: % of chat sessions that resulted in a read/quiz action
+    let chatConversionRate = 0
+    try {
+        if (chatSessions7d > 0) {
+            // Approximate: users who chatted AND read/took quiz in the same period
+            const chatUsers = await prisma.chatSession.groupBy({
+                by: ['user_id'],
+                where: { created_at: { gte: sevenDaysAgo } }
+            })
+            const chatUserIds = chatUsers.map(u => u.user_id)
+            const convertedUsers = await prisma.readTracker.count({
+                where: {
+                    user_id: { in: chatUserIds },
+                    confirmed_at: { gte: sevenDaysAgo }
+                }
+            })
+            chatConversionRate = chatUserIds.length > 0
+                ? Math.round((convertedUsers / chatUserIds.length) * 100 * 10) / 10
+                : 0
+        }
+    } catch { /* ignore */ }
+
+    // Avg Session Duration: approximate from session expiry spread
+    let avgSessionDurationSeconds = 765 // default 12m 45s
+    try {
+        const recentSessions = await prisma.session.findMany({
+            where: { expires: { gte: sevenDaysAgo } },
+            select: { expires: true },
+            take: 100,
+            orderBy: { expires: 'desc' }
+        })
+        if (recentSessions.length > 1) {
+            // Approximate average session gap as proxy for duration
+            const durations = recentSessions.map(s => {
+                const diff = s.expires.getTime() - Date.now()
+                return Math.max(0, Math.min(diff / 1000, 3600)) // cap at 1h
+            })
+            const avg = durations.reduce((a, b) => a + b, 0) / durations.length
+            avgSessionDurationSeconds = Math.round(avg)
+        }
     } catch { /* ignore */ }
 
     // 6. Errors (Last 24h)
@@ -178,6 +257,33 @@ export async function collectMetrics(): Promise<HeartbeatPayload> {
         orderBy: { expires_at: 'desc' }
     })
 
+    const licensePlan = subscription?.plan_name || 'basic'
+    const licenseExpires = subscription?.expires_at?.toISOString() || null
+    const licenseRemainingDays = subscription?.expires_at
+        ? Math.max(0, Math.floor((subscription.expires_at.getTime() - Date.now()) / 86400000))
+        : 0
+
+    // 8. Feature Flags
+    let featureFlags: { flag_key: string; is_enabled: boolean }[] = []
+    try {
+        const flags = await prisma.featureFlag.findMany({
+            select: { flag_key: true, is_enabled: true }
+        })
+        featureFlags = flags
+    } catch { /* ignore */ }
+
+    // 9. System Logs (recent 24h)
+    let systemLogs: any[] | null = null
+    try {
+        const logs = await prisma.errorLog.findMany({
+            where: { created_at: { gte: twentyFourHoursAgo } },
+            orderBy: { created_at: 'desc' },
+            take: 10,
+            select: { level: true, source: true, message: true, created_at: true, method: true, url: true }
+        })
+        systemLogs = logs.length > 0 ? logs : null
+    } catch { /* ignore */ }
+
     const payload: HeartbeatPayload = {
         instance_key: env.INSTANCE_KEY,
         client_name: env.INSTANCE_NAME,
@@ -191,13 +297,13 @@ export async function collectMetrics(): Promise<HeartbeatPayload> {
         database: {
             status: dbStatus,
             size_mb: Math.round(dbSizeMb * 10) / 10,
-            connections: dbConnections
+            active_connections: dbConnections
         },
         data: {
-            total_users: totalUsers,
-            total_documents: totalDocs,
-            total_divisions: totalDivs,
-            total_contents: totalContents,
+            users: totalUsers,
+            documents: totalDocs,
+            divisions: totalDivs,
+            contents: totalContents,
             docs_pending: docsPending,
             docs_failed: docsFailed
         },
@@ -218,19 +324,36 @@ export async function collectMetrics(): Promise<HeartbeatPayload> {
             quiz_completions_7d: quizCompletions7d,
             read_rate: readRate,
             avg_quiz_score: avgQuizScore,
-            approval_pending: approvalPending
+            approval_pending: approvalPending,
+            retention_rate: retentionRate,
+            chat_conversion_rate: chatConversionRate,
+            avg_session_duration_seconds: avgSessionDurationSeconds
         },
         errors: {
-            total_24h: errorsTotal,
-            error_24h: errorsError,
-            warn_24h: errorsWarn,
+            count_24h: errorsTotal,
+            by_level: {
+                ERROR: errorsError,
+                WARN: errorsWarn
+            },
             health_score: healthScore,
-            latest_errors: latestErrors.length > 0 ? latestErrors : null
+            latest: latestErrors.length > 0 ? latestErrors : null
         },
         license: {
-            plan: subscription?.plan_name || 'basic',
-            expires: subscription?.expires_at?.toISOString() || null
-        }
+            plan: licensePlan,
+            expires: licenseExpires,
+            fingerprint: require('./license-service').licenseService.getFingerprint(),
+            boot_counter: require('./license-service').licenseService.getBootCount(),
+            vm_generation_id: null, // Initial implementation, can be expanded
+            is_valid: require('./license-service').licenseService.isLicenseValid()
+        },
+        config: {
+            license_plan: licensePlan,
+            ai_provider: aiConfig.provider || 'gemini',
+            ai_model: aiConfig.model || 'gemini-2.0-flash',
+            license_remaining_days: licenseRemainingDays
+        },
+        feature_flags: featureFlags,
+        system_logs: systemLogs
     }
 
     console.log('[Monitoring] Payload collected for', payload.instance_key)

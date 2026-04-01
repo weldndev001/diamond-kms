@@ -640,6 +640,16 @@ model ClientInstance {
   latest_errors      Json?
   license_plan       String    @default("basic")
   license_expires    DateTime?
+
+  // 🛡️ Anti-Cloning & License Protection
+  hardware_fingerprint  String?
+  vm_generation_id      String?
+  boot_counter          Int       @default(0)
+  clone_detected        Boolean   @default(false)
+  clone_detected_at     DateTime?
+  license_key_issued    String?   @db.Text
+  license_issued_at     DateTime?
+
   created_at         DateTime  @default(now())
   updated_at         DateTime  @default(now()) @updatedAt
 
