@@ -29,4 +29,9 @@ export const env = {
     NEXT_PUBLIC_APP_URL: getEnv('NEXT_PUBLIC_APP_URL'),
     NODE_ENV: process.env.NODE_ENV ?? 'development',
     IS_PRODUCTION: process.env.NODE_ENV === 'production',
+
+    // Monitoring Center Integration
+    INSTANCE_KEY: getEnv('INSTANCE_KEY') || 'DKMS-DEFAULT',
+    INSTANCE_NAME: getEnv('INSTANCE_NAME') || 'Diamond KMS',
+    MONITORING_CENTER_URL: getEnv('MONITORING_CENTER_URL') || '',
 } as const
