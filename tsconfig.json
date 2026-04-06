@@ -37,6 +37,12 @@
     "**/*.mts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "tmp-*.ts",
+    "tmp-*.js",
+    "test-*.ts",
+    "test-*.js",
+    "check-*.ts",
+    "check-*.js"
   ]
 }
