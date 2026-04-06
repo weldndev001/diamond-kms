@@ -1,5 +1,7 @@
 /**
  * Next.js Instrumentation Hook
+ * Trigger deploy: 2026-04-06 17:47
+ * 
  * Called once when the server starts.
  * Used to initialize monitoring heartbeat interval.
  * 
