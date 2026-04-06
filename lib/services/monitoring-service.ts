@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma'
 import { env } from '@/lib/env'
+import { licenseService } from './license-service'
 
 export interface HeartbeatPayload {
     instance_key: string
@@ -341,10 +342,10 @@ export async function collectMetrics(): Promise<HeartbeatPayload> {
         license: {
             plan: licensePlan,
             expires: licenseExpires,
-            fingerprint: require('./license-service').licenseService.getFingerprint(),
-            boot_counter: require('./license-service').licenseService.getBootCount(),
+            fingerprint: licenseService.getFingerprint(),
+            boot_counter: licenseService.getBootCount(),
             vm_generation_id: null, // Initial implementation, can be expanded
-            is_valid: require('./license-service').licenseService.isLicenseValid()
+            is_valid: licenseService.isLicenseValid()
         },
         config: {
             license_plan: licensePlan,
