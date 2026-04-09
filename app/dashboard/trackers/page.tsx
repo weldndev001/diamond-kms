@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { useTranslation } from '@/hooks/useTranslation'
-import { getMandatoryReadStatsAction } from '@/lib/actions/read-tracker.actions'
+import { getQuizCompletionStatsAction } from '@/lib/actions/quiz.actions'
 import { RoleGuard } from '@/components/shared/RoleGuard'
 import { CheckCircle, BarChart3, Users, Search, BookOpen } from 'lucide-react'
 
@@ -16,7 +16,7 @@ export default function TrackersPage() {
 
     useEffect(() => {
         if (organization?.id) {
-            getMandatoryReadStatsAction(organization.id).then(res => {
+            getQuizCompletionStatsAction(organization.id).then(res => {
                 if (res.success) {
                     setStats(res.data || [])
                 }
@@ -38,7 +38,7 @@ export default function TrackersPage() {
 
                 <div className="card-sm border p-6 mb-6">
                     <p className="text-text-500">
-                        {t('trackers.desc')}
+                        {t('trackers.desc_quiz')}
                     </p>
                 </div>
 
@@ -48,10 +48,10 @@ export default function TrackersPage() {
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-300" size={18} />
                             <input
                                 type="text"
-                                placeholder={t('trackers.search_placeholder')}
+                                placeholder={t('trackers.search_placeholder_quiz')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 pr-4 py-2 border rounded-md w-full focus:ring-navy-600 focus:border-navy-600"
+                                className="pl-10 pr-4 py-2 border rounded-md w-full focus:ring-navy-600 focus:border-navy-600 outline-none"
                             />
                         </div>
                     </div>
@@ -63,7 +63,7 @@ export default function TrackersPage() {
                             <div className="py-12 text-center">
                                 <BookOpen size={48} className="mx-auto text-text-300 mb-4" />
                                 <h3 className="text-lg font-bold font-display text-text-700">{t('trackers.empty_title')}</h3>
-                                <p className="text-text-500 mt-1">{t('trackers.empty_desc')}</p>
+                                <p className="text-text-500 mt-1">{t('trackers.empty_desc_quiz')}</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -71,7 +71,7 @@ export default function TrackersPage() {
                                     <div key={item.id} className="border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden bg-white">
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
-                                                <span className="text-xs font-semibold uppercase tracking-wider bg-surface-100 text-text-500 px-2 py-1 rounded">
+                                                <span className="text-xs font-semibold uppercase tracking-wider bg-navy-light text-navy-700 px-2 py-1 rounded">
                                                     {item.category}
                                                 </span>
                                             </div>
@@ -90,7 +90,7 @@ export default function TrackersPage() {
                                                 <div className="flex items-center gap-2 text-sm text-text-500">
                                                     <Users size={16} className="text-navy-600" />
                                                     <span className="font-semibold text-navy-900">{item.readCount}</span>
-                                                    / {item.totalTarget} {t('trackers.readers_count')}
+                                                    / {item.totalTarget} {t('trackers.quiz_participants')}
                                                 </div>
                                                 <div className="text-2xl font-black text-navy-600">
                                                     {item.percent}%

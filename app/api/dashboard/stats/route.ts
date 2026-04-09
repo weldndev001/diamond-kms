@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import prisma from '@/lib/prisma'
-import { env } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,13 +32,17 @@ export async function GET(req: NextRequest) {
         const orgId = userRecord.organization_id
         const role = userDiv?.role
         const divisionId = userDiv?.division_id
-        const isAdmin = role === 'SUPER_ADMIN' || role === 'MAINTAINER'
+        
+        // Define Permission Roles based on user request
+        const isSuperAdmin = role === 'SUPER_ADMIN' || role === 'MAINTAINER'
+        const isGroupAdmin = role === 'GROUP_ADMIN'
+        const isSupervisor = role === 'SUPERVISOR'
+        const isStaff = role === 'STAFF'
 
-        // Base filters
-        const orgFilter = { organization_id: orgId }
-        const divFilter = !isAdmin && divisionId
+        // Base filters for Document & Content (Group scoping)
+        const divFilter = !isSuperAdmin && divisionId
             ? { organization_id: orgId, division_id: divisionId }
-            : orgFilter
+            : { organization_id: orgId }
 
         // Fetch counts in parallel
         const [
@@ -47,54 +50,68 @@ export async function GET(req: NextRequest) {
             totalContents,
             totalDivisions,
             totalMembers,
-            readTrackerStats,
         ] = await Promise.all([
+            // 📝 DOCUMENT: Super Admin see all, others see group
             prisma.document.count({ where: divFilter }),
+            
+            // 📝 CONTENT: Super Admin see all, others see group
             prisma.content.count({ where: { ...divFilter, status: 'PUBLISHED' } }),
-            isAdmin
+            
+            // 🏢 GROUP: Super Admin only
+            isSuperAdmin
                 ? prisma.division.count({ where: { organization_id: orgId } })
                 : Promise.resolve(0),
-            isAdmin
-                ? prisma.user.count({ where: { organization_id: orgId, is_active: true } })
-                : prisma.userDivision.count({
-                    where: { division_id: divisionId || '', user: { is_active: true } },
-                }),
-            // Reading tracker aggregate: count confirmed reads
-            prisma.readTracker.count({
-                where: {
-                    is_confirmed: true,
-                    content: divFilter,
-                },
-            }),
+            
+            // 👥 MEMBER: Super Admin (All), Group Admin (Group Only), Others No Read
+            (isSuperAdmin || isGroupAdmin)
+                ? (isSuperAdmin 
+                    ? prisma.user.count({ where: { organization_id: orgId, is_active: true } })
+                    : prisma.userDivision.count({ where: { division_id: divisionId || '', user: { is_active: true } } }))
+                : Promise.resolve(0),
         ])
 
-        // Total mandatory content for reading rate
-        const totalMandatory = await prisma.content.count({
-            where: {
-                ...divFilter,
-                is_mandatory_read: true,
-                status: 'PUBLISHED',
-            },
+        // 📈 READING TRACKER: Based on Quiz Completion
+        // We calculate aggregate completion rate: (Total unique completions across active quizzes) / (Total expected completions)
+        
+        // 1. Get relevant quizzes
+        const quizWhere: any = { organization_id: orgId, is_published: true }
+        if (!isSuperAdmin && divisionId) {
+            quizWhere.division_id = divisionId
+        }
+        
+        const activeQuizzes = await prisma.quiz.findMany({
+            where: quizWhere,
+            select: { id: true }
         })
-
-        // Total expected reads = mandatory content * members
-        const memberCount = isAdmin
+        
+        // 2. Total members to track
+        const targetMemberCount = isSuperAdmin
             ? await prisma.user.count({ where: { organization_id: orgId, is_active: true } })
-            : totalMembers
+            : (divisionId ? await prisma.userDivision.count({ where: { division_id: divisionId, user: { is_active: true } } }) : 0)
 
-        const expectedReads = totalMandatory * memberCount
-        const readingRate = expectedReads > 0
-            ? Math.round((readTrackerStats / expectedReads) * 100)
+        // 3. Count unique completions per quiz
+        const completionsMap = await Promise.all(activeQuizzes.map(async (q) => {
+            return prisma.quizResult.groupBy({
+                by: ['user_id'],
+                where: { quiz_id: q.id }
+            }).then(res => res.length)
+        }))
+        
+        const totalCompletions = completionsMap.reduce((acc, curr) => acc + curr, 0)
+        const totalExpected = activeQuizzes.length * targetMemberCount
+        
+        const readingRate = totalExpected > 0
+            ? Math.round((totalCompletions / totalExpected) * 100)
             : 0
 
         return NextResponse.json({
             totalDocuments,
             totalContents,
-            totalDivisions: isAdmin ? totalDivisions : undefined,
-            totalMembers,
+            totalDivisions: isSuperAdmin ? totalDivisions : undefined,
+            totalMembers: (isSuperAdmin || isGroupAdmin) ? totalMembers : undefined,
             readingTracker: {
-                confirmed: readTrackerStats,
-                expected: expectedReads,
+                confirmed: totalCompletions,
+                expected: totalExpected,
                 rate: readingRate,
             },
             role,

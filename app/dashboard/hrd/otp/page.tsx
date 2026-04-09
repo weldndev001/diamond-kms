@@ -37,7 +37,7 @@ const INITIAL_PACKAGES: FeaturePackage[] = [
     },
     {
         id: 'pkg-ai-assistant',
-        name: 'AI Assistant',
+        name: 'AISA',
         description: 'AI Chat with RAG for document Q&A',
         icon: <Bot size={20} />,
         unlocked: false,

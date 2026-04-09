@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     output: 'standalone',
+    allowedDevOrigins: ['diamondkms-dev.weldn.ai'],
     experimental: {
-        instrumentationHook: true,
         serverActions: {
             bodySizeLimit: '10mb',
         },

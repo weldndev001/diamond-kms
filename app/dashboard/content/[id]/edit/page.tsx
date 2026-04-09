@@ -9,6 +9,7 @@ import { Save, ArrowLeft, BookOpen, Search, X, CheckCircle2, Upload, Trash2, Ima
 import Link from 'next/link'
 import { TiptapEditor } from '@/components/editor/TiptapEditor'
 import { uploadFileAction } from '@/lib/actions/storage.actions'
+import { Role } from '@prisma/client'
 
 export default function EditContentPage() {
     const router = useRouter()
@@ -16,6 +17,7 @@ export default function EditContentPage() {
     const id = params.id as string
     const { user, organization, role, division } = useCurrentUser()
 
+    const [loading, setLoading] = useState(true)
     const [title, setTitle] = useState('')
     const [category, setCategory] = useState('Standard Operating Procedure')
     const [divisionId, setDivisionId] = useState('')
@@ -24,47 +26,28 @@ export default function EditContentPage() {
     const [headerImage, setHeaderImage] = useState('')
     const [uploadingHeader, setUploadingHeader] = useState(false)
     const [status, setStatus] = useState({ type: '', msg: '' })
-    const [loading, setLoading] = useState(true)
-
     const [divisions, setDivisions] = useState<any[]>([])
+    const [contentData, setContentData] = useState<any>(null)
 
-    // Roles that must be locked to their own division
-    const isDivisionLocked = role === 'SUPERVISOR' || role === 'GROUP_ADMIN' || role === 'STAFF'
+    const isSuperAdmin = role === Role.SUPER_ADMIN || role === Role.MAINTAINER
+    const isDivisionLocked = role === Role.SUPERVISOR || role === Role.GROUP_ADMIN
 
-    // Source Selection Modal
-    const [isSourceModalOpen, setIsSourceModalOpen] = useState(false)
-    const [documents, setDocuments] = useState<any[]>([])
-    const [selectedSources, setSelectedSources] = useState<string[]>([])
-    const [docSearch, setDocSearch] = useState('')
-
-    // Auto-set division for locked roles (if not editing an existing one yet)
-    useEffect(() => {
-        if (isDivisionLocked && division?.id && !divisionId) {
-            setDivisionId(division.id)
-        }
-    }, [isDivisionLocked, division?.id, divisionId])
-
-    useEffect(() => {
-        if (organization?.id) {
-            getDivisionsAction(organization.id).then(res => {
-                if (res.success && res.data) setDivisions(res.data)
-            })
-            // Fetch documents for sources
-            fetch(`/api/documents?orgId=${organization.id}`)
-                .then(res => res.json())
-                .then(res => {
-                    if (res.success) setDocuments(res.data || [])
-                })
-        }
-    }, [organization?.id])
-
-    // Load existing content
     useEffect(() => {
         async function loadContent() {
             if (!id) return
             const res = await getContentByIdAction(id)
             if (res.success && res.data) {
                 const c = res.data
+                setContentData(c)
+                
+                // RBAC Check for Edit
+                const canEdit = isSuperAdmin || (role === Role.GROUP_ADMIN && c.division_id === division?.id) || (role === Role.SUPERVISOR && c.division_id === division?.id)
+                
+                if (!canEdit) {
+                    router.push('/dashboard/content')
+                    return
+                }
+
                 setTitle(c.title)
                 setCategory(c.category)
                 setDivisionId(c.division_id || 'global')
@@ -77,7 +60,28 @@ export default function EditContentPage() {
             setLoading(false)
         }
         loadContent()
-    }, [id])
+    }, [id, isSuperAdmin, role, division?.id, router])
+
+    useEffect(() => {
+        if (organization?.id) {
+            getDivisionsAction(organization.id).then(res => {
+                if (res.success && res.data) setDivisions(res.data)
+            })
+            // Fetch documents for sources
+            const divFilter = !isSuperAdmin ? division?.id : undefined
+            fetch(`/api/documents?orgId=${organization.id}${divFilter ? `&divisionId=${divFilter}` : ''}`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) setDocuments(res.data || [])
+                })
+        }
+    }, [organization?.id, isSuperAdmin, division?.id])
+
+    // Source Selection Modal
+    const [isSourceModalOpen, setIsSourceModalOpen] = useState(false)
+    const [documents, setDocuments] = useState<any[]>([])
+    const [selectedSources, setSelectedSources] = useState<string[]>([])
+    const [docSearch, setDocSearch] = useState('')
 
     const toggleSource = (docId: string) => {
         if (selectedSources.includes(docId)) {
@@ -132,7 +136,7 @@ export default function EditContentPage() {
             title,
             body: bodyHtml,
             category,
-            divisionId,
+            divisionId: divisionId === 'global' ? null : divisionId,
             isMandatory,
             imageUrl: headerImage
         })
@@ -140,7 +144,7 @@ export default function EditContentPage() {
         if (res.success) {
             setStatus({ type: 'success', msg: 'Article updated successfully' })
             setTimeout(() => {
-                router.push(`/dashboard/knowledge-base/${id}`)
+                router.push(`/dashboard/content/${id}`)
             }, 1000)
         } else {
             setStatus({ type: 'error', msg: res.error || 'Failed to update article' })
@@ -276,7 +280,7 @@ export default function EditContentPage() {
                                         className={`w-full border-surface-200 border rounded-md p-2.5 focus:ring-navy-600 focus:border-navy-600 bg-white ${isDivisionLocked ? 'opacity-60 cursor-not-allowed bg-surface-50' : ''}`}
                                     >
                                         <option value="" disabled>Select Division...</option>
-                                        {!isDivisionLocked && (
+                                        {isSuperAdmin && (
                                             <option value="global" className="font-bold">🌐 Global Organization (All)</option>
                                         )}
                                         {divisions.map(d => (

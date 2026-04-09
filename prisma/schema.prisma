@@ -91,6 +91,7 @@ model Division {
   contents       Content[]
   quizzes        Quiz[]
   faqs           FAQ[]
+  knowledge_bases KnowledgeBase[]
 
   @@map("divisions")
 }
@@ -146,16 +147,21 @@ model Document {
 model KnowledgeBase {
   id              String   @id @default(uuid())
   organization_id String
+  division_id     String?
   name            String
   description     String?  @db.Text
+  status          ContentStatus @default(DRAFT)
+  published_at    DateTime?
   created_at      DateTime @default(now())
   updated_at      DateTime @default(now()) @updatedAt
 
   organization  Organization          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  division      Division?             @relation(fields: [division_id], references: [id], onDelete: Cascade)
   documents     KnowledgeBaseSource[]
   chat_sessions ChatSession[]
 
   @@index([organization_id])
+  @@index([division_id])
   @@map("knowledge_bases")
 }
 
@@ -402,6 +408,7 @@ model FAQ {
   created_by      String
   question        String   @db.Text
   answer          String   @db.Text
+  image_url       String?  @db.Text
   order_index     Int
   created_at      DateTime @default(now())
 

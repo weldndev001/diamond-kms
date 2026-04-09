@@ -33,7 +33,7 @@ export default function WebsiteSettingsPage() {
     const [orgName, setOrgName] = useState('')
     const [appName, setAppName] = useState('DIAMOND KMS')
     const [slogan, setSlogan] = useState('AI Powered Knowledge Management System')
-    const [logo, setLogo] = useState('logo_movio.png')
+    const [logo, setLogo] = useState('Logo-Movio-250x70.png')
     const [crossDiv, setCrossDiv] = useState(false)
     const [systemLanguage, setSystemLanguage] = useState('en-US')
     
@@ -98,7 +98,7 @@ export default function WebsiteSettingsPage() {
             setOrgName(orgRes.data.name || '')
             setAppName(orgRes.data.app_name || 'DIAMOND KMS')
             setSlogan(orgRes.data.slogan || 'AI Powered Knowledge Management System')
-            setLogo(orgRes.data.logo_url || 'logo_movio.png')
+            setLogo(orgRes.data.logo_url || 'Logo-Movio-250x70.png')
             setSystemLanguage(orgRes.data.system_language || 'en-US')
             setCrossDiv(orgRes.data.cross_division_query_enabled ?? false)
         }

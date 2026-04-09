@@ -136,6 +136,16 @@ export async function POST(req: NextRequest) {
                         // No citations for greetings
                         send('done', { done: true })
                     } else {
+                        // ── Fetch session summary if available ──
+                        let sessionSummary: string | undefined
+                        if (sessionId) {
+                            const chatSession = await prisma.chatSession.findUnique({
+                                where: { id: sessionId },
+                                select: { summary: true }
+                            })
+                            sessionSummary = chatSession?.summary || undefined
+                        }
+
                         // ── Normal RAG query ──────────────────────────────
                         // Call RAG pipeline, stream chunk by chunk
                         const citations = await ragQuery({
@@ -148,6 +158,7 @@ export async function POST(req: NextRequest) {
                             crossDivisionEnabled:
                                 orgConfig?.cross_division_query_enabled ?? false,
                             knowledgeBaseId,
+                            sessionSummary, // Pass the summary here
                             onChunk: (text) => send('chunk', { text }),
                             signal,
                         })
@@ -156,45 +167,47 @@ export async function POST(req: NextRequest) {
                         send('citations', { citations })
                         send('done', { done: true })
 
-                        // ── Persist messages to DB ───────────────────────────
+                        // ── Persist messages to DB & Compaction ───────────────────────────
                         if (sessionId) {
                             try {
-                                // Collect full response text for persistence
-                                // We need a separate mechanism since streaming already happened
-                                // The full text is reconstructed client-side and sent back,
-                                // but we can also reconstruct from the RAG pipeline
-                                // For now, save via a follow-up from the client
-
-                                // Auto-generate title if this is the first exchange
                                 const msgCount = await prisma.chatMessage.count({
                                     where: { session_id: sessionId },
                                 })
 
+                                // Auto-generate title if this is the first exchange
                                 if (msgCount === 0) {
-                                    // Generate title from the first question
                                     try {
                                         const { getAIServiceForOrg } = await import('@/lib/ai/get-ai-service')
                                         const ai = await getAIServiceForOrg(orgId)
                                         const title = await ai.generateCompletion(
-                                            `Buatkan judul singkat (maksimal 6 kata, tanpa tanda kutip) untuk percakapan yang dimulai dengan pertanyaan: "${question.slice(0, 200)}". JANGAN GUNAKAN FORMAT MARKDOWN ATAU BINTANG. Gunakan penomoran jika perlu.`,
+                                            `Buatkan judul singkat (maksimal 6 kata, tanpa tanda kutip) untuk percakapan yang dimulai dengan pertanyaan: "${question.slice(0, 200)}". JANGAN GUNAKAN FORMAT MARKDOWN ATAU BINTANG.`,
                                             { maxTokens: 30 }
                                         )
-                                        const cleanTitle = title.trim().replace(/^["']|["']$/g, '').slice(0, 80)
                                         await prisma.chatSession.update({
                                             where: { id: sessionId },
-                                            data: { title: cleanTitle || question.slice(0, 50) },
+                                            data: { title: title.trim().replace(/^["']|["']$/g, '').slice(0, 80) },
                                         })
-                                        send('title_updated', { title: cleanTitle || question.slice(0, 50) })
+                                        send('title_updated', { title: title.trim() })
                                     } catch (titleErr) {
                                         logger.warn('Failed to generate chat title', titleErr)
-                                        // Fallback: use question as title
-                                        await prisma.chatSession.update({
-                                            where: { id: sessionId },
-                                            data: { title: question.slice(0, 50) },
-                                        })
-                                        send('title_updated', { title: question.slice(0, 50) })
                                     }
                                 }
+
+                                // ── TRIGGER COMPACTION ──
+                                // Every 5 messages after the first 10, or if auto_summary is forced
+                                const orgFull = await prisma.organization.findUnique({
+                                    where: { id: orgId },
+                                    select: { auto_summary_chat: true }
+                                })
+
+                                if (orgFull?.auto_summary_chat && msgCount >= 10 && msgCount % 5 === 0) {
+                                    const { summarizeSession } = await import('@/lib/ai/chat-compaction')
+                                    // Run in background
+                                    summarizeSession(sessionId, orgId).catch(err => 
+                                        logger.error('Background compaction failed', err)
+                                    )
+                                }
+
                             } catch (persistErr) {
                                 logger.warn('Failed to persist chat session metadata', persistErr)
                             }

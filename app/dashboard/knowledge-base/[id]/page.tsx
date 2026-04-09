@@ -633,7 +633,7 @@ export default function ContentDetailPage() {
                                     <Sparkles size={14} className="text-white" />
                                 </div>
                                 <div>
-                                    <h2 className="font-bold font-display text-navy-900 text-sm">AI Article Assistant</h2>
+                                    <h2 className="font-bold font-display text-navy-900 text-sm">AISA Article Assistant</h2>
                                     <p className="text-[10px] text-text-400">Ask about this article's content</p>
                                 </div>
                             </div>
@@ -729,7 +729,7 @@ export default function ContentDetailPage() {
                                             {msg.role === 'assistant' && (
                                                 <div className="flex items-center gap-1.5 mb-1.5">
                                                     <Bot size={12} className="text-navy-600" />
-                                                    <span className="text-[10px] font-semibold text-navy-600">AI Assistant</span>
+                                                    <span className="text-[10px] font-semibold text-navy-600">AISA</span>
                                                 </div>
                                             )}
                                             <div className={`text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'assistant' ? 'text-text-700' : ''}`}>

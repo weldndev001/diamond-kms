@@ -9,7 +9,7 @@ import { useTranslation } from '@/hooks/useTranslation'
 import Link from 'next/link'
 
 export default function UsersPage() {
-    const { organization, role } = useCurrentUser()
+    const { organization, role, division } = useCurrentUser()
     const { t } = useTranslation()
     const [users, setUsers] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -20,11 +20,17 @@ export default function UsersPage() {
         if (organization?.id) {
             loadData()
         }
-    }, [organization?.id])
+    }, [organization?.id, role, division?.id])
 
     const loadData = async () => {
         if (!organization?.id) return
-        const res = await getUsersAction(organization.id)
+        
+        const filters: any = {}
+        if (role === 'GROUP_ADMIN' && division?.id) {
+            filters.divisionId = division.id
+        }
+
+        const res = await getUsersAction(organization.id, filters)
         if (res.success) setUsers(res.data || [])
         setLoading(false)
     }

@@ -2,18 +2,41 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { ContentStatus, Role } from '@prisma/client'
+import { getSessionUser, isAdmin, isGroupAdmin, isSupervisor } from '@/lib/auth/server-utils'
 
 /**
- * MOCK OR REAL GET KBs
- * This function gets all knowledge bases for an organization,
- * including their documents and contents.
+ * Gets knowledge bases for an organization, filtered by user division and role.
  */
-export async function getKnowledgeBasesAction(organization_id: string) {
+export async function getKnowledgeBasesAction(organization_id: string, division_id?: string) {
     try {
+        const user = await getSessionUser()
+        if (!user) return []
+
+        const where: any = { organization_id }
+
+        // RBAC filtering
+        if (user.role !== Role.SUPER_ADMIN && user.role !== Role.MAINTAINER) {
+            // Group Admin, Supervisor, and Staff see their division's KBs AND global KBs
+            where.OR = [
+                { division_id: user.divisionId },
+                { division_id: null }
+            ]
+            
+            // Staff only sees PUBLISHED KBs
+            if (user.role === Role.STAFF) {
+                where.status = ContentStatus.PUBLISHED
+            }
+        } else if (division_id) {
+            // Super Admin can filter by division
+            where.division_id = division_id === 'global' ? null : division_id
+        }
+
         const kbs = await prisma.knowledgeBase.findMany({
-            where: { organization_id },
+            where,
             include: {
                 documents: true,
+                division: { select: { name: true } },
                 _count: {
                     select: { chat_sessions: true }
                 }
@@ -23,7 +46,6 @@ export async function getKnowledgeBasesAction(organization_id: string) {
 
         if (!kbs) return []
 
-        // Enrich the documents with actual titles from Document or Content tables
         const enrichedKBs = await Promise.all(kbs.map(async (kb: any) => {
             const enrichedDocs = await Promise.all(kb.documents.map(async (docSource: any) => {
                 if (docSource.source_type === 'document') {
@@ -55,9 +77,11 @@ export async function getKnowledgeBasesAction(organization_id: string) {
                 id: kb.id,
                 name: kb.name,
                 description: kb.description || '',
+                status: kb.status,
+                divisionName: kb.division?.name || 'Global',
                 documents: enrichedDocs,
                 created_at: kb.created_at.toISOString(),
-                messageCount: kb._count.chat_sessions // Simplification: using session count instead of individual messages for now
+                messageCount: kb._count.chat_sessions
             }
         }))
 
@@ -75,14 +99,29 @@ export async function createKnowledgeBaseAction(
     organization_id: string,
     name: string,
     description: string,
-    sources: { id: string, type: 'document' | 'content' }[]
+    sources: { id: string, type: 'document' | 'content' }[],
+    divisionId?: string
 ) {
     try {
+        const user = await getSessionUser()
+        if (!user) return { success: false, error: 'User session not found' }
+
+        // Role verification
+        if (!await isSupervisor(divisionId)) {
+            return { success: false, error: 'Unauthorized: Minimal role Supervisor diperlukan' }
+        }
+
+        // Supervisor can only create DRAFT
+        const finalStatus = (await isGroupAdmin(divisionId)) ? ContentStatus.PUBLISHED : ContentStatus.DRAFT
+
         const newKb = await prisma.knowledgeBase.create({
             data: {
                 organization_id,
+                division_id: divisionId || null,
                 name,
                 description,
+                status: finalStatus,
+                published_at: finalStatus === ContentStatus.PUBLISHED ? new Date() : null,
                 documents: {
                     create: sources.map((s: any) => ({
                         source_id: s.id,
@@ -101,6 +140,33 @@ export async function createKnowledgeBaseAction(
 }
 
 /**
+ * Publishes a Knowledge Base
+ */
+export async function publishKnowledgeBaseAction(kbId: string) {
+    try {
+        const kb = await prisma.knowledgeBase.findUnique({ where: { id: kbId } })
+        if (!kb) return { success: false, error: 'Knowledge Base tidak ditemukan' }
+
+        if (!await isGroupAdmin(kb.division_id || undefined)) {
+            return { success: false, error: 'Unauthorized: Hanya Group Admin atau Super Admin yang dapat mempublikasikan' }
+        }
+
+        await prisma.knowledgeBase.update({
+            where: { id: kbId },
+            data: {
+                status: ContentStatus.PUBLISHED,
+                published_at: new Date()
+            }
+        })
+
+        revalidatePath('/dashboard/knowledge-base')
+        return { success: true }
+    } catch (error: any) {
+        return { success: false, error: error.message }
+    }
+}
+
+/**
  * Adds multiple sources to an existing KB
  */
 export async function addSourcesToKBAction(
@@ -108,6 +174,13 @@ export async function addSourcesToKBAction(
     sources: { id: string, type: 'document' | 'content' }[]
 ) {
     try {
+        const kb = await prisma.knowledgeBase.findUnique({ where: { id: kbId } })
+        if (!kb) return { success: false, error: 'Knowledge Base tidak ditemukan' }
+
+        if (!await isSupervisor(kb.division_id || undefined)) {
+            return { success: false, error: 'Unauthorized' }
+        }
+
         await prisma.knowledgeBaseSource.createMany({
             data: sources.map((s: any) => ({
                 knowledge_base_id: kbId,
@@ -120,7 +193,6 @@ export async function addSourcesToKBAction(
         revalidatePath('/dashboard/knowledge-base')
         return { success: true }
     } catch (error: any) {
-        console.error('Error adding sources:', error)
         return { success: false, error: error.message }
     }
 }
@@ -133,6 +205,13 @@ export async function removeSourceFromKBAction(
     sourceId: string
 ) {
     try {
+        const kb = await prisma.knowledgeBase.findUnique({ where: { id: kbId } })
+        if (!kb) return { success: false, error: 'Knowledge Base tidak ditemukan' }
+
+        if (!await isSupervisor(kb.division_id || undefined)) {
+            return { success: false, error: 'Unauthorized' }
+        }
+
         await prisma.knowledgeBaseSource.deleteMany({
             where: {
                 knowledge_base_id: kbId,
@@ -143,7 +222,29 @@ export async function removeSourceFromKBAction(
         revalidatePath('/dashboard/knowledge-base')
         return { success: true }
     } catch (error: any) {
-        console.error('Error removing source:', error)
+        return { success: false, error: error.message }
+    }
+}
+
+/**
+ * Deletes a Knowledge Base
+ */
+export async function deleteKnowledgeBaseAction(kbId: string) {
+    try {
+        const kb = await prisma.knowledgeBase.findUnique({ where: { id: kbId } })
+        if (!kb) return { success: false, error: 'Knowledge Base tidak ditemukan' }
+
+        if (!await isGroupAdmin(kb.division_id || undefined)) {
+            return { success: false, error: 'Unauthorized: Hanya Group Admin atau Super Admin yang dapat menghapus' }
+        }
+
+        await prisma.knowledgeBase.delete({
+            where: { id: kbId }
+        })
+
+        revalidatePath('/dashboard/knowledge-base')
+        return { success: true }
+    } catch (error: any) {
         return { success: false, error: error.message }
     }
 }
@@ -165,28 +266,11 @@ export async function getKBChatSessionsAction(kbId: string) {
             messages: s.messages.map((m: any) => ({
                 role: m.role as 'user' | 'assistant',
                 content: m.content
-            })).sort((a: any, b: any) => 0), // Normally you'd sort by created_at but we don't have it explicitly selected here
+            })).sort((a: any, b: any) => 0), 
             updatedAt: s.updated_at.toISOString()
         }))
     } catch (err) {
         console.error('Error fetching KB chat sessions', err)
         return []
-    }
-}
-
-/**
- * Deletes a Knowledge Base
- */
-export async function deleteKnowledgeBaseAction(kbId: string) {
-    try {
-        await prisma.knowledgeBase.delete({
-            where: { id: kbId }
-        })
-
-        revalidatePath('/dashboard/knowledge-base')
-        return { success: true }
-    } catch (error: any) {
-        console.error('Error deleting knowledge base:', error)
-        return { success: false, error: error.message }
     }
 }

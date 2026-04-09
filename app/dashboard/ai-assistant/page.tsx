@@ -72,7 +72,7 @@ export default function AIAssistantPage() {
                 <p className="text-[10px] font-bold text-text-400 uppercase tracking-wider mb-2">
                     {t('ai_assistant.reference_sources')}
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {citationList.slice(0, 4).map((c, i) => {
                         const isArticle = c.sourceType === 'ARTICLE'
                         const cleanText = c.chunkContent.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim()
@@ -82,6 +82,14 @@ export default function AIAssistantPage() {
                         const href = isArticle
                             ? `/dashboard/knowledge-base/${c.documentId}#:~:text=${encodedKeyword}`
                             : `/dashboard/documents/${c.documentId}?page=${c.pageStart}&search=${encodedKeyword}`
+
+                        // Build breadcrumb path for user navigation
+                        const pathSegments = isArticle
+                            ? ['Basis Pengetahuan', c.documentTitle]
+                            : ['Dokumen', c.documentTitle]
+                        const locationLabel = isArticle
+                            ? `Bagian ${c.pageStart}`
+                            : `Hal. ${c.pageStart}${c.pageEnd > c.pageStart ? `–${c.pageEnd}` : ''}`
                         
                         return (
                             <a
@@ -89,19 +97,32 @@ export default function AIAssistantPage() {
                                 href={href}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group flex flex-col justify-center bg-white dark:bg-slate-800 border border-surface-200 dark:border-slate-700 rounded-lg p-2.5 hover:border-navy-400 dark:hover:border-navy-400 shadow-sm hover:shadow transition-all"
+                                className="group flex flex-col bg-white dark:bg-slate-800 border border-surface-200 dark:border-slate-700 rounded-lg p-3 hover:border-navy-400 dark:hover:border-navy-400 shadow-sm hover:shadow-md transition-all"
                             >
-                                <div className="flex items-center gap-2">
-                                    <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 ${isArticle ? 'bg-amber-100 text-amber-600' : 'bg-navy-100 dark:bg-navy-900 text-navy-600 dark:text-navy-400'}`}>
-                                        <FileText size={12} />
+                                <div className="flex items-start gap-2.5">
+                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isArticle ? 'bg-amber-100 text-amber-600' : 'bg-navy-100 dark:bg-navy-900 text-navy-600 dark:text-navy-400'}`}>
+                                        <FileText size={13} />
                                     </div>
-                                    <div className="min-w-0">
-                                        <p className="font-bold text-navy-900 dark:text-white text-[11px] truncate group-hover:text-navy-700 dark:group-hover:text-navy-300">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-bold text-navy-900 dark:text-white text-[11px] truncate group-hover:text-navy-700 dark:group-hover:text-navy-300 leading-tight">
                                             {c.documentTitle}
                                         </p>
-                                        <div className="flex items-center gap-1 mt-0.5">
-                                            <span className="text-[9px] font-black text-navy-500 dark:text-navy-400 uppercase tracking-tighter">
-                                                {isArticle ? `Bagian ${c.pageStart}` : `Hal. ${c.pageStart}`}
+                                        {/* Location badge */}
+                                        <div className="flex items-center gap-1 mt-1">
+                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-tight ${isArticle ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-navy-50 text-navy-600 border border-navy-200'}`}>
+                                                {locationLabel}
+                                            </span>
+                                            {c.divisionName && (
+                                                <span className="text-[9px] text-text-400 font-medium truncate">
+                                                    · {c.divisionName}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {/* Navigation path breadcrumb */}
+                                        <div className="flex items-center gap-1 mt-1.5 text-[9px] text-text-400 group-hover:text-navy-500 transition-colors">
+                                            <span className="opacity-70">📂</span>
+                                            <span className="font-medium truncate">
+                                                {pathSegments[0]} › {pathSegments[1]?.substring(0, 30)}{(pathSegments[1]?.length || 0) > 30 ? '...' : ''} › {locationLabel}
                                             </span>
                                         </div>
                                     </div>

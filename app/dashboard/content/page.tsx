@@ -4,16 +4,17 @@ import { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getContentsAction, deleteContentAction } from '@/lib/actions/content.actions'
 import { getDivisionsAction } from '@/lib/actions/user.actions'
-import { Search, Filter, FileText, Plus, LayoutGrid, List, ChevronRight, Clock, CheckCircle, AlertCircle, Loader2, Eye, Trash2, ClipboardCheck, BookOpen, Edit } from 'lucide-react'
+import { Search, Filter, FileText, Plus, LayoutGrid, List, ChevronRight, Clock, CheckCircle, AlertCircle, Loader2, Eye, Trash2, ClipboardCheck, BookOpen, Edit, ShieldCheck } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import Link from 'next/link'
+import { Role } from '@prisma/client'
 
 const getStatusBadge = (status: string, t: any) => {
     switch (status) {
         case 'PUBLISHED':
             return <span className="chip bg-success-bg text-success"><CheckCircle size={12} /> {t('content.status_published')}</span>
         case 'PENDING_APPROVAL':
-            return <span className="chip bg-amber-100 text-amber-800"><Loader2 size={12} /> {t('content.status_pending_approval')}</span>
+            return <span className="chip bg-amber-100 text-amber-800"><Loader2 size={12} className="animate-spin" /> {t('content.status_pending_approval')}</span>
         case 'REJECTED':
             return <span className="chip bg-danger-bg text-danger"><AlertCircle size={12} /> {t('content.status_rejected')}</span>
         default:
@@ -22,28 +23,32 @@ const getStatusBadge = (status: string, t: any) => {
 }
 
 export default function ContentListPage() {
-    const { organization, user, role, division } = useCurrentUser()
+    const { organization, role, division } = useCurrentUser()
     const { t } = useTranslation()
     const [contents, setContents] = useState<any[]>([])
     const [divisions, setDivisions] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-    const isAdmin = role === 'SUPER_ADMIN' || role === 'MAINTAINER'
-    const canApprove = role === 'SUPER_ADMIN' || role === 'GROUP_ADMIN'
     const [filterDiv, setFilterDiv] = useState('')
     const [initialized, setInitialized] = useState(false)
 
+    const isSuperAdmin = role === Role.SUPER_ADMIN || role === Role.MAINTAINER
+    const isGroupAdmin = role === Role.GROUP_ADMIN || isSuperAdmin
+    const isSupervisor = role === Role.SUPERVISOR || isGroupAdmin
+    const canCreate = isSupervisor
+    const canApprove = isGroupAdmin
+
     useEffect(() => {
         if (!initialized && division?.id) {
-            if (!isAdmin) setFilterDiv(division.id)
+            if (!isSuperAdmin) setFilterDiv(division.id)
             setInitialized(true)
         }
-    }, [division?.id, isAdmin, initialized])
+    }, [division?.id, isSuperAdmin, initialized])
 
     const loadData = async () => {
         if (!organization?.id) return
-        const effectiveDiv = !isAdmin ? (division?.id || filterDiv) : (filterDiv || undefined)
+        const effectiveDiv = !isSuperAdmin ? (division?.id || filterDiv) : (filterDiv || undefined)
         const [contentsRes, divsRes] = await Promise.all([
             getContentsAction(organization.id, effectiveDiv),
             getDivisionsAction(organization.id)
@@ -84,14 +89,11 @@ export default function ContentListPage() {
                             <span className="ml-1 bg-amber-500 text-white text-[11px] font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{pendingCount}</span>
                         </Link>
                     )}
-                    {canApprove && pendingCount === 0 && (
-                        <Link href="/dashboard/approvals" className="btn bg-surface-100 text-text-600 border border-surface-200 hover:bg-surface-200 transition">
-                            <ClipboardCheck size={16} /> {t('content.approvals')}
+                    {canCreate && (
+                        <Link href="/dashboard/knowledge-base/create" className="btn btn-primary">
+                            <Plus size={16} /> {t('content.create_btn')}
                         </Link>
                     )}
-                    <Link href="/dashboard/knowledge-base/create" className="btn btn-primary">
-                        <Plus size={16} /> {t('content.create_btn')}
-                    </Link>
                 </div>
             </div>
 
@@ -108,7 +110,7 @@ export default function ContentListPage() {
                         />
                     </div>
                     <div className="flex items-center gap-3">
-                        {isAdmin && (
+                        {isSuperAdmin && (
                             <div className="flex items-center gap-3">
                                 <Filter size={16} className="text-text-300" />
                                 <select
@@ -121,7 +123,6 @@ export default function ContentListPage() {
                                 </select>
                             </div>
                         )}
-                        {/* View Mode Toggle */}
                         <div className="flex items-center bg-surface-100 rounded-lg p-0.5">
                             <button
                                 onClick={() => setViewMode('grid')}
@@ -156,14 +157,13 @@ export default function ContentListPage() {
                             <p className="text-text-500 max-w-sm">
                                 {searchTerm ? `${t('documents.no_docs_match')} "${searchTerm}"` : t('content.get_started_desc')}
                             </p>
-                            {!searchTerm && (
+                            {canCreate && !searchTerm && (
                                 <Link href="/dashboard/knowledge-base/create" className="btn btn-primary mt-4 inline-flex items-center gap-2">
                                     <Plus size={16} /> {t('content.create_btn')}
                                 </Link>
                             )}
                         </div>
                     ) : viewMode === 'grid' ? (
-                        /* ── GRID VIEW ── */
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                             {filteredContents.map((content) => (
                                 <div key={content.id} className="card card-hover flex flex-col overflow-hidden">
@@ -188,44 +188,44 @@ export default function ContentListPage() {
 
                                         <div className="flex flex-wrap gap-2 mt-auto">
                                             <span className="chip bg-surface-100 text-text-700">
+                                                <ShieldCheck size={10} className="mr-1" />
                                                 {content.division?.name || t('content.global')}
                                             </span>
                                             <span className="chip bg-surface-100 text-text-700">
-                                                <Clock size={11} /> {new Date(content.created_at).toLocaleDateString(t('common.language') === 'Indonesian' ? 'id-ID' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                <Clock size={11} className="mr-1" /> {new Date(content.created_at).toLocaleDateString(t('common.language') === 'Indonesian' ? 'id-ID' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                                             </span>
                                         </div>
                                     </div>
 
                                     <div className="border-t border-surface-200 bg-surface-50 p-4 flex justify-between items-center gap-2">
-                                        <Link href={`/dashboard/knowledge-base/${content.id}`} className="btn btn-primary flex-1 justify-center text-sm">
-                                            <Eye size={14} /> {t('common.view')}
+                                        <Link href={`/dashboard/content/${content.id}`} className="btn btn-primary flex-1 justify-center text-sm">
+                                            <Eye size={14} className="mr-2" /> {t('common.view')}
                                         </Link>
-                                        {['SUPER_ADMIN', 'GROUP_ADMIN', 'MAINTAINER', 'SUPERVISOR'].includes(role || '') && (
-                                            <Link href={`/dashboard/content/${content.id}/edit`}
-                                                className="w-10 h-10 flex items-center justify-center text-text-500 bg-white border border-surface-200 hover:bg-surface-100 rounded-lg transition shrink-0"
-                                                title="Edit"
-                                            >
-                                                <Edit size={16} />
-                                            </Link>
-                                        )}
-                                        {['SUPER_ADMIN', 'GROUP_ADMIN'].includes(role || '') && (
-                                            <button
-                                                onClick={() => handleDelete(content.id)}
-                                                className="w-10 h-10 flex items-center justify-center text-danger bg-danger-bg hover:opacity-80 rounded-lg transition shrink-0"
-                                                title="Delete"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                        {(isSuperAdmin || (isGroupAdmin && content.division_id === division?.id)) && (
+                                            <>
+                                                <Link href={`/dashboard/content/${content.id}/edit`}
+                                                    className="w-10 h-10 flex items-center justify-center text-text-300 hover:text-navy-600 bg-white border border-surface-200 hover:bg-navy-50 rounded-lg transition shrink-0"
+                                                    title="Edit"
+                                                >
+                                                    <Edit size={16} />
+                                                </Link>
+                                                <button
+                                                    onClick={() => handleDelete(content.id)}
+                                                    className="w-10 h-10 flex items-center justify-center text-text-300 hover:text-danger bg-white border border-surface-200 hover:bg-danger-bg rounded-lg transition shrink-0"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </>
                                         )}
                                     </div>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        /* ── LIST VIEW ── */
                         <div className="card divide-y">
                             {filteredContents.map((content) => (
-                                <Link key={content.id} href={`/dashboard/knowledge-base/${content.id}`}
+                                <Link key={content.id} href={`/dashboard/content/${content.id}`}
                                     className="w-full flex items-center gap-4 p-4 text-left hover:bg-surface-50 transition-colors group">
                                     <div className="w-10 h-10 bg-navy-100 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-navy-200 transition">
                                         <BookOpen size={18} className="text-navy-600" />
@@ -235,12 +235,14 @@ export default function ContentListPage() {
                                         <p className="text-text-400 text-xs mt-0.5 truncate">{t('common.by')} {content.author_name} · {content.category}</p>
                                     </div>
                                     <div className="flex items-center gap-3 text-[11px] text-text-400 shrink-0">
-                                        <span className="whitespace-nowrap">{content.division?.name || t('content.global')}</span>
+                                        <span className="whitespace-nowrap flex items-center gap-1">
+                                            <ShieldCheck size={10} /> {content.division?.name || t('content.global')}
+                                        </span>
                                         {getStatusBadge(content.status, t)}
                                         <div className="flex items-center gap-2">
-                                            {['SUPER_ADMIN', 'GROUP_ADMIN', 'MAINTAINER', 'SUPERVISOR'].includes(role || '') && (
+                                            {(isSuperAdmin || (isGroupAdmin && content.division_id === division?.id)) && (
                                                 <Link href={`/dashboard/content/${content.id}/edit`}
-                                                    className="p-1.5 text-text-400 hover:text-navy-600 hover:bg-navy-50 rounded-md transition"
+                                                    className="p-1.5 text-text-300 hover:text-navy-600 hover:bg-navy-50 rounded-md transition"
                                                     onClick={(e) => e.stopPropagation()}
                                                     title="Edit"
                                                 >

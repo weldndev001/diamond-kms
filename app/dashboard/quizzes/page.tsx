@@ -66,6 +66,12 @@ export default function QuizzesPage() {
     }
 
     useEffect(() => {
+        if (division?.id && !isSuperAdmin) {
+            setSelectedDivision(division.id)
+        }
+    }, [division, isSuperAdmin])
+
+    useEffect(() => {
         loadData()
     }, [organization?.id, selectedDivision, selectedQuiz])
 
@@ -192,7 +198,7 @@ export default function QuizzesPage() {
                                     value={selectedDivision}
                                     onChange={(e) => setSelectedDivision(e.target.value)}
                                     className="w-full bg-white dark:bg-slate-800 border border-surface-200 dark:border-slate-700 py-3.5 pl-12 lg:pl-20 pr-10 rounded-2xl outline-none focus:ring-4 focus:ring-navy-600/5 focus:border-navy-500 dark:focus:border-indigo-500/30 hover:border-navy-400 dark:hover:border-indigo-500/50 transition-all shadow-sm text-sm font-bold text-text-700 dark:text-slate-300 cursor-pointer appearance-none"
-                                    disabled={isStaff}
+                                    disabled={!isSuperAdmin}
                                 >
                                     <option value="ALL">{t('quizzes.all_active_div')}</option>
                                     {divisions.map(d => (
@@ -578,7 +584,7 @@ export default function QuizzesPage() {
                                     value={selectedDivision}
                                     onChange={(e) => setSelectedDivision(e.target.value)}
                                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 py-3.5 px-5 text-xs font-bold text-text-700 dark:text-slate-300 rounded-2xl outline-none focus:ring-4 focus:ring-navy-600/5 focus:border-navy-500 transition-all cursor-pointer appearance-none"
-                                    disabled={isStaff}
+                                    disabled={!isSuperAdmin}
                                 >
                                     <option value="ALL">{t('quizzes.all_active_div')}</option>
                                     {divisions.map(d => (

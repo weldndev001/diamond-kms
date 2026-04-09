@@ -10,7 +10,7 @@ import { getDivisionsAction, getUsersAction, updateUserAction, deactivateUserAct
 import { ArrowLeft, Save, Loader2, User as UserIcon, Building2, Shield, UserX, Mail, Briefcase, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function EditUserPage({ params }: { params: { id: string } }) {
-    const { organization } = useCurrentUser()
+    const { organization, role: currentUserRole, division: currentDivision } = useCurrentUser()
     const router = useRouter()
 
     const [divisions, setDivisions] = useState<any[]>([])
@@ -30,27 +30,36 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
         const loadData = async () => {
             if (!organization?.id) return
 
-            // Note: Since we don't have a single `getUserAction(id)` exposed yet,
-            // we will fetch `getUsersAction` as done on the listing page and find our user.
-            const [usersRes, divRes] = await Promise.all([
-                getUsersAction(organization.id),
-                getDivisionsAction(organization.id)
-            ])
+            const usersRes = await getUsersAction(organization.id)
+            const divRes = await getDivisionsAction(organization.id)
 
             if (divRes.success) {
-                setDivisions(divRes.data || [])
+                let divData = divRes.data || []
+                if (currentUserRole === 'GROUP_ADMIN' && currentDivision?.id) {
+                    divData = divData.filter((d: any) => d.id === currentDivision.id)
+                }
+                setDivisions(divData)
             }
 
             if (usersRes.success) {
                 const userObj = usersRes.data?.find((u: any) => u.id === params.id)
                 if (userObj) {
+                    // Security Check: if GROUP_ADMIN, verify division
+                    if (currentUserRole === 'GROUP_ADMIN' && currentDivision?.id) {
+                        const userDiv = userObj.user_divisions?.find((ud: any) => ud.is_primary) || userObj.user_divisions?.[0]
+                        if (userDiv?.division_id !== currentDivision.id) {
+                            setSubmitStatus({ type: 'error', msg: 'Anda tidak memiliki izin untuk mengedit user dari divisi lain.' })
+                            setLoading(false)
+                            return
+                        }
+                    }
+
                     setEditingUser(userObj)
                     setFullName(userObj.full_name || '')
                     setEmail(userObj.email || '')
                     setJobTitle(userObj.job_title || '')
                     
                     if (userObj.user_divisions?.length > 0) {
-                        // Priority: 1. is_primary division, 2. First division in array
                         const primaryDiv = userObj.user_divisions.find((ud: any) => ud.is_primary) || userObj.user_divisions[0]
                         setRole(primaryDiv.role as Role)
                         setDivisionId(primaryDiv.division_id)
@@ -63,7 +72,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
         }
 
         loadData()
-    }, [organization?.id, params.id])
+    }, [organization?.id, params.id, currentUserRole, currentDivision?.id])
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -258,7 +267,9 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                         <option value="STAFF">Staff (Default Access)</option>
                                         <option value="SUPERVISOR">Supervisor (Reviewer)</option>
                                         <option value="GROUP_ADMIN">Group Admin (Division Head)</option>
-                                        <option value="SUPER_ADMIN">Super Admin (HR / Global)</option>
+                                        {currentUserRole === 'SUPER_ADMIN' && (
+                                            <option value="SUPER_ADMIN">Super Admin (HR / Global)</option>
+                                        )}
                                     </select>
                                     <p className="text-xs text-text-400">
                                         Determines the feature access rights this user can see in the system.
@@ -275,7 +286,8 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                         required
                                         value={divisionId}
                                         onChange={(e) => setDivisionId(e.target.value)}
-                                        className="input-field w-full text-sm"
+                                        className="input-field w-full text-sm disabled:bg-surface-100"
+                                        disabled={currentUserRole === 'GROUP_ADMIN'}
                                     >
                                         <option value="">Select Division...</option>
                                         {divisions.map((d) => (
@@ -283,7 +295,9 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                         ))}
                                     </select>
                                     <p className="text-xs text-text-400">
-                                        Documents & SOPs from the division will be given automatically.
+                                        {currentUserRole === 'GROUP_ADMIN' 
+                                            ? 'Anda hanya dapat mengelola user di divisi Anda sendiri.' 
+                                            : 'Documents & SOPs from the division will be given automatically.'}
                                     </p>
                                 </div>
                             </div>

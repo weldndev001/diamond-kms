@@ -2,12 +2,24 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { Role } from '@prisma/client'
 
 export async function getQuizzesAction(orgId: string, divisionId?: string) {
     try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user) return { success: false, error: 'Unauthorized' }
+        
+        const userRole = (session.user as any).role
+        const userDivisionId = (session.user as any).divisionId
+
         const where: any = { organization_id: orgId }
         
-        if (divisionId && divisionId !== 'ALL') {
+        // RBAC Scoping
+        if (userRole !== Role.SUPER_ADMIN && userRole !== Role.MAINTAINER) {
+            where.division_id = userDivisionId
+        } else if (divisionId && divisionId !== 'ALL') {
             where.division_id = divisionId
         }
 
@@ -39,6 +51,12 @@ export async function getQuizzesAction(orgId: string, divisionId?: string) {
 
 export async function getQuizByIdAction(id: string) {
     try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user) return { success: false, error: 'Unauthorized' }
+        
+        const userRole = (session.user as any).role
+        const userDivisionId = (session.user as any).divisionId
+
         const quiz = await prisma.quiz.findUnique({
             where: { id },
             include: {
@@ -48,6 +66,14 @@ export async function getQuizByIdAction(id: string) {
             }
         })
         if (!quiz) return { success: false, error: 'Quiz not found' }
+
+        // RBAC Scoping
+        if (userRole !== Role.SUPER_ADMIN && userRole !== Role.MAINTAINER) {
+            if (quiz.division_id !== userDivisionId) {
+                return { success: false, error: 'Anda tidak memiliki akses ke kuis ini.' }
+            }
+        }
+
         return { success: true, data: quiz }
     } catch (error: any) {
         return { success: false, error: error.message }
@@ -73,12 +99,19 @@ export async function createQuizAction(data: {
     }>
 }) {
     try {
-        // RBAC: Check role for publication (User model doesn't have role directly)
-        const userDivisions = await prisma.userDivision.findMany({
-            where: { user_id: data.created_by },
-            select: { role: true }
-        })
-        const canPublish = userDivisions.some(ud => ud.role === 'GROUP_ADMIN' || ud.role === 'SUPER_ADMIN')
+        const session = await getServerSession(authOptions)
+        if (!session?.user) return { success: false, error: 'Unauthorized' }
+        
+        const userRole = (session.user as any).role
+        const userDivisionId = (session.user as any).divisionId
+
+        // RBAC: Force division if not Super Admin
+        let finalDivisionId = data.division_id
+        if (userRole !== Role.SUPER_ADMIN && userRole !== Role.MAINTAINER) {
+            finalDivisionId = userDivisionId
+        }
+
+        const canPublish = userRole === Role.GROUP_ADMIN || userRole === Role.SUPER_ADMIN || userRole === Role.MAINTAINER
         
         const finalIsPublished = canPublish ? (data.is_published || false) : false
 
@@ -88,7 +121,7 @@ export async function createQuizAction(data: {
                 description: data.description,
                 header_image: data.header_image,
                 time_limit_minutes: data.time_limit_minutes,
-                division_id: data.division_id,
+                division_id: finalDivisionId,
                 content_id: data.content_id || undefined,
                 organization_id: data.organization_id,
                 created_by: data.created_by,
@@ -165,6 +198,20 @@ export async function submitQuizResultAction(data: {
 
 export async function deleteQuizAction(id: string) {
     try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user) return { success: false, error: 'Unauthorized' }
+        const userRole = (session.user as any).role
+        const userDivisionId = (session.user as any).divisionId
+
+        const quiz = await prisma.quiz.findUnique({ where: { id } })
+        if (!quiz) return { success: false, error: 'Quiz not found' }
+
+        if (userRole !== Role.SUPER_ADMIN && userRole !== Role.MAINTAINER) {
+            if (quiz.division_id !== userDivisionId) {
+                return { success: false, error: 'Anda tidak diizinkan menghapus kuis di divisi lain.' }
+            }
+        }
+
         await prisma.quiz.delete({ where: { id } })
         revalidatePath('/dashboard/quizzes')
         return { success: true }
@@ -192,22 +239,37 @@ export async function updateQuizFullAction(id: string, data: {
 }) {
     console.log(`[updateQuizFullAction] Updating quiz ${id}, questions count: ${data.questions?.length}`);
     try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user) return { success: false, error: 'Unauthorized' }
+        const userRole = (session.user as any).role
+        const userDivisionId = (session.user as any).divisionId
+
         if (!id) throw new Error("Quiz ID is required");
+        
+        const existingQuiz = await prisma.quiz.findUnique({ where: { id } })
+        if (!existingQuiz) throw new Error("Quiz not found")
+
+        // RBAC Scoping
+        if (userRole !== Role.SUPER_ADMIN && userRole !== Role.MAINTAINER) {
+            if (existingQuiz.division_id !== userDivisionId) {
+                throw new Error("Anda tidak memiliki akses ke kuis ini.")
+            }
+        }
+
         if (!data.questions || data.questions.length === 0) {
             throw new Error("Quiz must have at least one question");
         }
-        if (data.is_published && data.created_by) {
-            const userDivisions = await prisma.userDivision.findMany({
-                where: { user_id: data.created_by },
-                select: { role: true }
-            })
-            const canPublish = userDivisions.some(ud => ud.role === 'GROUP_ADMIN' || ud.role === 'SUPER_ADMIN')
-            
-            if (!canPublish) {
-                // If supervisor tries to publish, force to false or throw error
-                // Force to false is safer for now to prevent accidental publication
-                data.is_published = false
-            }
+
+        const canPublish = userRole === Role.GROUP_ADMIN || userRole === Role.SUPER_ADMIN || userRole === Role.MAINTAINER
+        
+        if (data.is_published && !canPublish) {
+            data.is_published = false
+        }
+
+        // Force division if not Super Admin
+        let finalDivisionId = data.division_id
+        if (userRole !== Role.SUPER_ADMIN && userRole !== Role.MAINTAINER) {
+            finalDivisionId = userDivisionId
         }
         const result = await prisma.$transaction(async (tx) => {
             const quiz = await tx.quiz.update({
@@ -259,12 +321,22 @@ export async function updateQuizAction(id: string, data: {
     created_by?: string
 }) {
     try {
-        if (data.is_published && data.created_by) {
-            const userDivisions = await prisma.userDivision.findMany({
-                where: { user_id: data.created_by },
-                select: { role: true }
-            })
-            const canPublish = userDivisions.some(ud => ud.role === 'GROUP_ADMIN' || ud.role === 'SUPER_ADMIN')
+        const session = await getServerSession(authOptions)
+        if (!session?.user) return { success: false, error: 'Unauthorized' }
+        const userRole = (session.user as any).role
+        const userDivisionId = (session.user as any).divisionId
+
+        const quiz = await prisma.quiz.findUnique({ where: { id } })
+        if (!quiz) throw new Error("Quiz not found")
+
+        if (userRole !== Role.SUPER_ADMIN && userRole !== Role.MAINTAINER) {
+            if (quiz.division_id !== userDivisionId) {
+                throw new Error("Anda tidak memiliki akses.")
+            }
+        }
+
+        if (data.is_published) {
+            const canPublish = userRole === Role.GROUP_ADMIN || userRole === Role.SUPER_ADMIN || userRole === Role.MAINTAINER
             
             if (!canPublish) {
                 throw new Error("Unauthorized to publish. Only Admin can approve quizzes.")
@@ -274,12 +346,12 @@ export async function updateQuizAction(id: string, data: {
         if (data.is_published !== undefined) updateData.is_published = data.is_published
         if (data.notes !== undefined) updateData.notes = data.notes
 
-        const quiz = await prisma.quiz.update({
+        const updatedQuiz = await prisma.quiz.update({
             where: { id },
             data: updateData
         })
         revalidatePath('/dashboard/quizzes')
-        return { success: true, data: quiz }
+        return { success: true, data: updatedQuiz }
     } catch (error: any) {
         return { success: false, error: error.message }
     }
@@ -296,5 +368,53 @@ export async function updateQuizNoteAction(id: string, notes: string) {
     } catch (error: any) {
         console.error("Gagal update catatan:", error)
         return { success: false, error: "Gagal update catatan" }
+    }
+}
+export async function getQuizCompletionStatsAction(orgId: string, divisionId?: string) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user) return { success: false, error: 'Unauthorized' }
+        const userRole = (session.user as any).role
+        const userDivisionId = (session.user as any).divisionId
+
+        const membersWhere: any = { organization_id: orgId, is_active: true }
+        const quizWhere: any = { organization_id: orgId, is_published: true }
+        
+        // RBAC Scoping
+        if (userRole !== Role.SUPER_ADMIN && userRole !== Role.MAINTAINER) {
+            membersWhere.user_divisions = { some: { division_id: userDivisionId } }
+            quizWhere.division_id = userDivisionId
+        } else if (divisionId && divisionId !== 'ALL') {
+            membersWhere.user_divisions = { some: { division_id: divisionId } }
+            quizWhere.division_id = divisionId
+        }
+
+        const totalMembers = await prisma.user.count({ where: membersWhere })
+        const quizzes = await prisma.quiz.findMany({
+            where: quizWhere,
+            select: { id: true, title: true, created_at: true }
+        })
+
+        const stats = await Promise.all(quizzes.map(async (quiz) => {
+            const completedCount = await prisma.quizResult.groupBy({
+                by: ['user_id'],
+                where: { quiz_id: quiz.id },
+            }).then(groups => groups.length)
+
+            return {
+                id: quiz.id,
+                title: quiz.title,
+                category: 'Quiz',
+                published_at: quiz.created_at,
+                totalTarget: totalMembers,
+                readCount: completedCount,
+                percent: totalMembers > 0 ? Math.round((completedCount / totalMembers) * 100) : 0
+            }
+        }))
+
+        return { success: true, data: stats }
+    } catch (error: any) {
+        console.error('[getQuizCompletionStatsAction] Error:', error)
+        return { success: false, error: error.message }
     }
 }

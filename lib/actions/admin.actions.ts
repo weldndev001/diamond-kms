@@ -202,7 +202,7 @@ export async function updateOrgAIConfigAction(formData: FormData) {
             }
         })
 
-        revalidatePath('/dashboard/hrd/ai-settings')
+        revalidatePath('/dashboard/hrd/ai')
         return { success: true }
     } catch (error: any) {
         return { success: false, error: error.message }

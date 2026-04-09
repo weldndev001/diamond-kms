@@ -1,17 +1,28 @@
 'use server'
 
 import prisma from '@/lib/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export async function getLeaderboardAction(orgId: string, limit: number = 50, divisionId?: string, quizId?: string) {
     try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user) return { success: false, error: 'Unauthorized' }
+        const userRole = (session.user as any).role
+        const userDivisionId = (session.user as any).divisionId
+
+        let scoperDivisionId = divisionId
+        if (userRole !== 'SUPER_ADMIN' && userRole !== 'MAINTAINER') {
+            scoperDivisionId = userDivisionId
+        }
         // CASE 1: GLOBAL LEADERBOARD (Total Points from UserPoints table)
         if (!quizId || quizId === 'ALL') {
             const where: any = { organization_id: orgId }
             
-            if (divisionId && divisionId !== 'ALL') {
+            if (scoperDivisionId && scoperDivisionId !== 'ALL') {
                 where.user = {
                     user_divisions: {
-                        some: { division_id: divisionId }
+                        some: { division_id: scoperDivisionId }
                     }
                 }
             }
@@ -54,10 +65,10 @@ export async function getLeaderboardAction(orgId: string, limit: number = 50, di
             quiz_id: quizId
         }
 
-        if (divisionId && divisionId !== 'ALL') {
+        if (scoperDivisionId && scoperDivisionId !== 'ALL') {
             where.user = {
                 user_divisions: {
-                    some: { division_id: divisionId }
+                    some: { division_id: scoperDivisionId }
                 }
             }
         }

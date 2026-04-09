@@ -15,8 +15,9 @@ export default function LeaderboardPage() {
 
     useEffect(() => {
         if (organization?.id) {
-            // Staff sees division leaderboard, others see org-wide
-            const divFilter = isStaff ? division?.id : undefined
+            // Scoping: Only Super Admin/Maintainer see org-wide, others see division
+            const isSuperAdmin = role === 'SUPER_ADMIN' || role === 'MAINTAINER'
+            const divFilter = isSuperAdmin ? undefined : division?.id
             getLeaderboardAction(organization.id, 20, divFilter).then(res => {
                 if (res.success) {
                     setLeaders(res.data || [])

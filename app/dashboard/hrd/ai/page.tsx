@@ -60,8 +60,6 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
     const [chatModel, setChatModel] = useState('')
     const [embedModel, setEmbedModel] = useState('')
     const [autoSummaryChat, setAutoSummaryChat] = useState(false)
-    const [systemPrompt, setSystemPrompt] = useState('')
-    const [temperature, setTemperature] = useState<number>(0.7)
 
     // Model Discovery
     const [availableModels, setAvailableModels] = useState<string[]>([])
@@ -100,8 +98,6 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
                 setEmbedModel(config.embedModel || '')
                 setApiKey('')
                 setAutoSummaryChat(config.autoSummaryChat ?? false)
-                setSystemPrompt(config.systemPrompt || '')
-                setTemperature(config.temperature ?? 0.7)
             }
             setIsLoading(false)
         }
@@ -124,8 +120,6 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
         if (chatModel) formData.append('chatModel', chatModel)
         if (embedModel) formData.append('embedModel', embedModel)
         formData.append('autoSummaryChat', String(autoSummaryChat))
-        formData.append('systemPrompt', systemPrompt)
-        formData.append('temperature', String(temperature))
 
         const res = await updateOrgAIConfigAction(formData)
 
@@ -144,31 +138,201 @@ function AISettingsTab({ organization, router }: { organization: any, router: an
         return <div className="p-8 text-center text-text-500">Loading AI configuration...</div>
     }
 
-    if (isLoading) {
-        return <div className="p-8 text-center text-text-500">Loading AI configuration...</div>
-    }
-
     return (
         <div className="max-w-4xl space-y-6 animate-in fade-in duration-300">
-            <div className="bg-surface-0 p-8 rounded-xl border border-surface-200 shadow-sm text-center">
-                <div className="w-16 h-16 bg-navy-50 text-navy-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Settings size={28} />
+            {error && <div className="p-4 bg-danger-bg text-danger rounded-lg border border-red-200 text-sm">{error}</div>}
+            {success && <div className="p-4 bg-success-bg text-success rounded-lg border border-green-200 text-sm">{success}</div>}
+
+            <form onSubmit={handleSave} className="bg-surface-0 p-6 rounded-xl border border-surface-200 shadow-sm space-y-8">
+                {/* Provider Selection */}
+                <div className="space-y-4">
+                    <label className="block text-sm font-semibold text-navy-900">Provider Strategy</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[
+                            { id: 'managed', label: 'Managed by WELDN_AI', desc: 'AI service managed by the WELDN_AI team' },
+                            { id: 'self_hosted', label: 'Local Server AI', desc: 'Connect to a local or custom endpoint' }
+                        ].map((p) => (
+                            <label key={p.id} className={`flex items-start p-4 rounded-lg border-2 cursor-pointer transition-colors ${provider === p.id ? 'border-amber-500 bg-amber-50' : 'border-surface-200 hover:border-navy-300'}`}>
+                                <input
+                                    type="radio"
+                                    name="provider"
+                                    value={p.id}
+                                    checked={provider === p.id}
+                                    onChange={(e) => setProvider(e.target.value)}
+                                    className="pt-1 text-amber-500 focus:ring-amber-500"
+                                />
+                                <div className="ml-3">
+                                    <div className="font-semibold text-navy-900">{p.label}</div>
+                                    <div className="text-xs text-text-500 mt-0.5">{p.desc}</div>
+                                </div>
+                            </label>
+                        ))}
+                    </div>
                 </div>
-                <h3 className="text-xl font-bold text-navy-900 mb-2">Configuration Managed via Environment Variables</h3>
-                <p className="text-text-500 max-w-lg mx-auto mb-6">
-                    For enhanced security and centralized control, all AI configurations (Provider, Endpoint, Models, Temperature, and API Keys) are now managed directly through the server's <code>.env</code> file.
-                </p>
-                <div className="text-sm font-mono text-left bg-surface-50 p-6 rounded-lg border border-surface-200 max-w-2xl mx-auto overflow-x-auto whitespace-pre">
-                    <span className="text-text-400 block mb-2">// Example .env configuration:</span>
-                    <span className="text-navy-700 font-semibold block">AI_PROVIDER="self_hosted"</span>
-                    <span className="text-navy-700 font-semibold block">AI_ENDPOINT="https://llm01.weldn.ai/olla/openai/v1"</span>
-                    <span className="text-navy-700 font-semibold block">AI_CHAT_MODEL="Qwen3.5-4B-Q4_K_M-unsloth.gguf"</span>
-                    <span className="text-navy-700 font-semibold block">AI_EMBED_MODEL="Qwen3-Embedding-0.6B-Q8_0.gguf"</span>
-                    <span className="text-navy-700 font-semibold block">AI_HYBRID_EMBED="false"</span>
-                    <span className="text-navy-700 font-semibold block">AI_API_KEY="400cb90781a7e8b7365df43c0..."</span>
-                    <span className="text-navy-700 font-semibold block">AI_TEMPERATURE="0.7"</span>
+
+                {/* WELDN_AI Managed Service Fields */}
+                {provider === 'managed' && (
+                    <div className="p-5 bg-surface-50 border border-surface-200 rounded-lg space-y-5">
+                        <div className="flex items-center gap-2 text-sm font-bold text-navy-900 mb-2">
+                            <Server size={16} className="text-navy-500" />
+                            WELDN_AI Service Configuration
+                        </div>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-medium text-navy-900">
+                                <LinkIcon size={14} className="text-text-400" /> Service URL
+                            </label>
+                            <input
+                                type="url"
+                                value={endpoint}
+                                onChange={(e) => setEndpoint(e.target.value)}
+                                placeholder="https://api.weldn.ai/v1"
+                                className="input-field font-mono text-sm"
+                            />
+                            <p className="text-xs text-text-400">The WELDN_AI service endpoint URL specified by the team.</p>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-medium text-navy-900">
+                                <Key size={14} className="text-text-400" /> API Key
+                            </label>
+                            <input
+                                type="password"
+                                value={apiKey}
+                                onChange={(e) => setApiKey(e.target.value)}
+                                placeholder="Enter API Key from WELDN_AI..."
+                                className="input-field font-mono text-sm"
+                            />
+                            <p className="text-xs text-text-400">API key provided by the WELDN_AI team upon service activation.</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Conditional Fields based on Provider */}
+                {provider === 'byok' && (
+                    <div className="p-5 bg-surface-50 border border-surface-200 rounded-lg space-y-5">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2 text-sm font-bold text-navy-900">
+                                <Server size={16} className="text-navy-500" />
+                                Connection Details
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleFetchModels}
+                                disabled={isFetchingModels}
+                                className="text-xs font-semibold text-amber-600 hover:text-amber-700 disabled:opacity-50 flex items-center gap-1.5"
+                            >
+                                {isFetchingModels ? <div className="w-3 h-3 border-2 border-amber-600/30 border-t-amber-600 rounded-full animate-spin" /> : <RefreshCcw size={12} />}
+                                Load Available Models
+                            </button>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-medium text-navy-900">
+                                <Key size={14} className="text-text-400" /> API Key
+                            </label>
+                            <input
+                                type="password"
+                                value={apiKey}
+                                onChange={(e) => setApiKey(e.target.value)}
+                                placeholder="Leave blank to keep existing key, or enter new key..."
+                                className="input-field font-mono text-sm"
+                                required={!chatModel}
+                            />
+                            <p className="text-xs text-text-400">
+                                Required for BYOK. Securely encrypted before storage.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-surface-200 mt-4">
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-sm font-medium text-navy-900">
+                                    <Cpu size={14} className="text-text-400" /> Chat Model Name
+                                </label>
+                                {availableModels.length > 0 ? (
+                                    <select
+                                        value={chatModel}
+                                        onChange={(e) => setChatModel(e.target.value)}
+                                        className="input-field font-mono text-sm"
+                                        required
+                                    >
+                                        <option value="" disabled>Select a model...</option>
+                                        {availableModels.map(m => (
+                                            <option key={`chat-${m}`} value={m}>{m}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <input
+                                        type="text"
+                                        value={chatModel}
+                                        onChange={(e) => setChatModel(e.target.value)}
+                                        placeholder={provider === 'byok' ? 'gemini-2.5-flash / gpt-4o-mini' : 'llama3.3:70b'}
+                                        className="input-field font-mono text-sm"
+                                    />
+                                )}
+                            </div>
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-sm font-medium text-navy-900">
+                                    <Cpu size={14} className="text-text-400" /> Embedding Model Name
+                                </label>
+                                {availableModels.length > 0 ? (
+                                    <select
+                                        value={embedModel}
+                                        onChange={(e) => setEmbedModel(e.target.value)}
+                                        className="input-field font-mono text-sm"
+                                        required
+                                    >
+                                        <option value="" disabled>Select a model...</option>
+                                        {availableModels.map(m => (
+                                            <option key={`embed-${m}`} value={m}>{m}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <input
+                                        type="text"
+                                        value={embedModel}
+                                        onChange={(e) => setEmbedModel(e.target.value)}
+                                        placeholder="nomic-embed-text"
+                                        className="input-field font-mono text-sm"
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Chat Behavior Settings */}
+                <div className="p-5 bg-surface-50 border border-surface-200 rounded-lg space-y-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-navy-900">
+                        <MessageSquare size={16} className="text-navy-500" />
+                        Chat Behavior
+                    </div>
+                    <label className="flex items-center justify-between cursor-pointer">
+                        <div>
+                            <div className="text-sm font-medium text-navy-900">Auto-generate Chat Summary</div>
+                            <div className="text-xs text-text-400 mt-0.5">Automatically create a summary of each conversation after the session ends.</div>
+                        </div>
+                        <div className="relative">
+                            <input
+                                type="checkbox"
+                                checked={autoSummaryChat}
+                                onChange={(e) => setAutoSummaryChat(e.target.checked)}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-surface-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        </div>
+                    </label>
                 </div>
-            </div>
+
+                <div className="flex justify-end pt-4 border-t border-surface-100">
+                    <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="btn btn-primary flex items-center gap-2"
+                    >
+                        {isSaving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={16} />}
+                        Save Configuration
+                    </button>
+                </div>
+            </form>
         </div>
     )
 }

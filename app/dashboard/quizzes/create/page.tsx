@@ -19,10 +19,11 @@ export default function CreateQuizPage() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const editId = searchParams.get('edit')
-    const { user, organization, role } = useCurrentUser()
+    const { user, organization, role, division } = useCurrentUser()
     const userRole = role?.toUpperCase() || ''
     const isSupervisor = userRole === 'SUPERVISOR'
-    const isKadiv = userRole === 'GROUP_ADMIN' || userRole === 'SUPER_ADMIN'
+    const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole === 'MAINTAINER'
+    const isKadiv = userRole === 'GROUP_ADMIN' || isSuperAdmin
 
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
@@ -55,6 +56,10 @@ export default function CreateQuizPage() {
             getContentsAction(organization.id).then(res => {
                 if (res.success) setContents(res.data || [])
             })
+        }
+
+        if (division?.id && !isSuperAdmin && !editId) {
+            setDivisionId(division.id)
         }
 
         if (editId) {
@@ -349,7 +354,8 @@ export default function CreateQuizPage() {
                                 required
                                 value={divisionId}
                                 onChange={(e) => setDivisionId(e.target.value)}
-                                className="w-full bg-white dark:bg-slate-900 border border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 rounded-2xl p-3.5 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all font-bold appearance-none cursor-pointer"
+                                className="w-full bg-white dark:bg-slate-900 border border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 rounded-2xl p-3.5 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all font-bold appearance-none cursor-pointer disabled:bg-surface-50 disabled:cursor-not-allowed"
+                                disabled={!isSuperAdmin}
                             >
                                 <option value="" disabled>{t('quizzes_create.select_division')}</option>
                                 {divisions.map(d => (

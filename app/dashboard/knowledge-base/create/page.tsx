@@ -9,10 +9,19 @@ import { Save, ArrowLeft, BookOpen, Search, X, CheckCircle2, Upload, Trash2, Ima
 import Link from 'next/link'
 import { TiptapEditor } from '@/components/editor/TiptapEditor'
 import { uploadFileAction } from '@/lib/actions/storage.actions'
+import { Role } from '@prisma/client'
 
 export default function CreateContentPage() {
     const router = useRouter()
     const { user, organization, role, division } = useCurrentUser()
+
+    useEffect(() => {
+        // Allow Super Admin, Maintainer, Group Admin, and Supervisor
+        const allowedRoles = [Role.SUPER_ADMIN, Role.MAINTAINER, Role.GROUP_ADMIN, Role.SUPERVISOR]
+        if (role && !allowedRoles.includes(role as Role)) {
+            router.push('/dashboard/content')
+        }
+    }, [role, router])
 
     const [title, setTitle] = useState('')
     const [category, setCategory] = useState('Standard Operating Procedure')
@@ -26,7 +35,8 @@ export default function CreateContentPage() {
     const [divisions, setDivisions] = useState<any[]>([])
 
     // Roles that must be locked to their own division
-    const isDivisionLocked = role === 'SUPERVISOR' || role === 'GROUP_ADMIN' || role === 'STAFF'
+    const isSuperAdmin = role === Role.SUPER_ADMIN || role === Role.MAINTAINER
+    const isDivisionLocked = role === Role.SUPERVISOR || role === Role.GROUP_ADMIN
 
     // Source Selection Modal
     const [isSourceModalOpen, setIsSourceModalOpen] = useState(false)
@@ -47,13 +57,14 @@ export default function CreateContentPage() {
                 if (res.success && res.data) setDivisions(res.data)
             })
             // Fetch documents for sources
-            fetch(`/api/documents?orgId=${organization.id}`)
+            const divFilter = !isSuperAdmin ? division?.id : undefined
+            fetch(`/api/documents?orgId=${organization.id}${divFilter ? `&divisionId=${divFilter}` : ''}`)
                 .then(res => res.json())
                 .then(res => {
                     if (res.success) setDocuments(res.data || [])
                 })
         }
-    }, [organization?.id])
+    }, [organization?.id, isSuperAdmin, division?.id])
 
     const toggleSource = (docId: string) => {
         if (selectedSources.includes(docId)) {
@@ -108,7 +119,7 @@ export default function CreateContentPage() {
             title,
             body: bodyHtml,
             category,
-            divisionId,
+            divisionId: divisionId === 'global' ? null : divisionId, // global means all divisions (null)
             orgId: organization.id,
             authorId: user.id,
             isMandatory,
@@ -118,7 +129,7 @@ export default function CreateContentPage() {
         if (res.success) {
             setStatus({ type: 'success', msg: 'Article created successfully (Draft)' })
             setTimeout(() => {
-                router.push('/dashboard/knowledge-base')
+                router.push('/dashboard/content')
             }, 1000)
         } else {
             setStatus({ type: 'error', msg: res.error || 'Failed to create article' })
@@ -133,9 +144,9 @@ export default function CreateContentPage() {
     return (
         <div className="max-w-5xl mx-auto space-y-6">
             <div className="flex items-center gap-4">
-                <Link href="/dashboard/content" className="p-2 text-text-500 hover:text-navy-900 hover:bg-surface-100 rounded-full transition">
+                <button onClick={() => router.back()} className="p-2 text-text-500 hover:text-navy-900 hover:bg-surface-100 rounded-full transition">
                     <ArrowLeft size={20} />
-                </Link>
+                </button>
                 <div className="flex items-center gap-3">
                     <h1 className="text-2xl font-bold font-display text-navy-900">Create Knowledge Base Article</h1>
                 </div>
@@ -245,7 +256,7 @@ export default function CreateContentPage() {
                                         className={`w-full border-surface-200 border rounded-md p-2.5 focus:ring-navy-600 focus:border-navy-600 bg-white ${isDivisionLocked ? 'opacity-60 cursor-not-allowed bg-surface-50' : ''}`}
                                     >
                                         <option value="" disabled>Select Division...</option>
-                                        {!isDivisionLocked && (
+                                        {isSuperAdmin && (
                                             <option value="global" className="font-bold">🌐 Global Organization (All)</option>
                                         )}
                                         {divisions.map(d => (

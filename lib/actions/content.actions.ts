@@ -2,15 +2,30 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { ContentStatus } from '@prisma/client'
+import { ContentStatus, Role } from '@prisma/client'
+import { getSessionUser, isAdmin, isGroupAdmin, isSupervisor } from '@/lib/auth/server-utils'
 
 export async function getContentsAction(orgId: string, divisionId?: string) {
     try {
+        const user = await getSessionUser()
+        if (!user) return { success: false, error: 'User session not found' }
+
         const where: any = { organization_id: orgId }
-        if (divisionId === 'global') {
-            where.division_id = null
+        
+        // RBAC filtering
+        if (user.role !== Role.SUPER_ADMIN && user.role !== Role.MAINTAINER) {
+            where.division_id = user.divisionId
+            
+            // Staff only see PUBLISHED
+            if (user.role === Role.STAFF) {
+                where.status = ContentStatus.PUBLISHED
+            }
         } else if (divisionId) {
-            where.division_id = divisionId
+            if (divisionId === 'global') {
+                where.division_id = null
+            } else {
+                where.division_id = divisionId
+            }
         }
 
         const contents = await prisma.content.findMany({
@@ -19,7 +34,6 @@ export async function getContentsAction(orgId: string, divisionId?: string) {
             orderBy: { created_at: 'desc' },
         })
 
-        // Fetch user data manually since there is no prisma relation for author_id
         const userIds = contents.map(c => c.author_id)
         const users = await prisma.user.findMany({ where: { id: { in: userIds } } })
         const userMap = users.reduce((acc, user) => ({ ...acc, [user.id]: user.full_name }), {} as Record<string, string>)
@@ -63,15 +77,23 @@ export async function createContentAction(data: {
     imageUrl?: string
 }) {
     try {
+        if (!await isSupervisor(data.divisionId)) {
+            return { success: false, error: "Unauthorized: Minimal role Supervisor diperlukan" }
+        }
+
+        // Supervisor can only create DRAFT
+        const finalStatus = (await isGroupAdmin(data.divisionId)) ? ContentStatus.PUBLISHED : ContentStatus.DRAFT
+
         const content = await prisma.content.create({
             data: {
                 title: data.title,
                 body: data.body,
                 category: data.category || 'General',
                 author_id: data.authorId,
-                status: ContentStatus.DRAFT,
+                status: finalStatus,
                 is_mandatory_read: data.isMandatory || false,
                 image_url: data.imageUrl || null,
+                published_at: finalStatus === ContentStatus.PUBLISHED ? new Date() : null,
                 organization: {
                     connect: { id: data.orgId }
                 },
@@ -91,6 +113,13 @@ export async function createContentAction(data: {
 
 export async function publishContentAction(id: string) {
     try {
+        const content = await prisma.content.findUnique({ where: { id } })
+        if (!content) return { success: false, error: 'Konten tidak ditemukan' }
+
+        if (!await isGroupAdmin(content.division_id || undefined)) {
+            return { success: false, error: "Unauthorized: Hanya Group Admin atau Super Admin yang dapat mempublikasikan konten" }
+        }
+
         await prisma.content.update({
             where: { id },
             data: { status: ContentStatus.PUBLISHED, published_at: new Date() }
@@ -103,6 +132,7 @@ export async function publishContentAction(id: string) {
         const host = headerList.get('host') || 'localhost:7000'
         const protocol = host.includes('localhost') ? 'http' : 'https'
         const baseUrl = env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`
+        
         fetch(`${baseUrl}/api/ai/process-content`, {
             method: 'POST',
             headers: {
@@ -122,6 +152,13 @@ export async function publishContentAction(id: string) {
 
 export async function deleteContentAction(id: string) {
     try {
+        const content = await prisma.content.findUnique({ where: { id } })
+        if (!content) return { success: false, error: 'Konten tidak ditemukan' }
+
+        if (!await isGroupAdmin(content.division_id || undefined)) {
+            return { success: false, error: "Unauthorized: Hanya Group Admin atau Super Admin yang dapat menghapus konten" }
+        }
+
         await prisma.content.delete({ where: { id } })
         revalidatePath('/dashboard/contents')
         return { success: true }
@@ -139,6 +176,13 @@ export async function updateContentAction(id: string, data: {
     imageUrl?: string
 }) {
     try {
+        const contentOrig = await prisma.content.findUnique({ where: { id } })
+        if (!contentOrig) return { success: false, error: 'Konten tidak ditemukan' }
+
+        if (!await isSupervisor(contentOrig.division_id || undefined)) {
+            return { success: false, error: "Unauthorized" }
+        }
+
         const updateData: any = {
             title: data.title,
             body: data.body,

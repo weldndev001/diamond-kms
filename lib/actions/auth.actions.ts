@@ -158,9 +158,6 @@ export async function inviteUserAction({
     role: string
     divisionId: string
 }) {
-    // In a real app, we would get the current user session here via getServerSession
-    // But since we are migrating, we'll assume the client passes the context or we fetch it.
-    
     if (!password || password.length < 6) {
         return { success: false, error: 'Password minimal 6 karakter' }
     }
@@ -168,14 +165,27 @@ export async function inviteUserAction({
     try {
         const passwordHash = await bcrypt.hash(password, 10)
 
-        // We need the organization_id of the inviter. 
-        // This should be retrieved from the session.
         const { getServerSession } = await import('next-auth')
         const { authOptions } = await import('@/lib/auth')
         const session = await getServerSession(authOptions)
 
         if (!session?.user) return { success: false, error: 'Unauthorized' }
+        
         const orgId = (session.user as any).organizationId
+        const requesterRole = (session.user as any).role
+        const requesterDivisionId = (session.user as any).division?.id
+
+        // Security Check: GROUP_ADMIN scoping
+        if (requesterRole === Role.GROUP_ADMIN) {
+            // Must be in the same division
+            if (divisionId !== requesterDivisionId) {
+                return { success: false, error: 'Anda hanya dapat mengundang user ke divisi Anda sendiri.' }
+            }
+            // Cannot create SUPER_ADMIN
+            if (role === Role.SUPER_ADMIN) {
+                return { success: false, error: 'Anda tidak dapat membuat user dengan peran Super Admin.' }
+            }
+        }
 
         await prisma.user.create({
             data: {

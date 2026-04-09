@@ -37,6 +37,8 @@ const getIconForLabel = (label: string) => {
         case 'Cari & Tanya AI':
         case 'Search & Ask AI':
         case 'AI Assistant':
+        case 'AISA':
+        case 'Chat AISA':
         case 'Asisten AI': return <Sparkles size={16} />
         case 'Knowledge Base':
         case 'Basis Pengetahuan': return <Tags size={16} />
@@ -112,9 +114,9 @@ const getNavEntries = (role: string | undefined, t: (key: string) => string): Na
             label: t('common.knowledge_management'),
             icon: 'Tags',
             children: [
-                { label: t('common.manage_knowledge_base'), href: '/dashboard/knowledge-base' },
                 { label: t('common.manage_document'), href: '/dashboard/documents' },
-                { label: t('common.manage_content'), href: '/dashboard/content' }
+                { label: t('common.manage_content'), href: '/dashboard/content' },
+                { label: t('common.manage_knowledge_base'), href: '/dashboard/knowledge-base' }
             ]
         },
         {

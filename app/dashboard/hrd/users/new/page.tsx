@@ -11,7 +11,7 @@ import { ArrowLeft, UserPlus, Eye, EyeOff, Loader2, Save } from 'lucide-react'
 import Link from 'next/link'
 
 export default function CreateUserPage() {
-    const { organization, role: currentUserRole } = useCurrentUser()
+    const { organization, role: currentUserRole, division } = useCurrentUser()
     const router = useRouter()
 
     const [divisions, setDivisions] = useState<any[]>([])
@@ -32,12 +32,18 @@ export default function CreateUserPage() {
             if (!organization?.id) return
             const res = await getDivisionsAction(organization.id)
             if (res.success) {
-                setDivisions(res.data || [])
+                let data = res.data || []
+                // If GROUP_ADMIN, only show their division
+                if (currentUserRole === 'GROUP_ADMIN' && division?.id) {
+                    data = data.filter((d: any) => d.id === division.id)
+                    setDivisionId(division.id)
+                }
+                setDivisions(data)
             }
             setIsLoadingDivisions(false)
         }
         loadDivisions()
-    }, [organization?.id])
+    }, [organization?.id, currentUserRole, division?.id])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -163,7 +169,9 @@ export default function CreateUserPage() {
                                     <option value="STAFF">Staff</option>
                                     <option value="SUPERVISOR">Supervisor</option>
                                     <option value="GROUP_ADMIN">Group Admin (Div. Head)</option>
-                                    <option value="SUPER_ADMIN">Super Admin</option>
+                                    {currentUserRole === 'SUPER_ADMIN' && (
+                                        <option value="SUPER_ADMIN">Super Admin</option>
+                                    )}
                                 </select>
                             </div>
 
@@ -175,8 +183,8 @@ export default function CreateUserPage() {
                                     required
                                     value={divisionId}
                                     onChange={(e) => setDivisionId(e.target.value)}
-                                    className="input-field bg-white"
-                                    disabled={isLoadingDivisions}
+                                    className="input-field bg-white disabled:bg-surface-100"
+                                    disabled={isLoadingDivisions || currentUserRole === 'GROUP_ADMIN'}
                                 >
                                     <option value="">
                                         {isLoadingDivisions ? 'Loading divisions...' : 'Select Division...'}
@@ -185,6 +193,11 @@ export default function CreateUserPage() {
                                         <option key={d.id} value={d.id}>{d.name}</option>
                                     ))}
                                 </select>
+                                {currentUserRole === 'GROUP_ADMIN' && (
+                                    <p className="text-[10px] text-text-400 mt-1">
+                                        Anda hanya dapat membuat user untuk divisi Anda sendiri.
+                                    </p>
+                                )}
                             </div>
                         </div>
 

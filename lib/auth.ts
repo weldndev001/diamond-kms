@@ -29,7 +29,7 @@ export const authOptions: NextAuthOptions = {
           include: {
             user_divisions: {
               where: { is_primary: true },
-              select: { role: true }
+              include: { division: true }
             }
           }
         });
@@ -52,7 +52,8 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.full_name,
           role: user.user_divisions[0]?.role,
-          organizationId: user.organization_id
+          organizationId: user.organization_id,
+          divisionId: user.user_divisions[0]?.division_id
         };
       }
     })
@@ -62,6 +63,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.organizationId = user.organizationId;
+        token.divisionId = user.divisionId;
       }
       return token;
     },
@@ -70,6 +72,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub;
         session.user.role = token.role;
         session.user.organizationId = token.organizationId;
+        session.user.divisionId = token.divisionId;
       }
       return session;
     }

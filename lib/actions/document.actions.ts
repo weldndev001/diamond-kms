@@ -2,11 +2,22 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { Role } from '@prisma/client'
+import { getSessionUser, isGroupAdmin, isSupervisor } from '@/lib/auth/server-utils'
 
 export async function getDocumentsAction(orgId: string, divisionId?: string) {
     try {
+        const user = await getSessionUser()
+        if (!user) return { success: false, error: 'User session not found' }
+
         const where: any = { organization_id: orgId }
-        if (divisionId) where.division_id = divisionId
+        
+        // RBAC filtering
+        if (user.role !== Role.SUPER_ADMIN && user.role !== Role.MAINTAINER) {
+            where.division_id = user.divisionId
+        } else if (divisionId) {
+            where.division_id = divisionId
+        }
 
         const documents = await prisma.document.findMany({
             where,
@@ -16,7 +27,6 @@ export async function getDocumentsAction(orgId: string, divisionId?: string) {
             orderBy: { created_at: 'desc' }
         })
 
-        // Fetch uploader names
         const uploaderIds = [...new Set(documents.map(d => d.uploaded_by))]
         const users = await prisma.user.findMany({ where: { id: { in: uploaderIds } } })
         const userMap = users.reduce((acc, u) => ({ ...acc, [u.id]: u.full_name }), {} as Record<string, string>)
@@ -68,6 +78,10 @@ export async function createDocumentAction(data: {
     userId: string
 }) {
     try {
+        if (!await isSupervisor(data.divisionId)) {
+            return { success: false, error: "Unauthorized: Minimal role Supervisor diperlukan untuk mengunggah dokumen" }
+        }
+
         const doc = await prisma.document.create({
             data: {
                 file_name: data.fileName,
@@ -95,8 +109,15 @@ export async function processDocumentAction(docId: string, aiData: {
     chunks: { content: string; tokenCount: number; pageNumber?: number }[]
 }) {
     try {
+        // Only admins or supervisors can trigger processing
+        const doc = await prisma.document.findUnique({ where: { id: docId } })
+        if (!doc) return { success: false, error: 'Dokumen tidak ditemukan' }
+        
+        if (!await isSupervisor(doc.division_id)) {
+            return { success: false, error: 'Unauthorized' }
+        }
+
         await prisma.$transaction(async (tx) => {
-            // Update the document metadata
             await tx.document.update({
                 where: { id: docId },
                 data: {
@@ -107,7 +128,6 @@ export async function processDocumentAction(docId: string, aiData: {
                 }
             })
 
-            // Create chunks
             for (let i = 0; i < aiData.chunks.length; i++) {
                 await tx.documentChunk.create({
                     data: {
@@ -131,6 +151,13 @@ export async function processDocumentAction(docId: string, aiData: {
 
 export async function deleteDocumentAction(id: string) {
     try {
+        const doc = await prisma.document.findUnique({ where: { id } })
+        if (!doc) return { success: false, error: 'Dokumen tidak ditemukan' }
+
+        if (!await isGroupAdmin(doc.division_id)) {
+            return { success: false, error: "Unauthorized: Hanya Group Admin atau Super Admin yang dapat menghapus dokumen" }
+        }
+
         await prisma.document.delete({ where: { id } })
         revalidatePath('/dashboard/documents')
         return { success: true }
@@ -150,31 +177,36 @@ export async function searchDocumentsAction(
     }
 ) {
     try {
-        // Try hybrid search (semantic + full-text) if user context is available
+        const user = await getSessionUser()
+        if (!user) return { success: false, error: 'Unauthorized' }
+
+        // Hybrid search fallback logic
         if (options?.userId && options?.userRole && options?.divisionId) {
             try {
                 const { hybridSearch } = await import('@/lib/search/hybrid-search')
-                const Role = await import('@prisma/client').then(m => m.Role)
+                const RoleEnum = await import('@prisma/client').then(m => m.Role)
                 const results = await hybridSearch({
                     query,
                     orgId,
                     userId: options.userId,
-                    userRole: options.userRole as typeof Role[keyof typeof Role],
+                    userRole: options.userRole as typeof RoleEnum[keyof typeof RoleEnum],
                     divisionId: options.divisionId,
                     crossDivisionEnabled: options.crossDivisionEnabled ?? false,
                 })
                 return { success: true, data: results }
             } catch (hybridErr) {
                 console.warn('Hybrid search failed, falling back to basic search:', hybridErr)
-                // Fall through to basic search
             }
         }
 
-        // Fallback: basic SQL full-text search
+        // Fallback: basic SQL search with scoping
         const results = await prisma.document.findMany({
             where: {
                 organization_id: orgId,
                 is_processed: true,
+                ...(user.role !== Role.SUPER_ADMIN && user.role !== Role.MAINTAINER ? {
+                    division_id: user.divisionId
+                } : {}),
                 OR: [
                     { ai_title: { contains: query, mode: 'insensitive' } },
                     { ai_summary: { contains: query, mode: 'insensitive' } },
