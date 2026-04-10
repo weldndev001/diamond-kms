@@ -26,10 +26,10 @@ export async function GET() {
                             feature_flags: true,
                         }
                     },
-                    user_divisions: {
+                    user_groups: {
                         where: { is_primary: true },
                         include: {
-                            division: true,
+                            group: true,
                         }
                     }
                 }
@@ -41,10 +41,10 @@ export async function GET() {
                 userProfile = await prisma.user.findUnique({
                     where: { id: userId },
                     include: {
-                        user_divisions: {
+                        user_groups: {
                             where: { is_primary: true },
                             include: {
-                                division: true,
+                                group: true,
                             }
                         }
                     }
@@ -58,14 +58,14 @@ export async function GET() {
             return NextResponse.json({ success: false, error: 'User profile not found in DB' }, { status: 401 })
         }
 
-        const primaryDivision = userProfile.user_divisions?.[0]
+        const primaryGroup = userProfile.user_groups?.[0]
 
         return NextResponse.json({
             success: true,
             data: {
                 ...userProfile,
-                role: primaryDivision?.role,
-                division: primaryDivision?.division,
+                role: primaryGroup?.role,
+                group: primaryGroup?.group,
             }
         })
     } catch (error: any) {

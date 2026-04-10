@@ -27,10 +27,10 @@ export async function POST(req: NextRequest) {
         const userId = (user as any).id
 
         // Get user profile
-        const userDiv = await prisma.userDivision.findFirst({
+        const userGrp = await prisma.userGroup.findFirst({
             where: { user_id: userId, is_primary: true },
         })
-        if (!userDiv) {
+        if (!userGrp) {
             return Response.json({ error: 'User profile not found' }, { status: 401 })
         }
 
@@ -46,11 +46,11 @@ export async function POST(req: NextRequest) {
         const orgId = userRecord.organization_id
         const orgConfig = await prisma.organization.findUnique({
             where: { id: orgId },
-            select: { cross_division_query_enabled: true },
+            select: { cross_group_query_enabled: true },
         })
 
         // Permission check
-        if (!hasPermission(userDiv.role, 'ai:use_chat')) {
+        if (!hasPermission(userGrp.role, 'ai:use_chat')) {
             return Response.json({ error: 'Forbidden' }, { status: 403 })
         }
 
@@ -67,14 +67,32 @@ export async function POST(req: NextRequest) {
         let history: ChatMessage[]
         let sessionId: string | undefined
         let knowledgeBaseId: string | undefined
+        let useVector: boolean | undefined
+        let useGraph: boolean | undefined
+        let useRerank: boolean | undefined
+
         try {
             const body = await req.json()
             question = body.question
             history = body.history ?? []
             sessionId = body.sessionId
             knowledgeBaseId = body.knowledgeBaseId
+            useVector = body.useVector
+            useGraph = body.useGraph
+            useRerank = body.useRerank
         } catch {
             return Response.json({ error: 'Invalid request body' }, { status: 400 })
+        }
+
+        // Validation: At least Vector or Rerank must be active
+        // Default to true if undefined (backward compatibility)
+        const v = useVector ?? true
+        const r = useRerank ?? false
+        if (!v && !r) {
+            return Response.json(
+                { error: 'Gagal: Setidaknya Vektor atau Reranking harus aktif.' },
+                { status: 400 }
+            )
         }
 
         if (!question?.trim()) {
@@ -153,12 +171,15 @@ export async function POST(req: NextRequest) {
                             history,
                             userId: userId,
                             orgId,
-                            userRole: userDiv.role,
-                            divisionId: userDiv.division_id,
-                            crossDivisionEnabled:
-                                orgConfig?.cross_division_query_enabled ?? false,
+                            userRole: userGrp.role,
+                            groupId: userGrp.group_id,
+                            crossGroupEnabled:
+                                orgConfig?.cross_group_query_enabled ?? false,
                             knowledgeBaseId,
                             sessionSummary, // Pass the summary here
+                            useVector,      // Pass the new flags
+                            useGraph,
+                            useRerank,
                             onChunk: (text) => send('chunk', { text }),
                             signal,
                         })

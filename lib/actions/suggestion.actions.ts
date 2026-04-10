@@ -34,7 +34,7 @@ export async function getSuggestionsAction(orgId: string, status?: SuggestionSta
         const suggestions = await prisma.revisionSuggestion.findMany({
             where,
             include: {
-                content: { select: { id: true, title: true, division: { select: { name: true } } } }
+                content: { select: { id: true, title: true, group: { select: { name: true } } } }
             },
             orderBy: { created_at: 'asc' }
         })

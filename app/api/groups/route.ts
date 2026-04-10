@@ -7,23 +7,23 @@ export async function GET(request: Request) {
 
     if (!orgId) return NextResponse.json({ success: false, error: 'Missing orgId' }, { status: 400 })
 
-    const divisions = await prisma.division.findMany({
+    const groups = await prisma.group.findMany({
         where: { organization_id: orgId },
         include: {
             _count: {
-                select: { user_divisions: true }
+                select: { user_groups: true }
             }
         }
     })
 
-    return NextResponse.json({ success: true, data: divisions })
+    return NextResponse.json({ success: true, data: groups })
 }
 
 export async function POST(request: Request) {
     const body = await request.json()
     const { name, description, orgId } = body
 
-    const division = await prisma.division.create({
+    const group = await prisma.group.create({
         data: {
             name,
             description,
@@ -31,5 +31,5 @@ export async function POST(request: Request) {
         }
     })
 
-    return NextResponse.json({ success: true, data: division })
+    return NextResponse.json({ success: true, data: group })
 }

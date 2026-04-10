@@ -36,14 +36,31 @@ export async function GET(
     try {
         const uploadDir = env.UPLOAD_DIR || './uploads'
         const safeFilePath = filePath.replace(/\.\./g, '')
+        const isDev = process.env.NODE_ENV === 'development'
         const fullPath = join(process.cwd(), uploadDir, 'documents', safeFilePath)
+        
+        // Log the path being checked for debugging
+        console.log(`[PDF Proxy] Checking path: ${fullPath}`)
 
         if (!existsSync(fullPath)) {
-            console.error('[PDF Proxy] File not found:', fullPath)
+            console.error('[PDF Proxy] File NOT found at:', fullPath)
+            
+            // Check if directory exists at least
+            const dirPath = join(fullPath, '..')
+            const dirExists = existsSync(dirPath)
+            console.log(`[PDF Proxy] Parent directory exists: ${dirExists} (${dirPath})`)
+
             return new NextResponse(
-                `<html><body style="margin:40px;font-family:sans-serif;color:#666">
-                    <h3>⚠️ Gagal memuat PDF</h3>
-                    <p>File tidak ditemukan di server.</p>
+                `<html><body style="margin:40px;font-family:sans-serif;color:#666;line-height:1.6">
+                    <h3 style="color:#e11d48">⚠️ Gagal memuat PDF</h3>
+                    <p><b>File tidak ditemukan di server.</b></p>
+                    <div style="background:#f1f5f9;padding:15px;border-radius:8px;font-size:12px;margin-top:20px;font-family:monospace">
+                        <b>Debug Info:</b><br/>
+                        Path: ${safeFilePath}<br/>
+                        ${isDev ? `Full Path: ${fullPath}<br/>` : ''}
+                        Directory: ${dirExists ? 'Exists' : 'MISSING'}
+                    </div>
+                    <p style="font-size:13px;margin-top:20px">Pastikan file sudah terunggah ke folder <code>uploads/documents/</code> di server lokal Anda.</p>
                 </body></html>`,
                 {
                     status: 404,

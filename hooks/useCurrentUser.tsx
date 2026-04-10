@@ -7,7 +7,7 @@ import { signOut } from 'next-auth/react'
 interface UserContextType {
     user: UserWithRole | null
     role: UserWithRole['role']
-    division: UserWithRole['division']
+    group: UserWithRole['group']
     organization: UserWithRole['organization']
     isLoading: boolean
     refresh: () => Promise<void>
@@ -16,7 +16,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType>({
     user: null,
     role: undefined,
-    division: undefined,
+    group: undefined,
     organization: undefined,
     isLoading: true,
     refresh: async () => { },
@@ -87,7 +87,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         <UserContext.Provider value={{
             user,
             role: user?.role,
-            division: user?.division,
+            group: user?.group,
             organization: user?.organization,
             isLoading,
             refresh,

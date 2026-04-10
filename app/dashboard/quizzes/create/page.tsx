@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { createQuizAction, getQuizByIdAction, updateQuizFullAction } from '@/lib/actions/quiz.actions'
-import { getDivisionsAction } from '@/lib/actions/user.actions'
+import { getGroupsAction } from '@/lib/actions/user.actions'
 import { getContentsAction } from '@/lib/actions/content.actions'
 import { Save, ArrowLeft, PlusCircle, Trash, Send, HelpCircle, Clock, Sparkles, Image as ImageIcon, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
@@ -19,18 +19,18 @@ export default function CreateQuizPage() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const editId = searchParams.get('edit')
-    const { user, organization, role, division } = useCurrentUser()
+    const { user, organization, role, group } = useCurrentUser()
     const userRole = role?.toUpperCase() || ''
     const isSupervisor = userRole === 'SUPERVISOR'
     const isSuperAdmin = userRole === 'SUPER_ADMIN' || userRole === 'MAINTAINER'
-    const isKadiv = userRole === 'GROUP_ADMIN' || isSuperAdmin
+    const isGroupAdmin = userRole === 'GROUP_ADMIN' || isSuperAdmin
 
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [headerImage, setHeaderImage] = useState<string | null>(null)
     const [isUploadingHeader, setIsUploadingHeader] = useState(false)
     const [timeLimit, setTimeLimit] = useState<number | ''>('')
-    const [divisionId, setDivisionId] = useState('')
+    const [groupId, setGroupId] = useState('')
     const [contentId, setContentId] = useState('')
     const [isPublished, setIsPublished] = useState(false)
     const [status, setStatus] = useState({ type: '', msg: '' })
@@ -40,7 +40,7 @@ export default function CreateQuizPage() {
     const [isCropperOpen, setIsCropperOpen] = useState(false)
     const [originalFileName, setOriginalFileName] = useState('')
 
-    const [divisions, setDivisions] = useState<any[]>([])
+    const [groups, setGroups] = useState<any[]>([])
     const [contents, setContents] = useState<any[]>([])
 
     // Manage multiple questions dynamically
@@ -50,16 +50,16 @@ export default function CreateQuizPage() {
 
     useEffect(() => {
         if (organization?.id) {
-            getDivisionsAction(organization.id).then(res => {
-                if (res.success) setDivisions(res.data || [])
+            getGroupsAction(organization.id).then(res => {
+                if (res.success) setGroups(res.data || [])
             })
             getContentsAction(organization.id).then(res => {
                 if (res.success) setContents(res.data || [])
             })
         }
 
-        if (division?.id && !isSuperAdmin && !editId) {
-            setDivisionId(division.id)
+        if (group?.id && !isSuperAdmin && !editId) {
+            setGroupId(group.id)
         }
 
         if (editId) {
@@ -69,7 +69,7 @@ export default function CreateQuizPage() {
                     setTitle(q.title)
                     setDescription(q.description || '')
                     setTimeLimit(q.time_limit_minutes || '')
-                    setDivisionId(q.division_id)
+                    setGroupId(q.group_id)
                     setContentId(q.content_id || '')
                     setIsPublished(q.is_published)
                     if (q.questions && q.questions.length > 0) {
@@ -233,7 +233,7 @@ export default function CreateQuizPage() {
             description,
             header_image: headerImage || undefined,
             time_limit_minutes: timeLimit ? Number(timeLimit) : undefined,
-            division_id: divisionId,
+            group_id: groupId,
             content_id: contentId || undefined,
             organization_id: organization.id,
             created_by: user.id,
@@ -349,16 +349,16 @@ export default function CreateQuizPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">{t('quizzes_create.division_label')}</label>
+                            <label className="block text-sm font-bold text-text-700 dark:text-slate-300 ml-1">{t('quizzes_create.group_label')}</label>
                             <select
                                 required
-                                value={divisionId}
-                                onChange={(e) => setDivisionId(e.target.value)}
+                                value={groupId}
+                                onChange={(e) => setGroupId(e.target.value)}
                                 className="w-full bg-white dark:bg-slate-900 border border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 rounded-2xl p-3.5 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all font-bold appearance-none cursor-pointer disabled:bg-surface-50 disabled:cursor-not-allowed"
                                 disabled={!isSuperAdmin}
                             >
-                                <option value="" disabled>{t('quizzes_create.select_division')}</option>
-                                {divisions.map(d => (
+                                <option value="" disabled>{t('quizzes_create.select_group')}</option>
+                                {groups.map(d => (
                                     <option key={d.id} value={d.id}>{d.name}</option>
                                 ))}
                             </select>
@@ -391,7 +391,7 @@ export default function CreateQuizPage() {
                             />
                         </div>
 
-                        {isKadiv && (
+                        {isGroupAdmin && (
                             <div className="space-y-2 flex items-center mt-6">
                                 <label className="flex items-center gap-3 cursor-pointer group">
                                     <div className="relative flex items-center">
@@ -534,7 +534,7 @@ export default function CreateQuizPage() {
                                                                     className={`w-full rounded-2xl p-3.5 text-sm outline-none transition-all duration-300 border font-bold ${
                                                                         q.correct_answer === optIndex.toString()
                                                                              ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-700 dark:text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.1)]' 
-                                                                            : 'bg-white dark:bg-slate-900 border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/5'
+                                                                             : 'bg-white dark:bg-slate-900 border-surface-200 dark:border-slate-700 text-text-900 dark:text-slate-100 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/5'
                                                                     }`}
                                                                     placeholder={`${t('quizzes_create.option_placeholder')} ${optIndex + 1}`}
                                                                 />
@@ -602,7 +602,7 @@ export default function CreateQuizPage() {
                         >
                             {t('common.cancel')}
                         </Link>
-                        {isKadiv ? (
+                        {isGroupAdmin ? (
                             <>
                                 <button
                                     type="button"

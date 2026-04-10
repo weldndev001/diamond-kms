@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getFAQsAction, createFAQAction, deleteFAQAction } from '@/lib/actions/faq.actions'
-import { getDivisionsAction } from '@/lib/actions/user.actions'
+import { getGroupsAction } from '@/lib/actions/user.actions'
 import { HelpCircle, Plus, Trash2, Search, ChevronDown, ChevronUp, Edit2, Image as ImageIcon, X } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { uploadFileAction } from '@/lib/actions/storage.actions'

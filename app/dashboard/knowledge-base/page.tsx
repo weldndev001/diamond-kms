@@ -28,7 +28,7 @@ interface DocItem {
     id: string
     title: string
     type: 'document' | 'content'
-    division?: string
+    group?: string
     author?: string
     status?: string
     created_at?: string
@@ -39,7 +39,7 @@ interface KnowledgeBase {
     name: string
     description: string
     status: string
-    divisionName: string
+    groupName: string
     documents: DocItem[]
     created_at: string
     messageCount: number
@@ -151,7 +151,7 @@ function KBListView({ knowledgeBases, onSelect, onCreate, onDelete, canCreate }:
                             
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="flex items-center gap-1 text-[10px] font-bold text-navy-600 bg-navy-50 px-2 py-0.5 rounded-md">
-                                    <ShieldCheck size={10} /> {kb.divisionName}
+                                    <ShieldCheck size={10} /> {kb.groupName}
                                 </span>
                             </div>
 
@@ -184,7 +184,7 @@ function KBListView({ knowledgeBases, onSelect, onCreate, onDelete, canCreate }:
                                 <p className="text-text-400 text-xs mt-0.5 truncate">{kb.description}</p>
                             </div>
                             <div className="flex items-center gap-4 text-[11px] text-text-400 shrink-0">
-                                <span className="text-navy-600 font-semibold">{kb.divisionName}</span>
+                                <span className="text-navy-600 font-semibold">{kb.groupName}</span>
                                 <span className="flex items-center gap-1">
                                     <FileText size={11} /> {kb.documents.length}
                                 </span>
@@ -314,7 +314,7 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
                                         <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${doc.type === 'document' ? 'bg-navy-100 text-navy-700' : 'bg-amber-100 text-amber-700'}`}>
                                             {doc.type === 'document' ? t('knowledge_base.type_document') : t('knowledge_base.type_content')}
                                         </span>
-                                        {doc.division && <span>{doc.division}</span>}
+                                        {doc.group && <span>{doc.group}</span>}
                                     </div>
                                 </div>
                             </button>
@@ -609,7 +609,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc, onD
                     </div>
                     <div>
                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">GROUP</p>
-                        <p className="text-xs font-bold text-navy-900 truncate">{kb.divisionName}</p>
+                        <p className="text-xs font-bold text-navy-900 truncate">{kb.groupName}</p>
                     </div>
                 </div>
             </div>
@@ -646,7 +646,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc, onD
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="font-bold text-navy-900 text-sm truncate">{doc.title}</p>
-                                <p className="text-[11px] text-text-400 mt-0.5">{doc.division || 'General'} · {doc.type === 'document' ? 'PDF/Doc' : 'Article'}</p>
+                                <p className="text-[11px] text-text-400 mt-0.5">{doc.group || 'General'} · {doc.type === 'document' ? 'PDF/Doc' : 'Article'}</p>
                             </div>
                             {canEdit && (
                                 <button onClick={() => onRemoveDoc(doc.id)}
@@ -707,7 +707,7 @@ function AddDocsView({ allDocs, existingIds, onBack, onAdd }: {
                             </div>
                             <div className="text-left flex-1 min-w-0">
                                 <p className="text-sm font-bold text-navy-900 truncate">{doc.title}</p>
-                                <p className="text-[11px] text-text-400">{doc.division}</p>
+                                <p className="text-[11px] text-text-400">{doc.group}</p>
                             </div>
                         </button>
                     ))}
@@ -730,7 +730,7 @@ function AddDocsView({ allDocs, existingIds, onBack, onAdd }: {
 type View = 'list' | 'create' | 'detail' | 'chat' | 'edit' | 'add-docs'
 
 export default function KnowledgeBasePage() {
-    const { organization, role, division } = useCurrentUser()
+    const { organization, role, group } = useCurrentUser()
     const { t } = useTranslation()
     const [view, setView] = useState<View>('list')
     const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([])
@@ -786,27 +786,27 @@ export default function KnowledgeBasePage() {
                 const kbs = await getKnowledgeBasesAction(organization.id)
                 
                 // Group Members/Staff can only see PUBLISHED KBs (unless Super Admin/Group Admin)
-                const isStaff = role === Role.STAFF || role === Role.MEMBER
+                const isStaff = role === Role.STAFF
                 const filteredKBs = isStaff 
                     ? kbs.filter(kb => kb.status === ContentStatus.PUBLISHED)
                     : kbs
 
                 setKnowledgeBases(filteredKBs)
 
-                const divFilter = !isSuperAdmin ? division?.id : undefined
-                const res = await getContentsAction(organization.id, divFilter)
+                const groupFilter = !isSuperAdmin ? group?.id : undefined
+                const res = await getContentsAction(organization.id, groupFilter)
                 const contents: DocItem[] = res.success
                     ? (res.data || []).map((c: any) => ({
                         id: c.id,
                         title: c.title,
                         type: 'content' as const,
-                        division: c.division?.name || '',
+                        group: c.group?.name || '',
                         author: c.author_name,
                         status: c.status,
                     }))
                     : []
 
-                const docRes = await fetch(`/api/documents?orgId=${organization.id}${divFilter ? `&divisionId=${divFilter}` : ''}`)
+                const docRes = await fetch(`/api/documents?orgId=${organization.id}${groupFilter ? `&groupId=${groupFilter}` : ''}`)
                 let documents: DocItem[] = []
                 if (docRes.ok) {
                     const docData = await docRes.json()
@@ -814,7 +814,7 @@ export default function KnowledgeBasePage() {
                         id: d.id,
                         title: d.file_name || d.title || 'Untitled',
                         type: 'document' as const,
-                        division: d.division?.name || '',
+                        group: d.group?.name || '',
                         status: d.status,
                     }))
                 }
@@ -824,7 +824,7 @@ export default function KnowledgeBasePage() {
             setLoading(false)
         }
         load()
-    }, [organization?.id, division?.id, role, isSuperAdmin])
+    }, [organization?.id, group?.id, role, isSuperAdmin])
 
     const handleSelectKB = async (kb: KnowledgeBase) => {
         setActiveKB(kb)
@@ -840,7 +840,7 @@ export default function KnowledgeBasePage() {
             kb.name,
             kb.description || '',
             kb.documents.map(d => ({ id: d.id, type: d.type })),
-            division?.id
+            group?.id
         )
         if (res.success && res.kbId) {
             const updatedKBs = await getKnowledgeBasesAction(organization.id)
@@ -926,7 +926,7 @@ export default function KnowledgeBasePage() {
                     onDelete={(kb) => { setKbToDelete(kb); setShowDeleteModal(true); }}
                     onPublish={() => handlePublish(activeKB.id)}
                     canPublish={canPublish && activeKB.status === ContentStatus.DRAFT}
-                    canEdit={isSupervisor && (isSuperAdmin || activeKB.divisionName === division?.name)}
+                    canEdit={isSupervisor && (isSuperAdmin || activeKB.groupName === group?.name)}
                 />
             )}
             {view === 'chat' && activeKB && (
@@ -937,7 +937,7 @@ export default function KnowledgeBasePage() {
                     onRemoveDoc={handleRemoveDoc}
                     chatSessions={chatSessions}
                     onNewSession={() => { }}
-                    canEdit={isSupervisor && (isSuperAdmin || activeKB.divisionName === division?.name)}
+                    canEdit={isSupervisor && (isSuperAdmin || activeKB.groupName === group?.name)}
                 />
             )}
             {view === 'add-docs' && activeKB && (

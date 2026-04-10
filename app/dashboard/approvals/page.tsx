@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { RoleGuard } from '@/components/shared/RoleGuard'
 
 export default function ApprovalsPage() {
-    const { organization, user, role, division } = useCurrentUser()
+    const { organization, user, role, group } = useCurrentUser()
     const { t } = useTranslation()
     const [queues, setQueues] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -23,9 +23,9 @@ export default function ApprovalsPage() {
 
     const loadData = async () => {
         if (!organization?.id) return
-        // GROUP_ADMIN (Kadiv) hanya lihat approval divisi sendiri
-        const divFilter = role === 'GROUP_ADMIN' ? division?.id : undefined
-        const res = await getApprovalQueueAction(organization.id, divFilter)
+        // GROUP_ADMIN (Kadiv) hanya lihat approval grup sendiri
+        const groupFilter = role === 'GROUP_ADMIN' ? group?.id : undefined
+        const res = await getApprovalQueueAction(organization.id, groupFilter)
         if (res.success) {
             setQueues(res.data || [])
         }
@@ -34,7 +34,7 @@ export default function ApprovalsPage() {
 
     useEffect(() => {
         loadData()
-    }, [organization?.id, division?.id])
+    }, [organization?.id, group?.id])
 
     const handleApprove = async (id: string) => {
         if (!user || !confirm(t('approvals.confirm_approve'))) return
@@ -105,7 +105,7 @@ export default function ApprovalsPage() {
                         <thead>
                             <tr className="bg-surface-50 text-text-500 text-sm border-b">
                                 <th className="p-4 font-medium">{t('approvals.th_article')}</th>
-                                <th className="p-4 font-medium">{t('approvals.th_division')}</th>
+                                <th className="p-4 font-medium">{t('approvals.th_group')}</th>
                                 <th className="p-4 font-medium">{t('approvals.th_submitted_by')}</th>
                                 <th className="p-4 font-medium">{t('approvals.th_date')}</th>
                                 <th className="p-4 font-medium w-48 text-right">{t('approvals.th_action')}</th>
@@ -128,7 +128,7 @@ export default function ApprovalsPage() {
                                             </Link>
                                         </td>
                                         <td className="p-4 text-sm text-text-500">
-                                            {q.content?.division?.name || t('knowledge_base.group_general')}
+                                            {q.content?.group?.name || t('knowledge_base.group_general')}
                                         </td>
                                         <td className="p-4 text-sm text-navy-900 font-medium">
                                             {q.submitter_name}

@@ -14,7 +14,7 @@ import { useTranslation } from '@/hooks/useTranslation'
 interface DashboardStats {
     totalDocuments: number
     totalContents: number
-    totalDivisions?: number
+    totalGroups?: number
     totalMembers?: number
     readingTracker: {
         confirmed: number
@@ -75,7 +75,7 @@ export default function DashboardPage() {
     const getRoleLabel = () => {
         switch (role) {
             case 'SUPER_ADMIN': return t('dashboard.title')
-            case 'GROUP_ADMIN': return t('dashboard.divisional_title')
+            case 'GROUP_ADMIN': return t('dashboard.group_title')
             case 'SUPERVISOR': return t('dashboard.supervisor_title')
             case 'STAFF': return t('dashboard.staff_title')
             default: return t('dashboard.title')
@@ -159,17 +159,17 @@ export default function DashboardPage() {
                     </div>
                 </Link>
 
-                {/* Total Divisi — SUPER_ADMIN only */}
+                {/* Total Groups — SUPER_ADMIN only */}
                 {isHRD && (
-                    <Link href="/dashboard/hrd/users/divisions" className="card p-6 hover:border-navy-300 transition-colors group">
+                    <Link href="/dashboard/hrd/users/groups" className="card p-6 hover:border-navy-300 transition-colors group">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-purple-light text-purple-600 rounded-xl flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition">
                                 <Network size={24} />
                             </div>
                             <div>
-                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('dashboard.total_divisions')}</p>
+                                <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('dashboard.total_groups')}</p>
                                 <p className="text-3xl font-black font-display text-text-900 mt-0.5">
-                                    {stats?.totalDivisions ?? 0}
+                                    {stats?.totalGroups ?? 0}
                                 </p>
                             </div>
                         </div>

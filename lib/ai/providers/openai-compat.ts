@@ -155,4 +155,48 @@ export class OpenAICompatService implements AIService {
             }
         }
     }
+
+    async rerank(query: string, documents: string[]): Promise<{ index: number; score: number }[]> {
+        return withRetry(async () => {
+            const baseUrl = this.client.baseURL.replace(/\/$/, '')
+            // Check if baseURL already contains /v1
+            const url = baseUrl.includes('/v1') ? `${baseUrl}/rerank` : `${baseUrl}/v1/rerank`
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.client.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: env.AI_RERANK_MODEL,
+                        query,
+                        documents,
+                        top_n: documents.length
+                    })
+                })
+
+                if (!response.ok) {
+                    const errorText = await response.text()
+                    throw new Error(`Rerank request failed (${response.status}): ${errorText}`)
+                }
+
+                const data = await response.json()
+                /**
+                 * Standard Rerank API response format (Cohere/Jina style):
+                 * { 
+                 *   results: [ { index: 0, relevance_score: 0.98 }, ... ]
+                 * }
+                 */
+                return data.results.map((r: any) => ({
+                    index: r.index,
+                    score: r.relevance_score
+                }))
+            } catch (err: any) {
+                console.error(`[AI-SELFHOSTED] Rerank Error:`, err.message)
+                throw err
+            }
+        })
+    }
 }

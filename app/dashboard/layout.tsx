@@ -10,7 +10,10 @@ import {
     Network, CreditCard, Activity,
     Shield, FolderTree, Settings, Menu, Sparkles, Wrench, Search, X,
     ChevronDown, ChevronRight, PanelLeftOpen, PanelLeftClose,
-    KeyRound, Building, MonitorDot, Globe
+    KeyRound, Building, MonitorDot, Globe,
+    HelpCircle, MessageSquare, Library, Database, Files, Layout,
+    BrainCircuit, Trophy, UserCog, Settings2, ReceiptText, Cpu,
+    Key, Building2
 } from 'lucide-react'
 import { NotificationBell } from '@/components/shared/NotificationBell'
 import SmartSearch from '@/components/search/SmartSearch'
@@ -31,24 +34,28 @@ const getIconForLabel = (label: string) => {
         case 'Dasbor': return <Home size={16} />
         case 'FAQ':
         case 'Tanya Jawab':
-        case 'FAQs / Help': return <Bot size={16} />
+        case 'FAQs / Help': return <HelpCircle size={16} />
         case 'Manage Knowledge Base':
-        case 'Kelola Basis Pengetahuan':
+        case 'Kelola Basis Pengetahuan': return <Database size={16} />
         case 'Cari & Tanya AI':
         case 'Search & Ask AI':
         case 'AI Assistant':
         case 'AISA':
         case 'Chat AISA':
-        case 'Asisten AI': return <Sparkles size={16} />
+        case 'Asisten AI': return <MessageSquare size={16} />
+        case 'Knowledge Management':
+        case 'Manajemen Pengetahuan': return <Library size={16} />
         case 'Knowledge Base':
         case 'Basis Pengetahuan': return <Tags size={16} />
         case 'Content':
         case 'Manage Content':
-        case 'Kelola Konten':
+        case 'Kelola Konten': return <Layout size={16} />
         case 'Dokumen':
         case 'Manage Document':
         case 'Kelola Dokumen':
-        case 'Documents': return <FileText size={16} />
+        case 'Documents': return <Files size={16} />
+        case 'Quiz Management':
+        case 'Manajemen Kuis': return <BrainCircuit size={16} />
         case 'Quizzes':
         case 'Quiz':
         case 'Kuis':
@@ -56,27 +63,29 @@ const getIconForLabel = (label: string) => {
         case 'User':
         case 'Users':
         case 'Anggota': return <Users size={16} />
+        case 'User Management':
+        case 'Manajemen Pengguna': return <UserCog size={16} />
         case 'Organization Settings':
         case 'Pengaturan Organisasi':
-        case 'Organization': return <Settings size={16} />
+        case 'Organization': return <Settings2 size={16} />
         case 'OTP':
         case 'Activation':
-        case 'Aktivasi': return <KeyRound size={16} />
+        case 'Aktivasi': return <Key size={16} />
         case 'Remote Access':
         case 'Akses Remote': return <MonitorDot size={16} />
-        case 'Divisions':
-        case 'Division':
-        case 'Divisi': return <Network size={16} />
+        case 'Groups':
+        case 'Group':
+        case 'Grup': return <Network size={16} />
         case 'Leaderboard':
-        case 'Papan Peringkat': return <Award size={16} />
+        case 'Papan Peringkat': return <Trophy size={16} />
         case 'Billing':
-        case 'Tagihan': return <CreditCard size={16} />
+        case 'Tagihan': return <ReceiptText size={16} />
         case 'AI Management':
-        case 'Manajemen AI': return <Sparkles size={16} />
+        case 'Manajemen AI': return <Cpu size={16} />
         case 'System Overview':
         case 'Ikhtisar Sistem': return <Shield size={16} />
         case 'Organizations':
-        case 'Organisasi': return <FolderTree size={16} />
+        case 'Organisasi': return <Building2 size={16} />
         case 'Logs':
         case 'Log': return <Activity size={16} />
         case 'Application':
@@ -137,10 +146,10 @@ const getNavEntries = (role: string | undefined, t: (key: string) => string): Na
                 icon: 'Users',
                 children: [
                     { label: t('common.members'), href: '/dashboard/hrd/users' },
-                    { label: t('common.divisions'), href: '/dashboard/hrd/users/divisions' },
+                    { label: t('common.groups'), href: '/dashboard/hrd/users/groups' },
                 ]
             },
-            // Divisions removed as it's now in the User accordion
+            // Groups removed as it's now in the User accordion
             {
                 label: t('common.settings'),
                 icon: 'Settings',
@@ -163,7 +172,7 @@ const getNavEntries = (role: string | undefined, t: (key: string) => string): Na
                 icon: 'Users',
                 children: [
                     { label: t('common.members'), href: '/dashboard/hrd/users' },
-                    { label: t('common.divisions'), href: '/dashboard/hrd/users/divisions' },
+                    { label: t('common.groups'), href: '/dashboard/hrd/users/groups' },
                 ]
             },
         ]
@@ -251,16 +260,13 @@ function SidebarGroup({ group, pathname, searchParams }: { group: NavGroup; path
 
 function DashboardLayoutInner({ children }: { children: ReactNode }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-    const { user, role, organization, isLoading } = useCurrentUser()
+    const { organization, user, role, group, isLoading } = useCurrentUser()
     const pathname = usePathname()
     const searchParams = useSearchParams()
     const router = useRouter()
 
-    useEffect(() => {
-        if (!isLoading && !user) {
-            router.push('/login')
-        }
-    }, [isLoading, user, router])
+      // Client-side redirect removed because it is now handled by middleware.ts
+      // This prevents "Error in input stream" caused by cancelling RSC streams during redirect.
 
     const { t } = useTranslation()
 

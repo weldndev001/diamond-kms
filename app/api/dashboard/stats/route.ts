@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
         const userId = (user as any).id
 
-        // Get user profile with division and role
+        // Get user profile with group and role
         const userRecord = await prisma.user.findUnique({
             where: { id: userId },
             select: { organization_id: true },
@@ -25,13 +25,13 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'User not found' }, { status: 401 })
         }
 
-        const userDiv = await prisma.userDivision.findFirst({
+        const userGrp = await prisma.userGroup.findFirst({
             where: { user_id: userId, is_primary: true },
         })
 
         const orgId = userRecord.organization_id
-        const role = userDiv?.role
-        const divisionId = userDiv?.division_id
+        const role = userGrp?.role
+        const groupId = userGrp?.group_id
         
         // Define Permission Roles based on user request
         const isSuperAdmin = role === 'SUPER_ADMIN' || role === 'MAINTAINER'
@@ -40,33 +40,33 @@ export async function GET(req: NextRequest) {
         const isStaff = role === 'STAFF'
 
         // Base filters for Document & Content (Group scoping)
-        const divFilter = !isSuperAdmin && divisionId
-            ? { organization_id: orgId, division_id: divisionId }
+        const grpFilter = !isSuperAdmin && groupId
+            ? { organization_id: orgId, group_id: groupId }
             : { organization_id: orgId }
 
         // Fetch counts in parallel
         const [
             totalDocuments,
             totalContents,
-            totalDivisions,
+            totalGroups,
             totalMembers,
         ] = await Promise.all([
             // 📝 DOCUMENT: Super Admin see all, others see group
-            prisma.document.count({ where: divFilter }),
+            prisma.document.count({ where: grpFilter }),
             
             // 📝 CONTENT: Super Admin see all, others see group
-            prisma.content.count({ where: { ...divFilter, status: 'PUBLISHED' } }),
+            prisma.content.count({ where: { ...grpFilter, status: 'PUBLISHED' } }),
             
             // 🏢 GROUP: Super Admin only
             isSuperAdmin
-                ? prisma.division.count({ where: { organization_id: orgId } })
+                ? prisma.group.count({ where: { organization_id: orgId } })
                 : Promise.resolve(0),
             
             // 👥 MEMBER: Super Admin (All), Group Admin (Group Only), Others No Read
             (isSuperAdmin || isGroupAdmin)
                 ? (isSuperAdmin 
                     ? prisma.user.count({ where: { organization_id: orgId, is_active: true } })
-                    : prisma.userDivision.count({ where: { division_id: divisionId || '', user: { is_active: true } } }))
+                    : prisma.userGroup.count({ where: { group_id: groupId || '', user: { is_active: true } } }))
                 : Promise.resolve(0),
         ])
 
@@ -75,8 +75,8 @@ export async function GET(req: NextRequest) {
         
         // 1. Get relevant quizzes
         const quizWhere: any = { organization_id: orgId, is_published: true }
-        if (!isSuperAdmin && divisionId) {
-            quizWhere.division_id = divisionId
+        if (!isSuperAdmin && groupId) {
+            quizWhere.group_id = groupId
         }
         
         const activeQuizzes = await prisma.quiz.findMany({
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
         // 2. Total members to track
         const targetMemberCount = isSuperAdmin
             ? await prisma.user.count({ where: { organization_id: orgId, is_active: true } })
-            : (divisionId ? await prisma.userDivision.count({ where: { division_id: divisionId, user: { is_active: true } } }) : 0)
+            : (groupId ? await prisma.userGroup.count({ where: { group_id: groupId, user: { is_active: true } } }) : 0)
 
         // 3. Count unique completions per quiz
         const completionsMap = await Promise.all(activeQuizzes.map(async (q) => {
@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             totalDocuments,
             totalContents,
-            totalDivisions: isSuperAdmin ? totalDivisions : undefined,
+            totalGroups: isSuperAdmin ? totalGroups : undefined,
             totalMembers: (isSuperAdmin || isGroupAdmin) ? totalMembers : undefined,
             readingTracker: {
                 confirmed: totalCompletions,

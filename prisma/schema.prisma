@@ -5,27 +5,27 @@ generator client {
 
 datasource db {
   provider   = "postgresql"
-// extensions = [uuid_ossp(map: "uuid-ossp", schema: "extensions"), vector]
+//   extensions = [uuid_ossp(map: "uuid-ossp"), vector]
 }
 
 model Organization {
-  id                           String         @id @default(uuid())
-  name                         String
-  slug                         String         @unique
-  industry_segment             String
-  subscription_status          String
-  subscription_expires_at      DateTime?
-  ai_provider_config           Json?
-  cross_division_query_enabled Boolean        @default(false)
-  auto_summary_chat            Boolean        @default(false)
-  app_name                     String         @default("DIAMOND KMS")
-  slogan                       String         @default("AI Powered Knowledge Management System")
-  logo_url                     String?
-  system_language              String         @default("en-US")
-  created_at                   DateTime       @default(now())
+  id                        String         @id @default(uuid())
+  name                      String
+  slug                      String         @unique
+  industry_segment          String
+  subscription_status       String
+  subscription_expires_at   DateTime?
+  ai_provider_config        Json?
+  cross_group_query_enabled Boolean        @default(false)
+  auto_summary_chat         Boolean        @default(false)
+  app_name                  String         @default("DIAMOND KMS")
+  slogan                    String         @default("AI Powered Knowledge Management System")
+  logo_url                  String?
+  system_language           String         @default("en-US")
+  created_at                DateTime       @default(now())
 
   users           User[]
-  divisions       Division[]
+  groups          Group[]
   feature_flags   FeatureFlag[]
   documents       Document[]
   contents        Content[]
@@ -64,58 +64,58 @@ model User {
   is_active       Boolean  @default(true)
   created_at      DateTime @default(now())
 
-  organization   Organization   @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  user_divisions UserDivision[]
-  quiz_results   QuizResult[]
-  read_trackers  ReadTracker[]
-  user_points    UserPoints?
-  notifications  Notification[]
-  ai_usage_logs  AIUsageLog[]
-  chat_sessions  ChatSession[]
-  accounts       Account[]
-  sessions       Session[]
+  organization  Organization  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  user_groups   UserGroup[]
+  quiz_results  QuizResult[]
+  read_trackers ReadTracker[]
+  user_points   UserPoints?
+  notifications Notification[]
+  ai_usage_logs AIUsageLog[]
+  chat_sessions ChatSession[]
+  accounts      Account[]
+  sessions      Session[]
 
   @@map("users")
 }
 
-model Division {
-  id              String         @id @default(uuid())
+model Group {
+  id              String      @id @default(uuid())
   organization_id String
   name            String
   description     String?
-  created_at      DateTime       @default(now())
+  created_at      DateTime    @default(now())
 
-  organization   Organization   @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  user_divisions UserDivision[]
-  documents      Document[]
-  contents       Content[]
-  quizzes        Quiz[]
-  faqs           FAQ[]
+  organization    Organization    @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  user_groups     UserGroup[]
+  documents       Document[]
+  contents        Content[]
+  quizzes         Quiz[]
+  faqs            FAQ[]
   knowledge_bases KnowledgeBase[]
 
-  @@map("divisions")
+  @@map("groups")
 }
 
-model UserDivision {
-  id          String   @id @default(uuid())
-  user_id     String
-  division_id String
-  role        Role
-  is_primary  Boolean  @default(false)
+model UserGroup {
+  id       String @id @default(uuid())
+  user_id  String
+  group_id String
+  role     Role
+  is_primary Boolean @default(false)
 
-  user     User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  division Division @relation(fields: [division_id], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [group_id], references: [id], onDelete: Cascade)
 
-  @@unique([user_id, division_id])
+  @@unique([user_id, group_id])
   @@index([user_id])
-  @@index([division_id])
-  @@map("user_divisions")
+  @@index([group_id])
+  @@map("user_groups")
 }
 
 model Document {
   id                String          @id @default(uuid())
   organization_id   String
-  division_id       String
+  group_id          String?
   uploaded_by       String
   file_name         String
   file_path         String
@@ -134,20 +134,20 @@ model Document {
   created_at        DateTime        @default(now())
 
   organization  Organization           @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  division      Division               @relation(fields: [division_id], references: [id], onDelete: Cascade)
+  group         Group?                @relation(fields: [group_id], references: [id], onDelete: Cascade)
   chunks        DocumentChunk[]
   entities      DocumentEntity[]
   relationships DocumentRelationship[]
 
   @@index([organization_id])
-  @@index([division_id])
+  @@index([group_id])
   @@map("documents")
 }
 
 model KnowledgeBase {
   id              String   @id @default(uuid())
   organization_id String
-  division_id     String?
+  group_id        String?
   name            String
   description     String?  @db.Text
   status          ContentStatus @default(DRAFT)
@@ -156,12 +156,12 @@ model KnowledgeBase {
   updated_at      DateTime @default(now()) @updatedAt
 
   organization  Organization          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  division      Division?             @relation(fields: [division_id], references: [id], onDelete: Cascade)
+  group         Group?                @relation(fields: [group_id], references: [id], onDelete: Cascade)
   documents     KnowledgeBaseSource[]
   chat_sessions ChatSession[]
 
   @@index([organization_id])
-  @@index([division_id])
+  @@index([group_id])
   @@map("knowledge_bases")
 }
 
@@ -183,7 +183,7 @@ model DocumentChunk {
   document_id String
   chunk_index Int
   content     String                      @db.Text
-  embedding     Unsupported("vector")?
+//   embedding     Unsupported("vector")?
   token_count Int
   page_number Int?
   page_end    Int?
@@ -234,7 +234,7 @@ model DocumentRelationship {
 model Content {
   id                String             @id @default(uuid())
   organization_id   String
-  division_id       String?
+  group_id          String?
   author_id         String
   title             String
   body              String             @db.Text
@@ -254,7 +254,7 @@ model Content {
   published_at      DateTime?
 
   organization    Organization          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  division        Division?             @relation(fields: [division_id], references: [id], onDelete: Cascade)
+  group           Group?                @relation(fields: [group_id], references: [id], onDelete: Cascade)
   versions        ContentVersion[]
   review_comments ReviewComment[]
   approval_queues ApprovalQueue[]
@@ -319,7 +319,7 @@ model RevisionSuggestion {
 model Quiz {
   id                 String         @id @default(uuid())
   organization_id    String
-  division_id        String
+  group_id           String?
   created_by         String
   title              String
   description        String?        @db.Text
@@ -331,7 +331,7 @@ model Quiz {
   created_at         DateTime       @default(now())
 
   organization Organization   @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  division     Division       @relation(fields: [division_id], references: [id], onDelete: Cascade)
+  group        Group?          @relation(fields: [group_id], references: [id], onDelete: Cascade)
   content      Content?       @relation(fields: [content_id], references: [id], onDelete: Cascade)
   questions    QuizQuestion[]
   results      QuizResult[]
@@ -404,7 +404,7 @@ model UserPoints {
 model FAQ {
   id              String   @id @default(uuid())
   organization_id String
-  division_id     String?
+  group_id        String?
   created_by      String
   question        String   @db.Text
   answer          String   @db.Text
@@ -413,7 +413,7 @@ model FAQ {
   created_at      DateTime @default(now())
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  division     Division?    @relation(fields: [division_id], references: [id], onDelete: Cascade)
+  group        Group?       @relation(fields: [group_id], references: [id], onDelete: Cascade)
 
   @@index([organization_id])
   @@map("faqs")
@@ -525,7 +525,7 @@ model ContentChunk {
   content_id  String
   chunk_index Int
   content     String                      @db.Text
-  embedding     Unsupported("vector")?
+//   embedding     Unsupported("vector")?
   token_count Int
   created_at  DateTime                    @default(now())
 
@@ -620,7 +620,7 @@ model ClientInstance {
   db_size_mb         Float     @default(0)
   db_connections     Int       @default(0)
   total_users        Int       @default(0)
-  total_divisions    Int       @default(0)
+  total_groups       Int       @default(0)
   total_documents    Int       @default(0)
   total_contents     Int       @default(0)
   docs_pending       Int       @default(0)

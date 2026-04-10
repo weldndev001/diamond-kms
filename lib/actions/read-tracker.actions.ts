@@ -104,7 +104,7 @@ export async function getMandatoryReadStatsAction(orgId: string) {
         })
 
         const mappedData = mandatoryContents.map(c => {
-            const totalUsers = c.organization.users.length // simplistic, ideally we check by division
+            const totalUsers = c.organization.users.length // simplistic, ideally we check by group
             const readCount = c.read_trackers.filter(t => t.is_confirmed).length
             return {
                 id: c.id,

@@ -6,14 +6,14 @@ import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { RoleGuard } from '@/components/shared/RoleGuard'
 import { Role } from '@prisma/client'
-import { getDivisionsAction, getUsersAction, updateUserAction, deactivateUserAction } from '@/lib/actions/user.actions'
+import { getGroupsAction, getUsersAction, updateUserAction, deactivateUserAction } from '@/lib/actions/user.actions'
 import { ArrowLeft, Save, Loader2, User as UserIcon, Building2, Shield, UserX, Mail, Briefcase, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function EditUserPage({ params }: { params: { id: string } }) {
-    const { organization, role: currentUserRole, division: currentDivision } = useCurrentUser()
+    const { organization, role: currentUserRole, group: currentGroup } = useCurrentUser()
     const router = useRouter()
 
-    const [divisions, setDivisions] = useState<any[]>([])
+    const [groups, setGroups] = useState<any[]>([])
     const [editingUser, setEditingUser] = useState<any>(null)
     const [loading, setLoading] = useState(true)
 
@@ -23,7 +23,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [role, setRole] = useState<Role>(Role.STAFF)
-    const [divisionId, setDivisionId] = useState('')
+    const [groupId, setGroupId] = useState('')
     const [submitStatus, setSubmitStatus] = useState({ type: '', msg: '' })
 
     useEffect(() => {
@@ -31,24 +31,24 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
             if (!organization?.id) return
 
             const usersRes = await getUsersAction(organization.id)
-            const divRes = await getDivisionsAction(organization.id)
+            const groupRes = await getGroupsAction(organization.id)
 
-            if (divRes.success) {
-                let divData = divRes.data || []
-                if (currentUserRole === 'GROUP_ADMIN' && currentDivision?.id) {
-                    divData = divData.filter((d: any) => d.id === currentDivision.id)
+            if (groupRes.success) {
+                let groupData = groupRes.data || []
+                if (currentUserRole === 'GROUP_ADMIN' && currentGroup?.id) {
+                    groupData = groupData.filter((d: any) => d.id === currentGroup.id)
                 }
-                setDivisions(divData)
+                setGroups(groupData)
             }
 
             if (usersRes.success) {
                 const userObj = usersRes.data?.find((u: any) => u.id === params.id)
                 if (userObj) {
-                    // Security Check: if GROUP_ADMIN, verify division
-                    if (currentUserRole === 'GROUP_ADMIN' && currentDivision?.id) {
-                        const userDiv = userObj.user_divisions?.find((ud: any) => ud.is_primary) || userObj.user_divisions?.[0]
-                        if (userDiv?.division_id !== currentDivision.id) {
-                            setSubmitStatus({ type: 'error', msg: 'Anda tidak memiliki izin untuk mengedit user dari divisi lain.' })
+                    // Security Check: if GROUP_ADMIN, verify group
+                    if (currentUserRole === 'GROUP_ADMIN' && currentGroup?.id) {
+                        const userGroup = userObj.user_groups?.find((ug: any) => ug.is_primary) || userObj.user_groups?.[0]
+                        if (userGroup?.group_id !== currentGroup.id) {
+                            setSubmitStatus({ type: 'error', msg: 'Anda tidak memiliki izin untuk mengedit user dari grup lain.' })
                             setLoading(false)
                             return
                         }
@@ -59,10 +59,10 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                     setEmail(userObj.email || '')
                     setJobTitle(userObj.job_title || '')
                     
-                    if (userObj.user_divisions?.length > 0) {
-                        const primaryDiv = userObj.user_divisions.find((ud: any) => ud.is_primary) || userObj.user_divisions[0]
-                        setRole(primaryDiv.role as Role)
-                        setDivisionId(primaryDiv.division_id)
+                    if (userObj.user_groups?.length > 0) {
+                        const primaryGroup = userObj.user_groups.find((ug: any) => ug.is_primary) || userObj.user_groups[0]
+                        setRole(primaryGroup.role as Role)
+                        setGroupId(primaryGroup.group_id)
                     }
                 } else {
                     setSubmitStatus({ type: 'error', msg: 'User not found' })
@@ -72,15 +72,15 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
         }
 
         loadData()
-    }, [organization?.id, params.id, currentUserRole, currentDivision?.id])
+    }, [organization?.id, params.id, currentUserRole, currentGroup?.id])
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault()
         setSubmitStatus({ type: 'loading', msg: 'Updating user...' })
 
-        // Validate division selection
-        if (!divisionId) {
-            setSubmitStatus({ type: 'error', msg: 'Please select a primary division.' })
+        // Validate group selection
+        if (!groupId) {
+            setSubmitStatus({ type: 'error', msg: 'Please select a primary group.' })
             return
         }
 
@@ -90,7 +90,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
             email,
             jobTitle,
             role,
-            divisionId,
+            groupId,
             password
         })
 
@@ -151,7 +151,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                     </Link>
                     <div>
                         <h1 className="text-[28px] font-bold font-display text-navy-900 leading-tight">Edit User</h1>
-                        <p className="text-sm text-text-500 mt-1">Change role or move division for member {editingUser.full_name}.</p>
+                        <p className="text-sm text-text-500 mt-1">Change role or move group for member {editingUser.full_name}.</p>
                     </div>
                 </div>
 
@@ -266,7 +266,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                     >
                                         <option value="STAFF">Staff (Default Access)</option>
                                         <option value="SUPERVISOR">Supervisor (Reviewer)</option>
-                                        <option value="GROUP_ADMIN">Group Admin (Division Head)</option>
+                                        <option value="GROUP_ADMIN">Group Admin (Group Head)</option>
                                         {currentUserRole === 'SUPER_ADMIN' && (
                                             <option value="SUPER_ADMIN">Super Admin (HR / Global)</option>
                                         )}
@@ -276,28 +276,28 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                                     </p>
                                 </div>
 
-                                {/* Division Selection */}
+                                {/* Group Selection */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-navy-900 flex items-center gap-2">
                                         <Building2 size={16} className="text-navy-500" />
-                                        Primary Division
+                                        Primary Group
                                     </label>
                                     <select
                                         required
-                                        value={divisionId}
-                                        onChange={(e) => setDivisionId(e.target.value)}
+                                        value={groupId}
+                                        onChange={(e) => setGroupId(e.target.value)}
                                         className="input-field w-full text-sm disabled:bg-surface-100"
                                         disabled={currentUserRole === 'GROUP_ADMIN'}
                                     >
-                                        <option value="">Select Division...</option>
-                                        {divisions.map((d) => (
+                                        <option value="">Select Group...</option>
+                                        {groups.map((d) => (
                                             <option key={d.id} value={d.id}>{d.name}</option>
                                         ))}
                                     </select>
                                     <p className="text-xs text-text-400">
                                         {currentUserRole === 'GROUP_ADMIN' 
-                                            ? 'Anda hanya dapat mengelola user di divisi Anda sendiri.' 
-                                            : 'Documents & SOPs from the division will be given automatically.'}
+                                            ? 'Anda hanya dapat mengelola user di grup Anda sendiri.' 
+                                            : 'Documents & SOPs from the group will be given automatically.'}
                                     </p>
                                 </div>
                             </div>

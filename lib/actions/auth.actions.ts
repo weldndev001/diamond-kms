@@ -17,7 +17,7 @@ export async function loginAction(formData: FormData) {
         const user = await prisma.user.findUnique({
             where: { email },
             include: {
-                user_divisions: {
+                user_groups: {
                     where: { is_primary: true },
                     select: { role: true }
                 }
@@ -37,8 +37,8 @@ export async function loginAction(formData: FormData) {
         // But we can return success here to signal the client to call signIn().
         
         let redirectTo = '/dashboard'
-        if (user.user_divisions.length > 0) {
-            const role = user.user_divisions[0].role
+        if (user.user_groups.length > 0) {
+            const role = user.user_groups[0].role
             switch (role) {
                 case Role.SUPER_ADMIN:
                 case Role.GROUP_ADMIN:
@@ -107,8 +107,8 @@ export async function registerOrgAction(formData: FormData) {
                 }
             })
 
-            // Create Initial Division
-            const division = await tx.division.create({
+            // Create Initial Group
+            const group = await tx.group.create({
                 data: {
                     name: 'Headquarters',
                     organization_id: org.id,
@@ -123,9 +123,9 @@ export async function registerOrgAction(formData: FormData) {
                     password_hash: passwordHash,
                     full_name: orgName + ' Admin',
                     job_title: 'Super Admin',
-                    user_divisions: {
+                    user_groups: {
                         create: {
-                            division_id: division.id,
+                            group_id: group.id,
                             role: Role.SUPER_ADMIN,
                             is_primary: true
                         }
@@ -149,14 +149,14 @@ export async function inviteUserAction({
     fullName,
     jobTitle,
     role,
-    divisionId,
+    groupId,
 }: {
     email: string
     password: string
     fullName: string
     jobTitle?: string
     role: string
-    divisionId: string
+    groupId: string
 }) {
     if (!password || password.length < 6) {
         return { success: false, error: 'Password minimal 6 karakter' }
@@ -173,13 +173,13 @@ export async function inviteUserAction({
         
         const orgId = (session.user as any).organizationId
         const requesterRole = (session.user as any).role
-        const requesterDivisionId = (session.user as any).division?.id
+        const requesterGroupId = (session.user as any).groupId
 
         // Security Check: GROUP_ADMIN scoping
         if (requesterRole === Role.GROUP_ADMIN) {
-            // Must be in the same division
-            if (divisionId !== requesterDivisionId) {
-                return { success: false, error: 'Anda hanya dapat mengundang user ke divisi Anda sendiri.' }
+            // Must be in the same group
+            if (groupId !== requesterGroupId) {
+                return { success: false, error: 'Anda hanya dapat mengundang user ke grup Anda sendiri.' }
             }
             // Cannot create SUPER_ADMIN
             if (role === Role.SUPER_ADMIN) {
@@ -194,9 +194,9 @@ export async function inviteUserAction({
                 full_name: fullName,
                 job_title: jobTitle || null,
                 organization_id: orgId,
-                user_divisions: {
+                user_groups: {
                     create: {
-                        division_id: divisionId,
+                        group_id: groupId,
                         role: role as Role,
                         is_primary: true,
                     },

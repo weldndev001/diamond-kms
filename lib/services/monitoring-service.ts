@@ -20,7 +20,7 @@ export interface HeartbeatPayload {
     data: {
         users: number
         documents: number
-        divisions: number
+        groups: number
         contents: number
         docs_pending: number
         docs_failed: number
@@ -110,10 +110,10 @@ export async function collectMetrics(): Promise<HeartbeatPayload> {
     }
 
     // 3. Data Inventory
-    const [totalUsers, totalDocs, totalDivs, totalContents] = await Promise.all([
+    const [totalUsers, totalDocs, totalGroups, totalContents] = await Promise.all([
         prisma.user.count(),
         prisma.document.count(),
-        prisma.division.count(),
+        prisma.group.count(),
         prisma.content.count()
     ])
 
@@ -303,7 +303,7 @@ export async function collectMetrics(): Promise<HeartbeatPayload> {
         data: {
             users: totalUsers,
             documents: totalDocs,
-            divisions: totalDivs,
+            groups: totalGroups,
             contents: totalContents,
             docs_pending: docsPending,
             docs_failed: docsFailed

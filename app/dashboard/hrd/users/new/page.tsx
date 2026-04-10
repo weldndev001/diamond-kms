@@ -6,16 +6,16 @@ import { Role } from '@prisma/client'
 import { RoleGuard } from '@/components/shared/RoleGuard'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { inviteUserAction } from '@/lib/actions/auth.actions'
-import { getDivisionsAction } from '@/lib/actions/user.actions'
+import { getGroupsAction } from '@/lib/actions/user.actions'
 import { ArrowLeft, UserPlus, Eye, EyeOff, Loader2, Save } from 'lucide-react'
 import Link from 'next/link'
 
 export default function CreateUserPage() {
-    const { organization, role: currentUserRole, division } = useCurrentUser()
+    const { organization, role: currentUserRole, group } = useCurrentUser()
     const router = useRouter()
 
-    const [divisions, setDivisions] = useState<any[]>([])
-    const [isLoadingDivisions, setIsLoadingDivisions] = useState(true)
+    const [groups, setGroups] = useState<any[]>([])
+    const [isLoadingGroups, setIsLoadingGroups] = useState(true)
 
     // Form State
     const [email, setEmail] = useState('')
@@ -24,32 +24,32 @@ export default function CreateUserPage() {
     const [fullName, setFullName] = useState('')
     const [jobTitle, setJobTitle] = useState('')
     const [role, setRole] = useState<Role>(Role.STAFF)
-    const [divisionId, setDivisionId] = useState('')
+    const [groupId, setGroupId] = useState('')
     const [status, setStatus] = useState({ type: '', msg: '' })
 
     useEffect(() => {
-        async function loadDivisions() {
+        async function loadGroups() {
             if (!organization?.id) return
-            const res = await getDivisionsAction(organization.id)
+            const res = await getGroupsAction(organization.id)
             if (res.success) {
                 let data = res.data || []
-                // If GROUP_ADMIN, only show their division
-                if (currentUserRole === 'GROUP_ADMIN' && division?.id) {
-                    data = data.filter((d: any) => d.id === division.id)
-                    setDivisionId(division.id)
+                // If GROUP_ADMIN, only show their group
+                if (currentUserRole === 'GROUP_ADMIN' && group?.id) {
+                    data = data.filter((d: any) => d.id === group.id)
+                    setGroupId(group.id)
                 }
-                setDivisions(data)
+                setGroups(data)
             }
-            setIsLoadingDivisions(false)
+            setIsLoadingGroups(false)
         }
-        loadDivisions()
-    }, [organization?.id, currentUserRole, division?.id])
+        loadGroups()
+    }, [organization?.id, currentUserRole, group?.id])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setStatus({ type: 'loading', msg: 'Creating user account...' })
 
-        const res = await inviteUserAction({ email, password, fullName, jobTitle, role, divisionId })
+        const res = await inviteUserAction({ email, password, fullName, jobTitle, role, groupId })
         if (res.success) {
             setStatus({ type: 'success', msg: 'User created successfully! Redirecting...' })
             setTimeout(() => {
@@ -168,7 +168,7 @@ export default function CreateUserPage() {
                                 >
                                     <option value="STAFF">Staff</option>
                                     <option value="SUPERVISOR">Supervisor</option>
-                                    <option value="GROUP_ADMIN">Group Admin (Div. Head)</option>
+                                    <option value="GROUP_ADMIN">Group Admin (Grup Head)</option>
                                     {currentUserRole === 'SUPER_ADMIN' && (
                                         <option value="SUPER_ADMIN">Super Admin</option>
                                     )}
@@ -177,25 +177,25 @@ export default function CreateUserPage() {
 
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-semibold text-navy-900 mb-1">
-                                    Placement Division <span className="text-danger">*</span>
+                                    Placement Group <span className="text-danger">*</span>
                                 </label>
                                 <select
                                     required
-                                    value={divisionId}
-                                    onChange={(e) => setDivisionId(e.target.value)}
+                                    value={groupId}
+                                    onChange={(e) => setGroupId(e.target.value)}
                                     className="input-field bg-white disabled:bg-surface-100"
-                                    disabled={isLoadingDivisions || currentUserRole === 'GROUP_ADMIN'}
+                                    disabled={isLoadingGroups || currentUserRole === 'GROUP_ADMIN'}
                                 >
                                     <option value="">
-                                        {isLoadingDivisions ? 'Loading divisions...' : 'Select Division...'}
+                                        {isLoadingGroups ? 'Loading groups...' : 'Select Group...'}
                                     </option>
-                                    {divisions.map((d) => (
+                                    {groups.map((d) => (
                                         <option key={d.id} value={d.id}>{d.name}</option>
                                     ))}
                                 </select>
                                 {currentUserRole === 'GROUP_ADMIN' && (
                                     <p className="text-[10px] text-text-400 mt-1">
-                                        Anda hanya dapat membuat user untuk divisi Anda sendiri.
+                                        Anda hanya dapat membuat user untuk grup Anda sendiri.
                                     </p>
                                 )}
                             </div>

@@ -86,10 +86,8 @@ export async function getAIServiceForOrg(orgId: string): Promise<AIService> {
         throw new Error(`[AI-FACTORY] Konfigurasi AI untuk organisasi ${orgId} tidak ditemukan. Pastikan sudah diatur di AI Management.`)
     }
 
-    const config = (org?.ai_provider_config as AIProviderConfig | null)
-    if (!config) {
-        throw new Error(`[AI-FACTORY] Provider AI belum dikonfigurasi untuk organisasi ini.`)
-    }
+    // FALLBACK: If ai_provider_config is null, use empty object to trigger ENV fallback in getAIService
+    const config = (org?.ai_provider_config as AIProviderConfig | null) || ({} as AIProviderConfig)
     
     return getAIService(config)
 }

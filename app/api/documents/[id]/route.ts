@@ -14,7 +14,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const { id } = await params
     const document = await prisma.document.findUnique({
         where: { id },
-        include: { division: true }
+        include: { group: true }
     })
 
     if (!document) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 })

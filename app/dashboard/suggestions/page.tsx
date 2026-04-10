@@ -100,7 +100,7 @@ export default function SuggestionsPage() {
 
                                             <div className="mt-4 text-xs font-medium text-text-300">
                                                 {t('suggestions.submitted_on')} {new Date(s.created_at).toLocaleString(t('common.locale'))}
-                                                {s.content?.division?.name ? ` • ${t('suggestions.division')} ${s.content.division.name}` : ''}
+                                                {s.content?.group?.name ? ` • ${t('suggestions.group')} ${s.content.group.name}` : ''}
                                             </div>
                                         </div>
 

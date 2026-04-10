@@ -27,9 +27,9 @@ export const authOptions: NextAuthOptions = {
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
           include: {
-            user_divisions: {
+            user_groups: {
               where: { is_primary: true },
-              include: { division: true }
+              include: { group: true }
             }
           }
         });
@@ -51,9 +51,9 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.full_name,
-          role: user.user_divisions[0]?.role,
+          role: user.user_groups[0]?.role,
           organizationId: user.organization_id,
-          divisionId: user.user_divisions[0]?.division_id
+          groupId: user.user_groups[0]?.group_id
         };
       }
     })
@@ -63,7 +63,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.organizationId = user.organizationId;
-        token.divisionId = user.divisionId;
+        token.groupId = user.groupId;
       }
       return token;
     },
@@ -72,7 +72,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub;
         session.user.role = token.role;
         session.user.organizationId = token.organizationId;
-        session.user.divisionId = token.divisionId;
+        session.user.groupId = token.groupId;
       }
       return session;
     }

@@ -6,9 +6,9 @@ import { ContentStatus, Role } from '@prisma/client'
 import { getSessionUser, isAdmin, isGroupAdmin, isSupervisor } from '@/lib/auth/server-utils'
 
 /**
- * Gets knowledge bases for an organization, filtered by user division and role.
+ * Gets knowledge bases for an organization, filtered by user group and role.
  */
-export async function getKnowledgeBasesAction(organization_id: string, division_id?: string) {
+export async function getKnowledgeBasesAction(organization_id: string, group_id?: string) {
     try {
         const user = await getSessionUser()
         if (!user) return []
@@ -17,26 +17,26 @@ export async function getKnowledgeBasesAction(organization_id: string, division_
 
         // RBAC filtering
         if (user.role !== Role.SUPER_ADMIN && user.role !== Role.MAINTAINER) {
-            // Group Admin, Supervisor, and Staff see their division's KBs AND global KBs
+            // Group Admin, Supervisor, and Staff see their group's KBs AND global KBs
             where.OR = [
-                { division_id: user.divisionId },
-                { division_id: null }
+                { group_id: user.groupId },
+                { group_id: null }
             ]
             
             // Staff only sees PUBLISHED KBs
             if (user.role === Role.STAFF) {
                 where.status = ContentStatus.PUBLISHED
             }
-        } else if (division_id) {
-            // Super Admin can filter by division
-            where.division_id = division_id === 'global' ? null : division_id
+        } else if (group_id) {
+            // Super Admin can filter by group
+            where.group_id = group_id === 'global' ? null : group_id
         }
 
         const kbs = await prisma.knowledgeBase.findMany({
             where,
             include: {
                 documents: true,
-                division: { select: { name: true } },
+                group: { select: { name: true } },
                 _count: {
                     select: { chat_sessions: true }
                 }
@@ -51,24 +51,24 @@ export async function getKnowledgeBasesAction(organization_id: string, division_
                 if (docSource.source_type === 'document') {
                     const d = await prisma.document.findUnique({
                         where: { id: docSource.source_id },
-                        select: { file_name: true, division: { select: { name: true } } }
+                        select: { file_name: true, group: { select: { name: true } } }
                     })
                     return {
                         id: docSource.source_id,
                         title: d?.file_name || 'Unknown Document',
                         type: 'document' as const,
-                        division: d?.division?.name
+                        groupName: d?.group?.name
                     }
                 } else {
                     const c = await prisma.content.findUnique({
                         where: { id: docSource.source_id },
-                        select: { title: true, division: { select: { name: true } } }
+                        select: { title: true, group: { select: { name: true } } }
                     })
                     return {
                         id: docSource.source_id,
                         title: c?.title || 'Unknown Content',
                         type: 'content' as const,
-                        division: c?.division?.name
+                        groupName: c?.group?.name
                     }
                 }
             }))
@@ -78,7 +78,7 @@ export async function getKnowledgeBasesAction(organization_id: string, division_
                 name: kb.name,
                 description: kb.description || '',
                 status: kb.status,
-                divisionName: kb.division?.name || 'Global',
+                groupName: kb.group?.name || 'Global',
                 documents: enrichedDocs,
                 created_at: kb.created_at.toISOString(),
                 messageCount: kb._count.chat_sessions
@@ -100,24 +100,24 @@ export async function createKnowledgeBaseAction(
     name: string,
     description: string,
     sources: { id: string, type: 'document' | 'content' }[],
-    divisionId?: string
+    groupId?: string
 ) {
     try {
         const user = await getSessionUser()
         if (!user) return { success: false, error: 'User session not found' }
 
         // Role verification
-        if (!await isSupervisor(divisionId)) {
+        if (!await isSupervisor(groupId)) {
             return { success: false, error: 'Unauthorized: Minimal role Supervisor diperlukan' }
         }
 
         // Supervisor can only create DRAFT
-        const finalStatus = (await isGroupAdmin(divisionId)) ? ContentStatus.PUBLISHED : ContentStatus.DRAFT
+        const finalStatus = (await isGroupAdmin(groupId)) ? ContentStatus.PUBLISHED : ContentStatus.DRAFT
 
         const newKb = await prisma.knowledgeBase.create({
             data: {
                 organization_id,
-                division_id: divisionId || null,
+                group_id: groupId || null,
                 name,
                 description,
                 status: finalStatus,
@@ -147,7 +147,7 @@ export async function publishKnowledgeBaseAction(kbId: string) {
         const kb = await prisma.knowledgeBase.findUnique({ where: { id: kbId } })
         if (!kb) return { success: false, error: 'Knowledge Base tidak ditemukan' }
 
-        if (!await isGroupAdmin(kb.division_id || undefined)) {
+        if (!await isGroupAdmin(kb.group_id || undefined)) {
             return { success: false, error: 'Unauthorized: Hanya Group Admin atau Super Admin yang dapat mempublikasikan' }
         }
 
@@ -177,7 +177,7 @@ export async function addSourcesToKBAction(
         const kb = await prisma.knowledgeBase.findUnique({ where: { id: kbId } })
         if (!kb) return { success: false, error: 'Knowledge Base tidak ditemukan' }
 
-        if (!await isSupervisor(kb.division_id || undefined)) {
+        if (!await isSupervisor(kb.group_id || undefined)) {
             return { success: false, error: 'Unauthorized' }
         }
 
@@ -208,7 +208,7 @@ export async function removeSourceFromKBAction(
         const kb = await prisma.knowledgeBase.findUnique({ where: { id: kbId } })
         if (!kb) return { success: false, error: 'Knowledge Base tidak ditemukan' }
 
-        if (!await isSupervisor(kb.division_id || undefined)) {
+        if (!await isSupervisor(kb.group_id || undefined)) {
             return { success: false, error: 'Unauthorized' }
         }
 
@@ -234,7 +234,7 @@ export async function deleteKnowledgeBaseAction(kbId: string) {
         const kb = await prisma.knowledgeBase.findUnique({ where: { id: kbId } })
         if (!kb) return { success: false, error: 'Knowledge Base tidak ditemukan' }
 
-        if (!await isGroupAdmin(kb.division_id || undefined)) {
+        if (!await isGroupAdmin(kb.group_id || undefined)) {
             return { success: false, error: 'Unauthorized: Hanya Group Admin atau Super Admin yang dapat menghapus' }
         }
 

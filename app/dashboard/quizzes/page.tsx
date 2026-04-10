@@ -7,11 +7,11 @@ import { getQuizzesAction, deleteQuizAction, updateQuizAction, updateQuizNoteAct
 import { Plus, Search, HelpCircle, Trash2, Clock, CheckCircle, FileQuestion, MessageSquare, AlertCircle, Trophy, Medal, Award, TrendingUp, Sparkles, Pencil, X, LayoutGrid, List, FileText, ChevronDown, Check } from 'lucide-react'
 import Link from 'next/link'
 import { getLeaderboardAction } from '@/lib/actions/leaderboard.actions'
-import { getDivisionsAction } from '@/lib/actions/user.actions'
+import { getGroupsAction } from '@/lib/actions/user.actions'
 import { useSearchParams } from 'next/navigation'
 
 export default function QuizzesPage() {
-    const { organization, role, division, user } = useCurrentUser()
+    const { organization, role, group, user } = useCurrentUser()
     const { t } = useTranslation()
     const searchParams = useSearchParams()
     const view = searchParams.get('view')
@@ -21,9 +21,9 @@ export default function QuizzesPage() {
     const [error, setError] = useState<string | null>(null)
     const [searchTerm, setSearchTerm] = useState('')
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-    const [selectedDivision, setSelectedDivision] = useState<string>('ALL')
+    const [selectedGroup, setSelectedGroup] = useState<string>('ALL')
     const [selectedQuiz, setSelectedQuiz] = useState<string>('ALL')
-    const [divisions, setDivisions] = useState<any[]>([])
+    const [groups, setGroups] = useState<any[]>([])
     const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
     const [noteValue, setNoteValue] = useState("");
     const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
@@ -40,14 +40,14 @@ export default function QuizzesPage() {
         if (!organization?.id) return
         setLoading(true)
         setError(null)
-        const divFilter = isStaff ? division?.id : (selectedDivision !== 'ALL' ? selectedDivision : undefined)
+        const grpFilter = isStaff ? group?.id : (selectedGroup !== 'ALL' ? selectedGroup : undefined)
         const quizFilter = selectedQuiz !== 'ALL' ? selectedQuiz : undefined
 
         try {
-            const [quizRes, leaderRes, divRes] = await Promise.all([
-                getQuizzesAction(organization.id, isStaff ? division?.id : undefined),
-                getLeaderboardAction(organization.id, 50, divFilter, quizFilter),
-                getDivisionsAction(organization.id)
+            const [quizRes, leaderRes, grpRes] = await Promise.all([
+                getQuizzesAction(organization.id, isStaff ? group?.id : undefined),
+                getLeaderboardAction(organization.id, 50, grpFilter, quizFilter),
+                getGroupsAction(organization.id)
             ])
 
             if (quizRes.success) {
@@ -57,7 +57,7 @@ export default function QuizzesPage() {
             }
 
             if (leaderRes.success) setLeaders(leaderRes.data || [])
-            if (divRes.success) setDivisions(divRes.data || [])
+            if (grpRes.success) setGroups(grpRes.data || [])
         } catch (err: any) {
             setError(err.message || t('common.error'))
         } finally {
@@ -66,14 +66,14 @@ export default function QuizzesPage() {
     }
 
     useEffect(() => {
-        if (division?.id && !isSuperAdmin) {
-            setSelectedDivision(division.id)
+        if (group?.id && !isSuperAdmin) {
+            setSelectedGroup(group.id)
         }
-    }, [division, isSuperAdmin])
+    }, [group, isSuperAdmin])
 
     useEffect(() => {
         loadData()
-    }, [organization?.id, selectedDivision, selectedQuiz])
+    }, [organization?.id, selectedGroup, selectedQuiz])
 
     const handleDelete = async (id: string) => {
         if (!confirm(t('common.confirm_delete'))) return
@@ -88,9 +88,9 @@ export default function QuizzesPage() {
     const filteredQuizzes = quizzes.filter(q => {
         const matchesSearch = q.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             q.description?.toLowerCase().includes(searchTerm.toLowerCase())
-        // Perbaikan: gunakan division_id (snake_case)
-        const matchesDivision = selectedDivision === 'ALL' || q.division_id === selectedDivision
-        return matchesSearch && matchesDivision
+        // Perbaikan: gunakan group_id (snake_case)
+        const matchesGroup = selectedGroup === 'ALL' || q.group_id === selectedGroup
+        return matchesSearch && matchesGroup
     })
 
     const handleApprove = async (id: string) => {
@@ -195,13 +195,13 @@ export default function QuizzesPage() {
                                     <span className="text-[10px] font-black uppercase tracking-wider text-text-400 dark:text-slate-500 hidden lg:inline-block">{t('quizzes.filter_label')}</span>
                                 </div>
                                 <select
-                                    value={selectedDivision}
-                                    onChange={(e) => setSelectedDivision(e.target.value)}
+                                    value={selectedGroup}
+                                    onChange={(e) => setSelectedGroup(e.target.value)}
                                     className="w-full bg-white dark:bg-slate-800 border border-surface-200 dark:border-slate-700 py-3.5 pl-12 lg:pl-20 pr-10 rounded-2xl outline-none focus:ring-4 focus:ring-navy-600/5 focus:border-navy-500 dark:focus:border-indigo-500/30 hover:border-navy-400 dark:hover:border-indigo-500/50 transition-all shadow-sm text-sm font-bold text-text-700 dark:text-slate-300 cursor-pointer appearance-none"
                                     disabled={!isSuperAdmin}
                                 >
-                                    <option value="ALL">{t('quizzes.all_active_div')}</option>
-                                    {divisions.map(d => (
+                                    <option value="ALL">{t('quizzes.all_active_groups')}</option>
+                                    {groups.map(d => (
                                         <option key={d.id} value={d.id}>{d.name}</option>
                                     ))}
                                 </select>
@@ -581,13 +581,13 @@ export default function QuizzesPage() {
                             <div className="flex flex-col gap-3 w-full lg:w-72">
                                 <label className="text-[10px] font-black uppercase tracking-[0.3em] text-text-400 ml-2">{t('quizzes.radar_filter_div')}</label>
                                 <select
-                                    value={selectedDivision}
-                                    onChange={(e) => setSelectedDivision(e.target.value)}
+                                    value={selectedGroup}
+                                    onChange={(e) => setSelectedGroup(e.target.value)}
                                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 py-3.5 px-5 text-xs font-bold text-text-700 dark:text-slate-300 rounded-2xl outline-none focus:ring-4 focus:ring-navy-600/5 focus:border-navy-500 transition-all cursor-pointer appearance-none"
                                     disabled={!isSuperAdmin}
                                 >
-                                    <option value="ALL">{t('quizzes.all_active_div')}</option>
-                                    {divisions.map(d => (
+                                    <option value="ALL">{t('quizzes.all_active_groups')}</option>
+                                    {groups.map(d => (
                                         <option key={d.id} value={d.id}>{d.name}</option>
                                     ))}
                                 </select>
@@ -609,7 +609,7 @@ export default function QuizzesPage() {
 
                             <div className="lg:ml-auto w-full lg:w-auto">
                                 <button
-                                    onClick={() => { setSelectedDivision('ALL'); setSelectedQuiz('ALL') }}
+                                    onClick={() => { setSelectedGroup('ALL'); setSelectedQuiz('ALL') }}
                                     className="w-full lg:w-auto px-8 py-3.5 text-[11px] font-black uppercase tracking-widest text-navy-600 dark:text-indigo-400 hover:bg-navy-50 dark:hover:bg-indigo-950/30 rounded-2xl transition-all border border-transparent hover:border-navy-200 dark:hover:border-indigo-500/30 flex items-center justify-center gap-2 group"
                                 >
                                     <X size={16} className="group-hover:rotate-90 transition-transform duration-500" /> {t('quizzes.reset_param')}
@@ -679,7 +679,7 @@ export default function QuizzesPage() {
                                                     </td>
                                                     <td className="p-8">
                                                         <span className="text-[11px] font-black text-text-500 dark:text-slate-400 bg-surface-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-surface-200 dark:border-slate-700/50">
-                                                            {leader.division}
+                                                            {leader.group}
                                                         </span>
                                                     </td>
                                                     <td className="p-8">

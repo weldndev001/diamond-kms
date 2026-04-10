@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'messages array required' }, { status: 400 })
         }
 
-        const profile = await prisma.userDivision.findFirst({
+        const profile = await prisma.userGroup.findFirst({
             where: { user_id: userId, is_primary: true },
             include: { user: true },
         })

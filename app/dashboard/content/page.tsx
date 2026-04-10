@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getContentsAction, deleteContentAction } from '@/lib/actions/content.actions'
-import { getDivisionsAction } from '@/lib/actions/user.actions'
+import { getGroupsAction } from '@/lib/actions/user.actions'
 import { Search, Filter, FileText, Plus, LayoutGrid, List, ChevronRight, Clock, CheckCircle, AlertCircle, Loader2, Eye, Trash2, ClipboardCheck, BookOpen, Edit, ShieldCheck } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import Link from 'next/link'
@@ -23,14 +23,14 @@ const getStatusBadge = (status: string, t: any) => {
 }
 
 export default function ContentListPage() {
-    const { organization, role, division } = useCurrentUser()
+    const { organization, role, group } = useCurrentUser()
     const { t } = useTranslation()
     const [contents, setContents] = useState<any[]>([])
-    const [divisions, setDivisions] = useState<any[]>([])
+    const [groups, setGroups] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-    const [filterDiv, setFilterDiv] = useState('')
+    const [filterGroup, setFilterGroup] = useState('')
     const [initialized, setInitialized] = useState(false)
 
     const isSuperAdmin = role === Role.SUPER_ADMIN || role === Role.MAINTAINER
@@ -40,25 +40,25 @@ export default function ContentListPage() {
     const canApprove = isGroupAdmin
 
     useEffect(() => {
-        if (!initialized && division?.id) {
-            if (!isSuperAdmin) setFilterDiv(division.id)
+        if (!initialized && group?.id) {
+            if (!isSuperAdmin) setFilterGroup(group.id)
             setInitialized(true)
         }
-    }, [division?.id, isSuperAdmin, initialized])
+    }, [group?.id, isSuperAdmin, initialized])
 
     const loadData = async () => {
         if (!organization?.id) return
-        const effectiveDiv = !isSuperAdmin ? (division?.id || filterDiv) : (filterDiv || undefined)
-        const [contentsRes, divsRes] = await Promise.all([
-            getContentsAction(organization.id, effectiveDiv),
-            getDivisionsAction(organization.id)
+        const effectiveGroup = !isSuperAdmin ? (group?.id || filterGroup) : (filterGroup || undefined)
+        const [contentsRes, groupsRes] = await Promise.all([
+            getContentsAction(organization.id, effectiveGroup),
+            getGroupsAction(organization.id)
         ])
         if (contentsRes.success) setContents(contentsRes.data || [])
-        if (divsRes.success) setDivisions(divsRes.data || [])
+        if (groupsRes.success) setGroups(groupsRes.data || [])
         setLoading(false)
     }
 
-    useEffect(() => { loadData() }, [organization?.id, filterDiv, division?.id])
+    useEffect(() => { loadData() }, [organization?.id, filterGroup, group?.id])
 
     const handleDelete = async (id: string) => {
         if (!confirm(t('content.delete_confirm'))) return
@@ -114,12 +114,12 @@ export default function ContentListPage() {
                             <div className="flex items-center gap-3">
                                 <Filter size={16} className="text-text-300" />
                                 <select
-                                    value={filterDiv}
-                                    onChange={(e) => setFilterDiv(e.target.value)}
+                                    value={filterGroup}
+                                    onChange={(e) => setFilterGroup(e.target.value)}
                                     className="border border-surface-200 rounded-md p-2 text-sm bg-white focus:ring-navy-600 focus:border-navy-600"
                                 >
-                                    <option value="">{t('documents.all_divisions')}</option>
-                                    {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                    <option value="">{t('documents.all_groups')}</option>
+                                    {groups.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                 </select>
                             </div>
                         )}
@@ -189,7 +189,7 @@ export default function ContentListPage() {
                                         <div className="flex flex-wrap gap-2 mt-auto">
                                             <span className="chip bg-surface-100 text-text-700">
                                                 <ShieldCheck size={10} className="mr-1" />
-                                                {content.division?.name || t('content.global')}
+                                                {content.group?.name || t('content.global')}
                                             </span>
                                             <span className="chip bg-surface-100 text-text-700">
                                                 <Clock size={11} className="mr-1" /> {new Date(content.created_at).toLocaleDateString(t('common.language') === 'Indonesian' ? 'id-ID' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -201,7 +201,7 @@ export default function ContentListPage() {
                                         <Link href={`/dashboard/content/${content.id}`} className="btn btn-primary flex-1 justify-center text-sm">
                                             <Eye size={14} className="mr-2" /> {t('common.view')}
                                         </Link>
-                                        {(isSuperAdmin || (isGroupAdmin && content.division_id === division?.id)) && (
+                                        {(isSuperAdmin || (isGroupAdmin && content.group_id === group?.id)) && (
                                             <>
                                                 <Link href={`/dashboard/content/${content.id}/edit`}
                                                     className="w-10 h-10 flex items-center justify-center text-text-300 hover:text-navy-600 bg-white border border-surface-200 hover:bg-navy-50 rounded-lg transition shrink-0"
@@ -236,11 +236,11 @@ export default function ContentListPage() {
                                     </div>
                                     <div className="flex items-center gap-3 text-[11px] text-text-400 shrink-0">
                                         <span className="whitespace-nowrap flex items-center gap-1">
-                                            <ShieldCheck size={10} /> {content.division?.name || t('content.global')}
+                                            <ShieldCheck size={10} /> {content.group?.name || t('content.global')}
                                         </span>
                                         {getStatusBadge(content.status, t)}
                                         <div className="flex items-center gap-2">
-                                            {(isSuperAdmin || (isGroupAdmin && content.division_id === division?.id)) && (
+                                            {(isSuperAdmin || (isGroupAdmin && content.group_id === group?.id)) && (
                                                 <Link href={`/dashboard/content/${content.id}/edit`}
                                                     className="p-1.5 text-text-300 hover:text-navy-600 hover:bg-navy-50 rounded-md transition"
                                                     onClick={(e) => e.stopPropagation()}

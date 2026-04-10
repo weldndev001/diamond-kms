@@ -39,16 +39,16 @@ export async function POST(req: NextRequest) {
             results.users = backup.users.length
         }
 
-        // 3. Divisions
-        if (backup.divisions?.length) {
-            for (const row of backup.divisions) {
-                await prisma.division.upsert({
+        // 3. Groups
+        if (backup.groups?.length) {
+            for (const row of backup.groups) {
+                await prisma.group.upsert({
                     where: { id: row.id },
                     update: { ...row, created_at: new Date(row.created_at) },
                     create: { ...row, created_at: new Date(row.created_at) },
                 })
             }
-            results.divisions = backup.divisions.length
+            results.groups = backup.groups.length
         }
 
         // 4. Feature Flags
@@ -63,16 +63,16 @@ export async function POST(req: NextRequest) {
             results.featureFlags = backup.featureFlags.length
         }
 
-        // 5. UserDivisions
-        if (backup.userDivisions?.length) {
-            for (const row of backup.userDivisions) {
-                await prisma.userDivision.upsert({
+        // 5. UserGroups
+        if (backup.userGroups?.length) {
+            for (const row of backup.userGroups) {
+                await prisma.userGroup.upsert({
                     where: { id: row.id },
                     update: row,
                     create: row,
                 })
             }
-            results.userDivisions = backup.userDivisions.length
+            results.userGroups = backup.userGroups.length
         }
 
         // 6. Documents

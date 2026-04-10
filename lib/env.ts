@@ -26,6 +26,7 @@ export const env = {
     AI_TOP_K: getEnv('AI_TOP_K') || '40',
     AI_REPETITION_PENALTY: getEnv('AI_REPETITION_PENALTY') || '1.15',
     AI_MAX_TOKENS: getEnv('AI_MAX_TOKENS') || '2048',
+    AI_RERANK_MODEL: getEnv('AI_RERANK_MODEL') || 'Qwen3-Reranker-0.6B-Q8_0-ggmlorg.gguf',
 
     // Security
     CRON_SECRET: getEnv('CRON_SECRET'),

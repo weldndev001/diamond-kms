@@ -13,7 +13,7 @@ type Permission =
     | 'quiz:create'
     | 'quiz:take'
     | 'user:manage'
-    | 'division:manage'
+    | 'group:manage'
     | 'org:manage'
     | 'ai:use_chat'
     | 'ai:configure'
@@ -29,14 +29,14 @@ const ROLE_PERMISSIONS: Record<Role, Set<Permission>> = {
         'content:create', 'content:approve', 'content:publish', 'content:delete',
         'document:upload', 'document:delete',
         'quiz:create', 'quiz:take',
-        'user:manage', 'division:manage', 'org:manage',
+        'user:manage', 'group:manage', 'org:manage',
         'ai:use_chat', 'ai:configure', 'ai:view_usage',
     ]),
     GROUP_ADMIN: new Set([
         'content:create', 'content:approve', 'content:publish', 'content:delete',
         'document:upload', 'document:delete',
         'quiz:create', 'quiz:take',
-        'user:manage', 'division:manage',
+        'user:manage', 'group:manage',
         'ai:use_chat', 'ai:view_usage',
     ]),
     SUPERVISOR: new Set([

@@ -38,7 +38,7 @@ interface ClientInstance {
     db_size_mb: number
     db_connections: number
     total_users: number
-    total_divisions: number
+    total_groups: number
     total_documents: number
     total_contents: number
     docs_pending: number
@@ -297,7 +297,7 @@ function EngagementTab({ data, sf, sd, onSort }: { data: ClientInstance[]; sf: s
                             <td className="py-3.5 px-4">
                                 <Link href={`/admin/monitoring/${i.id}`} className="group">
                                     <div className="font-semibold text-white/90 text-[13px] group-hover:text-amber-400 transition-colors">{i.client_name}</div>
-                                    <div className="text-[11px] text-white/30">{i.total_divisions} divisi</div>
+                                    <div className="text-[11px] text-white/30">{i.total_groups} group</div>
                                 </Link>
                             </td>
                             <td className="py-3.5 px-3"><span className="text-lg font-bold text-white/90">{i.total_users}</span></td>

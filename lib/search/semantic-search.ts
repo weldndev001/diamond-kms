@@ -12,8 +12,8 @@ export interface SemanticSearchResult {
   similarity: number
   pageStart: number | null
   pageEnd: number | null
-  divisionId: string
-  divisionName: string
+  groupId: string
+  groupName: string
   docType: 'document' | 'content'
 }
 
@@ -22,16 +22,16 @@ export async function semanticSearch(params: {
   orgId: string
   userId: string
   userRole: Role
-  divisionId: string
-  crossDivisionEnabled: boolean
+  groupId: string
+  crossGroupEnabled: boolean
   limit?: number
 }): Promise<SemanticSearchResult[]> {
   const {
     query,
     orgId,
     userRole,
-    divisionId,
-    crossDivisionEnabled,
+    groupId,
+    crossGroupEnabled,
     limit = 8,
   } = params
 
@@ -41,12 +41,12 @@ export async function semanticSearch(params: {
   const vectorStr = JSON.stringify(queryEmbedding)
 
   // 2. Determine scope based on role (RAG scope rules)
-  const scopedToDiv = !crossDivisionEnabled && (userRole === 'STAFF' || userRole === 'SUPERVISOR')
+  const scopedToGroup = !crossGroupEnabled && (userRole === 'STAFF' || userRole === 'SUPERVISOR')
 
   // 3. Cosine similarity search with pgvector
   // 1 - cosine_distance = similarity (1 = identical, 0 = unrelated)
-  const divisionFilter = scopedToDiv
-    ? `AND d.division_id = '${divisionId}'`
+  const groupFilter = scopedToGroup
+    ? `AND d.group_id = '${groupId}'`
     : ''
 
   const results = await prisma.$queryRawUnsafe<SemanticSearchResult[]>(
@@ -59,16 +59,16 @@ export async function semanticSearch(params: {
             1 - (dc.embedding <=> $1::vector) AS "similarity",
             dc.page_number     AS "pageStart",
             COALESCE(dc.page_end, dc.page_number) AS "pageEnd",
-            d.division_id      AS "divisionId",
-            div.name           AS "divisionName",
+            d.group_id      AS "groupId",
+            g.name           AS "groupName",
             'document'         AS "docType"
           FROM document_chunks dc
           JOIN documents d   ON dc.document_id = d.id
-          JOIN divisions div ON d.division_id  = div.id
+          JOIN groups g      ON d.group_id  = g.id
           WHERE d.organization_id = $2
             AND d.is_processed   = true
             AND dc.embedding     IS NOT NULL
-            ${divisionFilter ? `AND d.division_id = '${divisionId}'` : ''}
+            ${groupFilter ? `AND d.group_id = '${groupId}'` : ''}
             AND 1 - (dc.embedding <=> $1::vector) > 0.2
             
           UNION ALL
@@ -81,15 +81,15 @@ export async function semanticSearch(params: {
             1 - (cc.embedding <=> $1::vector) AS "similarity",
             NULL               AS "pageStart",
             NULL               AS "pageEnd",
-            c.division_id      AS "divisionId",
-            div.name           AS "divisionName",
+            c.group_id      AS "groupId",
+            g.name           AS "groupName",
             'content'          AS "docType"
           FROM content_chunks cc
           JOIN contents c    ON cc.content_id = c.id
-          JOIN divisions div ON c.division_id  = div.id
+          JOIN groups g      ON c.group_id  = g.id
           WHERE c.organization_id = $2
             AND cc.embedding     IS NOT NULL
-            ${divisionFilter ? `AND c.division_id = '${divisionId}'` : ''}
+            ${groupFilter ? `AND c.group_id = '${groupId}'` : ''}
             AND 1 - (cc.embedding <=> $1::vector) > 0.2
         )
         SELECT * FROM combined_chunks
@@ -102,3 +102,4 @@ export async function semanticSearch(params: {
 
   return results
 }
+

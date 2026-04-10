@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import {
     MessageSquare, Send, X, FileText, Loader2, Bot, User,
-    Sparkles, Plus, Trash2, ChevronLeft, FileBarChart, History
+    Sparkles, Plus, Trash2, ChevronLeft, FileBarChart, History,
+    Settings, Database, Network, ArrowUpDown
 } from 'lucide-react'
 
 interface Message {
@@ -16,7 +17,7 @@ interface Citation {
     documentTitle: string
     pageStart: number
     pageEnd: number
-    divisionName: string
+    groupName: string
     chunkContent: string
 }
 
@@ -48,6 +49,10 @@ export default function ChatPanel() {
     const [input, setInput] = useState('')
     const [summaryLoading, setSummaryLoading] = useState(false)
     const [sessionSummary, setSessionSummary] = useState<string | null>(null)
+    const [showSettings, setShowSettings] = useState(false)
+    const [useVector, setUseVector] = useState(true)
+    const [useGraph, setUseGraph] = useState(true)
+    const [useRerank, setUseRerank] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     const scrollToBottom = useCallback(() => {
@@ -177,6 +182,9 @@ export default function ChatPanel() {
                     question,
                     history: messages.slice(-6),
                     sessionId: currentSessionId,
+                    useVector,
+                    useGraph,
+                    useRerank,
                 }),
             })
 
@@ -387,6 +395,13 @@ export default function ChatPanel() {
                         </div>
                     </div>
                     <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setShowSettings(!showSettings)}
+                            className={`transition p-1.5 rounded hover:bg-white/10 ${showSettings ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white'}`}
+                            title="Konfigurasi RAG"
+                        >
+                            <Settings size={16} />
+                        </button>
                         {activeSessionId && messages.length >= 2 && (
                             <button
                                 onClick={generateSummary}
@@ -409,6 +424,61 @@ export default function ChatPanel() {
                         </button>
                     </div>
                 </div>
+
+                {/* Settings Overlay Menu */}
+                {showSettings && (
+                    <div className="absolute top-[52px] right-2 z-[60] w-64 bg-white rounded-xl shadow-xl border border-surface-200 p-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <h4 className="text-[11px] font-bold text-navy-900 uppercase tracking-wider mb-2 px-1">Konfigurasi Retrieval</h4>
+                        <div className="space-y-1">
+                            {/* Vector Toggle */}
+                            <label className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition ${!useVector && !useRerank ? 'opacity-50' : 'hover:bg-surface-50'}`}>
+                                <div className="flex items-center gap-2">
+                                    <Database size={14} className="text-navy-500" />
+                                    <span className="text-xs font-medium text-navy-900">Vector Search</span>
+                                </div>
+                                <input 
+                                    type="checkbox" 
+                                    checked={useVector} 
+                                    disabled={useVector && !useRerank} // Prevent disabling both
+                                    onChange={(e) => setUseVector(e.target.checked)}
+                                    className="w-3.5 h-3.5 rounded border-surface-300 text-navy-600 focus:ring-navy-500"
+                                />
+                            </label>
+
+                            {/* Graph Toggle */}
+                            <label className="flex items-center justify-between p-2 rounded-lg cursor-pointer transition hover:bg-surface-50">
+                                <div className="flex items-center gap-2">
+                                    <Network size={14} className="text-navy-500" />
+                                    <span className="text-xs font-medium text-navy-900">Graph Context</span>
+                                </div>
+                                <input 
+                                    type="checkbox" 
+                                    checked={useGraph} 
+                                    onChange={(e) => setUseGraph(e.target.checked)}
+                                    className="w-3.5 h-3.5 rounded border-surface-300 text-navy-600 focus:ring-navy-500"
+                                />
+                            </label>
+
+                            {/* Rerank Toggle */}
+                            <label className="flex items-center justify-between p-2 rounded-lg cursor-pointer transition hover:bg-surface-50">
+                                <div className="flex items-center gap-2">
+                                    <ArrowUpDown size={14} className="text-navy-500" />
+                                    <span className="text-xs font-medium text-navy-900">Reranking</span>
+                                </div>
+                                <input 
+                                    type="checkbox" 
+                                    checked={useRerank} 
+                                    disabled={useRerank && !useVector} // Prevent disabling both
+                                    onChange={(e) => setUseRerank(e.target.checked)}
+                                    className="w-3.5 h-3.5 rounded border-surface-300 text-navy-600 focus:ring-navy-500"
+                                />
+                            </label>
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-surface-100 text-[9px] text-text-400 px-1 italic">
+                            * Wajib aktif salah satu: Vector atau Reranking.
+                        </div>
+                    </div>
+                )}
 
                 {/* Summary Banner */}
                 {sessionSummary && (
@@ -506,7 +576,7 @@ export default function ChatPanel() {
                                             <p className="text-text-400 mt-0.5">
                                                 Hal. {c.pageStart}
                                                 {c.pageEnd !== c.pageStart ? `-${c.pageEnd}` : ''} •{' '}
-                                                {c.divisionName}
+                                                {c.groupName}
                                             </p>
                                         </div>
                                     </div>

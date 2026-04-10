@@ -7,7 +7,7 @@ import { Search, Bot, FileText, Hash, ArrowRight, Sparkles, Tag, HardDrive } fro
 import Link from 'next/link'
 
 export default function SmartSearch() {
-    const { organization, role, user, division } = useCurrentUser()
+    const { organization, role, user, group } = useCurrentUser()
     const [query, setQuery] = useState('')
     const [results, setResults] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
@@ -24,8 +24,8 @@ export default function SmartSearch() {
             {
                 userId: user?.id || '',
                 userRole: role || 'STAFF',
-                divisionId: division?.id || '',
-                crossDivisionEnabled: organization.cross_division_query_enabled || false
+                groupId: group?.id || '',
+                crossGroupEnabled: organization.cross_group_query_enabled || false
             }
         )
         if (res.success) setResults(res.data || [])
@@ -136,7 +136,7 @@ export default function SmartSearch() {
                                                     {doc.type}
                                                 </span>
                                                 <span>&bull;</span>
-                                                <span>{doc.divisionName || doc.division?.name || 'General'}</span>
+                                                <span>{doc.groupName || doc.group?.name || 'General'}</span>
                                             </div>
                                         </div>
                                     </div>

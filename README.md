@@ -22,7 +22,7 @@ Welcome to **DIAMOND KMS**, a modern and comprehensive Knowledge Management Syst
 - **Enterprise Workflows**
   - Advanced multi-role access control (Super Admin, Group Admin, Supervisor, Maintainer).
   - Document and Content Approvals pipeline.
-  - User and Division management tailored for Human Resources (HRD).
+  - User and Group management tailored for Human Resources (HRD).
   - Suggestion box for employees to contribute ideas.
 
 ---

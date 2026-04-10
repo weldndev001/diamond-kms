@@ -12,8 +12,8 @@ export async function GET(request: Request) {
     const users = await prisma.user.findMany({
         where: { organization_id: orgId },
         include: {
-            user_divisions: {
-                include: { division: true }
+            user_groups: {
+                include: { group: true }
             }
         }
     })

@@ -52,7 +52,7 @@ const INITIAL_PACKAGES: FeaturePackage[] = [
     {
         id: 'pkg-hr',
         name: 'HR Management',
-        description: 'User management, divisions, and approval workflows',
+        description: 'User management, groups, and approval workflows',
         icon: <Users size={20} />,
         unlocked: false,
     },

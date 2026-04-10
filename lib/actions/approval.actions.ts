@@ -4,23 +4,23 @@ import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { ContentStatus, ApprovalStatus } from '@prisma/client'
 
-export async function getApprovalQueueAction(orgId: string, divisionId?: string) {
+export async function getApprovalQueueAction(orgId: string, groupId?: string) {
     try {
         const where: any = {
             status: ApprovalStatus.PENDING,
             content: { organization_id: orgId }
         }
 
-        // If a division is specified, only show approvals for that division
-        if (divisionId) {
-            where.content.division_id = divisionId
+        // If a group is specified, only show approvals for that group
+        if (groupId) {
+            where.content.group_id = groupId
         }
 
         const queues = await prisma.approvalQueue.findMany({
             where,
             include: {
                 content: {
-                    include: { division: true }
+                    include: { group: true }
                 }
             },
             orderBy: { submitted_at: 'asc' }

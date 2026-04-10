@@ -34,7 +34,7 @@ export default function WebsiteSettingsPage() {
     const [appName, setAppName] = useState('DIAMOND KMS')
     const [slogan, setSlogan] = useState('AI Powered Knowledge Management System')
     const [logo, setLogo] = useState('Logo-Movio-250x70.png')
-    const [crossDiv, setCrossDiv] = useState(false)
+    const [crossGroup, setCrossGroup] = useState(false)
     const [systemLanguage, setSystemLanguage] = useState('en-US')
     
     const [isSaving, setIsSaving] = useState(false)
@@ -100,7 +100,7 @@ export default function WebsiteSettingsPage() {
             setSlogan(orgRes.data.slogan || 'AI Powered Knowledge Management System')
             setLogo(orgRes.data.logo_url || 'Logo-Movio-250x70.png')
             setSystemLanguage(orgRes.data.system_language || 'en-US')
-            setCrossDiv(orgRes.data.cross_division_query_enabled ?? false)
+            setCrossGroup(orgRes.data.cross_group_query_enabled ?? false)
         }
         setLoading(false)
     }
@@ -139,7 +139,7 @@ export default function WebsiteSettingsPage() {
                 slogan: slogan,
                 logoUrl: logo,
                 systemLanguage: systemLanguage,
-                crossDivisionQueryEnabled: crossDiv
+                crossGroupQueryEnabled: crossGroup
             })
 
             if (res.success) {
@@ -297,19 +297,19 @@ export default function WebsiteSettingsPage() {
                                     <div className="flex items-start gap-4 bg-surface-50 border border-surface-200 rounded-2xl p-5 transition-all hover:bg-surface-100/50 hover:shadow-sm group">
                                         <button
                                             type="button"
-                                            onClick={() => setCrossDiv(!crossDiv)}
+                                            onClick={() => setCrossGroup(!crossGroup)}
                                             className="mt-0.5 shrink-0 transition-transform active:scale-95"
                                         >
-                                            {crossDiv ? (
+                                            {crossGroup ? (
                                                 <ToggleRight size={32} className="text-navy-600" />
                                             ) : (
                                                 <ToggleLeft size={32} className="text-text-300" />
                                             )}
                                         </button>
                                         <div>
-                                            <p className="font-bold text-navy-900 group-hover:text-navy-600 transition-colors">{t('settings.cross_div_query')}</p>
+                                            <p className="font-bold text-navy-900 group-hover:text-navy-600 transition-colors">{t('settings.cross_group_query')}</p>
                                             <p className="text-sm text-text-500 mt-1 leading-relaxed">
-                                                {t('settings.cross_div_desc')}
+                                                {t('settings.cross_group_desc')}
                                             </p>
                                         </div>
                                     </div>
@@ -443,9 +443,9 @@ export default function WebsiteSettingsPage() {
                                     <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-500 group-hover:text-white transition-all">
                                         <FolderTree size={24} />
                                     </div>
-                                    <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('settings.divisions')}</p>
+                                    <p className="text-text-500 text-xs font-semibold uppercase tracking-wider">{t('settings.groups')}</p>
                                     <p className="text-3xl font-black font-display text-navy-900 mt-1">
-                                        {org?._count?.divisions || 0}
+                                        {org?._count?.groups || 0}
                                     </p>
                                 </div>
 

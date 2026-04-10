@@ -371,7 +371,7 @@ export default function DocumentDetailPage() {
                     <div className="flex items-center gap-3 mt-0.5 text-xs text-text-500 flex-wrap">
                         <span className="flex items-center gap-1"><FileText size={12} /> {doc.file_name}</span>
                         <span>•</span>
-                        <span className="flex items-center gap-1"><FolderOpen size={12} /> {doc.division?.name || 'General'}</span>
+                        <span className="flex items-center gap-1"><FolderOpen size={12} /> {doc.group?.name || 'General'}</span>
                         <span>•</span>
                         <span className="flex items-center gap-1"><User size={12} /> {doc.uploader_name}</span>
                     </div>

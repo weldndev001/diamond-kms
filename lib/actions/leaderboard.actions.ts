@@ -4,25 +4,25 @@ import prisma from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
-export async function getLeaderboardAction(orgId: string, limit: number = 50, divisionId?: string, quizId?: string) {
+export async function getLeaderboardAction(orgId: string, limit: number = 50, groupId?: string, quizId?: string) {
     try {
         const session = await getServerSession(authOptions)
         if (!session?.user) return { success: false, error: 'Unauthorized' }
         const userRole = (session.user as any).role
-        const userDivisionId = (session.user as any).divisionId
+        const userGroupId = (session.user as any).groupId
 
-        let scoperDivisionId = divisionId
+        let scoperGroupId = groupId
         if (userRole !== 'SUPER_ADMIN' && userRole !== 'MAINTAINER') {
-            scoperDivisionId = userDivisionId
+            scoperGroupId = userGroupId
         }
         // CASE 1: GLOBAL LEADERBOARD (Total Points from UserPoints table)
         if (!quizId || quizId === 'ALL') {
             const where: any = { organization_id: orgId }
             
-            if (scoperDivisionId && scoperDivisionId !== 'ALL') {
+            if (scoperGroupId && scoperGroupId !== 'ALL') {
                 where.user = {
-                    user_divisions: {
-                        some: { division_id: scoperDivisionId }
+                    user_groups: {
+                        some: { group_id: scoperGroupId }
                     }
                 }
             }
@@ -34,8 +34,8 @@ export async function getLeaderboardAction(orgId: string, limit: number = 50, di
                 include: {
                     user: {
                         include: {
-                            user_divisions: {
-                                include: { division: true }
+                            user_groups: {
+                                include: { group: true }
                             }
                         }
                     }
@@ -43,12 +43,12 @@ export async function getLeaderboardAction(orgId: string, limit: number = 50, di
             })
 
             const mappedData = data.map(record => {
-                const primaryDiv = record.user.user_divisions.find(ud => ud.is_primary) || record.user.user_divisions[0]
+                const primaryGroup = record.user.user_groups.find(ug => ug.is_primary) || record.user.user_groups[0]
                 return {
                     id: record.id,
                     userId: record.user_id,
                     name: record.user.full_name,
-                    division: primaryDiv?.division.name || 'N/A',
+                    group: primaryGroup?.group.name || 'N/A',
                     jobTitle: record.user.job_title,
                     quizTitle: 'Seluruh Aktivitas (Kuis & Baca)',
                     points: record.total_points,
@@ -65,10 +65,10 @@ export async function getLeaderboardAction(orgId: string, limit: number = 50, di
             quiz_id: quizId
         }
 
-        if (scoperDivisionId && scoperDivisionId !== 'ALL') {
+        if (scoperGroupId && scoperGroupId !== 'ALL') {
             where.user = {
-                user_divisions: {
-                    some: { division_id: scoperDivisionId }
+                user_groups: {
+                    some: { group_id: scoperGroupId }
                 }
             }
         }
@@ -80,8 +80,8 @@ export async function getLeaderboardAction(orgId: string, limit: number = 50, di
             include: {
                 user: {
                     include: {
-                        user_divisions: {
-                            include: { division: true }
+                        user_groups: {
+                            include: { group: true }
                         }
                     }
                 },
@@ -92,12 +92,12 @@ export async function getLeaderboardAction(orgId: string, limit: number = 50, di
         });
 
         const mappedData = data.map(record => {
-            const primaryDiv = record.user.user_divisions.find(ud => ud.is_primary) || record.user.user_divisions[0];
+            const primaryGroup = record.user.user_groups.find(ug => ug.is_primary) || record.user.user_groups[0];
             return {
                 id: record.id,
                 userId: record.user_id,
                 name: record.user.full_name,
-                division: primaryDiv?.division.name || 'N/A',
+                group: primaryGroup?.group.name || 'N/A',
                 jobTitle: record.user.job_title,
                 quizTitle: record.quiz.title,
                 points: record.score,

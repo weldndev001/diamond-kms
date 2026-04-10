@@ -7,7 +7,7 @@ import { getLeaderboardAction } from '@/lib/actions/leaderboard.actions'
 import { Trophy, Medal, Award, TrendingUp, Sparkles } from 'lucide-react'
 
 export default function LeaderboardPage() {
-    const { organization, user, role, division } = useCurrentUser()
+    const { organization, user, role, group } = useCurrentUser()
     const { t } = useTranslation()
     const [leaders, setLeaders] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -15,17 +15,17 @@ export default function LeaderboardPage() {
 
     useEffect(() => {
         if (organization?.id) {
-            // Scoping: Only Super Admin/Maintainer see org-wide, others see division
+            // Scoping: Only Super Admin/Maintainer see org-wide, others see group
             const isSuperAdmin = role === 'SUPER_ADMIN' || role === 'MAINTAINER'
-            const divFilter = isSuperAdmin ? undefined : division?.id
-            getLeaderboardAction(organization.id, 20, divFilter).then(res => {
+            const groupFilter = isSuperAdmin ? undefined : group?.id
+            getLeaderboardAction(organization.id, 20, groupFilter).then(res => {
                 if (res.success) {
                     setLeaders(res.data || [])
                 }
                 setLoading(false)
             })
         }
-    }, [organization?.id, division?.id])
+    }, [organization?.id, group?.id])
 
     // Render podium icons for top 3
     const renderRankIcon = (index: number) => {
@@ -149,7 +149,7 @@ export default function LeaderboardPage() {
                                                     )}
                                                 </div>
                                                 <p className="text-xs text-text-500 truncate mt-0.5">
-                                                    {leader.division} • {leader.jobTitle || t('leaderboard.employee')}
+                                                    {leader.group} • {leader.jobTitle || t('leaderboard.employee')}
                                                 </p>
                                             </div>
 

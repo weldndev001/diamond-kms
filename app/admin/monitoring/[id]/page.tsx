@@ -18,7 +18,7 @@ interface Instance {
     status: string; minutes_since_heartbeat: number
     cpu_percent: number; memory_percent: number; disk_percent: number; uptime_seconds: number
     db_status: string; db_size_mb: number; db_connections: number
-    total_users: number; total_divisions: number; total_documents: number; total_contents: number
+    total_users: number; total_groups: number; total_documents: number; total_contents: number
     docs_pending: number; docs_failed: number
     ai_provider: string; ai_model: string; ai_status: string
     ai_avg_response_ms: number; ai_success_rate: number; ai_tokens_30d: number
@@ -504,7 +504,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                     <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 flex flex-col items-center justify-center gap-1">
                         <div className="text-2xl font-bold text-white/90">{i.total_users}</div>
                         <div className="text-[10px] text-white/30 font-semibold">TOTAL USERS</div>
-                        <div className="text-[11px] text-white/40">{i.total_divisions} divisi</div>
+                        <div className="text-[11px] text-white/40">{i.total_groups} group</div>
                     </div>
                 </div>
 

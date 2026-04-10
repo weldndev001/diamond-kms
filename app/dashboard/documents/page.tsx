@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getDocumentsAction, deleteDocumentAction } from '@/lib/actions/document.actions'
-import { getDivisionsAction } from '@/lib/actions/user.actions'
+import { getGroupsAction } from '@/lib/actions/user.actions'
 import { Search, Filter, FileText, MoreVertical, Eye, Trash2, CheckCircle, Clock, Loader2, AlertCircle, FileSpreadsheet, FileArchive, Upload, LayoutGrid, List, ChevronRight } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import Link from 'next/link'
@@ -29,44 +29,44 @@ const getStatusChip = (doc: any, t: any) => {
 }
 
 export default function DocumentsPage() {
-    const { organization, user, role, division } = useCurrentUser()
+    const { organization, user, role, group } = useCurrentUser()
     const { t } = useTranslation()
     const [documents, setDocuments] = useState<any[]>([])
-    const [divisions, setDivisions] = useState<any[]>([])
+    const [groups, setGroups] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
     const isAdmin = role === 'SUPER_ADMIN' || role === 'MAINTAINER'
-    const [filterDiv, setFilterDiv] = useState('')
+    const [filterGroup, setFilterGroup] = useState('')
     const [initialized, setInitialized] = useState(false)
 
     useEffect(() => {
-        if (!initialized && division?.id) {
-            if (!isAdmin) setFilterDiv(division.id)
+        if (!initialized && group?.id) {
+            if (!isAdmin) setFilterGroup(group.id)
             setInitialized(true)
         }
-    }, [division?.id, isAdmin, initialized])
+    }, [group?.id, isAdmin, initialized])
 
     const loadData = async () => {
         if (!organization?.id) return
-        const effectiveDiv = !isAdmin ? (division?.id || filterDiv) : (filterDiv || undefined)
-        const [docsRes, divsRes] = await Promise.all([
-            getDocumentsAction(organization.id, effectiveDiv),
-            getDivisionsAction(organization.id)
+        const effectiveGroup = !isAdmin ? (group?.id || filterGroup) : (filterGroup || undefined)
+        const [docsRes, groupsRes] = await Promise.all([
+            getDocumentsAction(organization.id, effectiveGroup),
+            getGroupsAction(organization.id)
         ])
         if (docsRes.success) setDocuments(docsRes.data || [])
-        if (divsRes.success) setDivisions(divsRes.data || [])
+        if (groupsRes.success) setGroups(groupsRes.data || [])
         setLoading(false)
     }
 
-    useEffect(() => { loadData() }, [organization?.id, filterDiv, division?.id])
+    useEffect(() => { loadData() }, [organization?.id, filterGroup, group?.id])
 
     useEffect(() => {
         const hasProcessing = documents.some(d => !d.is_processed && d.processing_status !== 'failed')
         if (!hasProcessing) return
         const poll = setInterval(() => { loadData() }, 5000)
         return () => clearInterval(poll)
-    }, [documents, organization?.id, filterDiv])
+    }, [documents, organization?.id, filterGroup])
 
     const handleDelete = async (id: string) => {
         if (!confirm(t('documents.delete_confirm_permanently'))) return
@@ -112,12 +112,12 @@ export default function DocumentsPage() {
                             <div className="flex items-center gap-3">
                                 <Filter size={16} className="text-text-300" />
                                 <select
-                                    value={filterDiv}
-                                    onChange={(e) => setFilterDiv(e.target.value)}
+                                    value={filterGroup}
+                                    onChange={(e) => setFilterGroup(e.target.value)}
                                     className="border border-surface-200 rounded-md p-2 text-sm bg-white focus:ring-navy-600 focus:border-navy-600"
                                 >
-                                    <option value="">{t('documents.all_divisions')}</option>
-                                    {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                    <option value="">{t('documents.all_groups')}</option>
+                                    {groups.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                 </select>
                             </div>
                         )}
@@ -187,7 +187,7 @@ export default function DocumentsPage() {
 
                                         <div className="flex flex-wrap gap-2 mt-auto">
                                             <span className="chip bg-surface-100 text-text-700">{formatFileSize(doc.file_size)}</span>
-                                            <span className="chip bg-surface-100 text-text-700">{doc.division?.name || t('knowledge_base.group_general')}</span>
+                                            <span className="chip bg-surface-100 text-text-700">{doc.group?.name || t('knowledge_base.group_general')}</span>
                                             {getStatusChip(doc, t)}
                                         </div>
                                     </div>
@@ -224,7 +224,7 @@ export default function DocumentsPage() {
                                     </div>
                                     <div className="flex items-center gap-4 text-[11px] text-text-400 shrink-0">
                                         <span className="whitespace-nowrap">{formatFileSize(doc.file_size)}</span>
-                                        <span className="whitespace-nowrap">{doc.division?.name || t('knowledge_base.group_general')}</span>
+                                        <span className="whitespace-nowrap">{doc.group?.name || t('knowledge_base.group_general')}</span>
                                         {getStatusChip(doc, t)}
                                     </div>
                                     <div className="hidden md:flex flex-wrap gap-1 shrink-0 max-w-[200px]">

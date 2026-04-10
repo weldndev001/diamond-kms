@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
                 db_connections: data.database?.active_connections ?? 0,
                 // Data
                 total_users: data.data?.users ?? 0,
-                total_divisions: data.data?.divisions ?? 0,
+                total_groups: data.data?.groups ?? 0,
                 total_documents: data.data?.documents ?? 0,
                 total_contents: data.data?.contents ?? 0,
                 docs_pending: data.data?.docs_pending ?? 0,
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
                 db_connections: data.database?.active_connections ?? 0,
                 // Data
                 total_users: data.data?.users ?? 0,
-                total_divisions: data.data?.divisions ?? 0,
+                total_groups: data.data?.groups ?? 0,
                 total_documents: data.data?.documents ?? 0,
                 total_contents: data.data?.contents ?? 0,
                 docs_pending: data.data?.docs_pending ?? 0,

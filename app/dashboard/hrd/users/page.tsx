@@ -9,7 +9,7 @@ import { useTranslation } from '@/hooks/useTranslation'
 import Link from 'next/link'
 
 export default function UsersPage() {
-    const { organization, role, division } = useCurrentUser()
+    const { organization, role, group } = useCurrentUser()
     const { t } = useTranslation()
     const [users, setUsers] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -20,14 +20,14 @@ export default function UsersPage() {
         if (organization?.id) {
             loadData()
         }
-    }, [organization?.id, role, division?.id])
+    }, [organization?.id, role, group?.id])
 
     const loadData = async () => {
         if (!organization?.id) return
         
         const filters: any = {}
-        if (role === 'GROUP_ADMIN' && division?.id) {
-            filters.divisionId = division.id
+        if (role === 'GROUP_ADMIN' && group?.id) {
+            filters.groupId = group.id
         }
 
         const res = await getUsersAction(organization.id, filters)
@@ -79,7 +79,7 @@ export default function UsersPage() {
                             <tr className="bg-surface-50 text-text-500 text-sm">
                                 <th className="p-4 font-medium border-b">{t('users.label_name')}</th>
                                 <th className="p-4 font-medium border-b">{t('users.label_role')}</th>
-                                <th className="p-4 font-medium border-b">{t('users.label_division')}</th>
+                                <th className="p-4 font-medium border-b">{t('users.label_group')}</th>
                                 <th className="p-4 font-medium border-b">{t('users.label_status')}</th>
                                 <th className="p-4 font-medium border-b w-32">{t('common.actions')}</th>
                             </tr>
@@ -98,11 +98,11 @@ export default function UsersPage() {
                                         </td>
                                         <td className="p-4">
                                             <span className="inline-block px-2 py-1 bg-surface-100 text-text-700 text-xs rounded border">
-                                                {u.user_divisions?.find((ud: any) => ud.is_primary)?.role || u.user_divisions?.[0]?.role || 'NO_ROLE'}
+                                                {u.user_groups?.find((ug: any) => ug.is_primary)?.role || u.user_groups?.[0]?.role || 'NO_ROLE'}
                                             </span>
                                         </td>
                                         <td className="p-4 text-sm text-text-500">
-                                            {u.user_divisions?.find((ud: any) => ud.is_primary)?.division?.name || u.user_divisions?.[0]?.division?.name || '-'}
+                                            {u.user_groups?.find((ug: any) => ug.is_primary)?.group?.name || u.user_groups?.[0]?.group?.name || '-'}
                                         </td>
                                         <td className="p-4">
                                             <div className="flex items-center gap-2">

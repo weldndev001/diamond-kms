@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { getDivisionsAction } from '@/lib/actions/user.actions'
+import { getGroupsAction } from '@/lib/actions/user.actions'
 import { createDocumentAction } from '@/lib/actions/document.actions'
 import {
     ArrowLeft, Upload, FileText, CheckCircle, Loader2, Bot,
@@ -37,8 +37,8 @@ export default function UploadDocumentPage() {
     const router = useRouter()
     const { t } = useTranslation()
     const { organization, user } = useCurrentUser()
-    const [divisions, setDivisions] = useState<any[]>([])
-    const [divisionId, setDivisionId] = useState('')
+    const [groups, setGroups] = useState<any[]>([])
+    const [groupId, setGroupId] = useState('')
 
     // Upload states
     const [file, setFile] = useState<File | null>(null)
@@ -54,10 +54,10 @@ export default function UploadDocumentPage() {
 
     useEffect(() => {
         if (organization?.id) {
-            getDivisionsAction(organization.id).then(res => {
+            getGroupsAction(organization.id).then(res => {
                 if (res.success && res.data) {
-                    setDivisions(res.data)
-                    if (res.data.length > 0) setDivisionId(res.data[0].id)
+                    setGroups(res.data)
+                    if (res.data.length > 0) setGroupId(res.data[0].id)
                 }
             })
             loadRecentUploads()
@@ -155,7 +155,7 @@ export default function UploadDocumentPage() {
     }
 
     const handleUpload = async () => {
-        if (!file || !user?.id || !organization?.id || !divisionId) return
+        if (!file || !user?.id || !organization?.id || !groupId) return
         setError('')
         setUploading(true)
 
@@ -182,7 +182,7 @@ export default function UploadDocumentPage() {
                 filePath: storagePath,
                 fileSize: file.size,
                 mimeType: file.type,
-                divisionId,
+                groupId,
                 orgId: organization.id,
                 userId: user.id
             })
@@ -299,13 +299,13 @@ export default function UploadDocumentPage() {
 
                 <div className="space-y-6">
                     <div className="space-y-2">
-                        <label className="block text-sm font-medium text-text-700">{t('documents.target_division')} <span className="text-danger">*</span></label>
+                        <label className="block text-sm font-medium text-text-700">{t('documents.target_group')} <span className="text-danger">*</span></label>
                         <select
-                            value={divisionId}
-                            onChange={(e) => setDivisionId(e.target.value)}
+                            value={groupId}
+                            onChange={(e) => setGroupId(e.target.value)}
                             className="w-full border-surface-200 border rounded-md p-2.5 focus:ring-navy-600 focus:border-navy-600 bg-white"
                         >
-                            {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                            {groups.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                         </select>
                     </div>
 
@@ -357,7 +357,7 @@ export default function UploadDocumentPage() {
                         </p>
                         <button
                             onClick={handleUpload}
-                            disabled={!file || !divisionId || uploading}
+                            disabled={!file || !groupId || uploading}
                             className="btn btn-primary shadow-md disabled:opacity-50 flex items-center gap-2"
                         >
                             {uploading ? (

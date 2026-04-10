@@ -809,8 +809,8 @@ export default function ContentDetailPage() {
                                 {content.author_name}
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="font-semibold text-text-700">Division:</span>
-                                {content.division?.name || 'Globally Visible'}
+                                <span className="font-semibold text-text-700">Group:</span>
+                                {content.group?.name || 'Globally Visible'}
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="font-semibold text-text-700">Created:</span>
@@ -899,7 +899,7 @@ export default function ContentDetailPage() {
                                     Found an error or outdated procedure in this article?
                                 </h3>
                                 <p className="text-sm text-text-500 mb-4">
-                                    Submit a revision suggestion. Your feedback will be reviewed by the division managers to keep our Knowledge Base up-to-date.
+                                    Submit a revision suggestion. Your feedback will be reviewed by the group managers to keep our Knowledge Base up-to-date.
                                 </p>
 
                                 {suggestionMsg && (

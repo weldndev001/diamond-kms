@@ -29,6 +29,15 @@ export interface AIService {
         input: { text?: string; fileBuffer?: Buffer; fileName: string }
     ): Promise<DocumentMetadata>
 
+    /** 
+     * Rerank documents based on relevance to query 
+     * Returns array of { index, score } ordered by relevance
+     */
+    rerank(
+        query: string,
+        documents: string[]
+    ): Promise<{ index: number; score: number }[]>
+
     /** Provider name for logging */
     readonly providerName: string
     readonly embeddingModel: string

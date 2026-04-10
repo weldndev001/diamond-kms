@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     const userId = (sessionAuth.user as any).id
 
-    const profile = await prisma.userDivision.findFirst({
+    const profile = await prisma.userGroup.findFirst({
         where: { user_id: userId, is_primary: true },
         include: { user: true },
     })

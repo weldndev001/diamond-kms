@@ -24,23 +24,23 @@ async function main() {
     },
   })
 
-  // 2. Create Divisions
-  const engDivision = await prisma.division.upsert({
-    where: { id: 'seed-division-engineering' },
+  // 2. Create Groups
+  const engGroup = await prisma.group.upsert({
+    where: { id: 'seed-group-engineering' },
     update: {},
     create: {
-      id: 'seed-division-engineering',
+      id: 'seed-group-engineering',
       organization_id: org.id,
       name: 'Engineering',
       description: 'Software engineering team',
     },
   })
 
-  const prodDivision = await prisma.division.upsert({
-    where: { id: 'seed-division-product' },
+  const prodGroup = await prisma.group.upsert({
+    where: { id: 'seed-group-product' },
     update: {},
     create: {
-      id: 'seed-division-product',
+      id: 'seed-group-product',
       organization_id: org.id,
       name: 'Product',
       description: 'Product management team',
@@ -71,9 +71,9 @@ async function main() {
           full_name: u.name,
           job_title: u.title,
           is_active: true,
-          user_divisions: {
+          user_groups: {
             create: {
-              division_id: engDivision.id,
+              group_id: engGroup.id,
               role: u.role,
               is_primary: true
             }
@@ -98,7 +98,7 @@ async function main() {
       const created = await prisma.content.create({
         data: {
           organization_id: org.id,
-          division_id: engDivision.id,
+          group_id: engGroup.id,
           author_id: s.authorId,
           title: s.title,
           body: s.body,
@@ -168,7 +168,7 @@ async function main() {
         db_size_mb: 1240.5,
         db_connections: 84,
         total_users: 1250,
-        total_divisions: 12,
+        total_groups: 12,
         total_documents: 4500,
         total_contents: 850,
         ai_provider: 'managed',

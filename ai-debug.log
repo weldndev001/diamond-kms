@@ -116,3 +116,7 @@
 [2026-03-31T07:47:53.100Z] [AI-FACTORY] BASE CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
 [2026-03-31T07:52:47.140Z] [AI-FACTORY] BASE CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
 [2026-03-31T07:53:07.917Z] [AI-FACTORY] BASE CONFIG: {"endpoint":"https://llm01.weldn.ai/olla/openai/v1","provider":"self_hosted","chatModel":"Qwen3.5-4B-Q4_K_M-unsloth.gguf","embedModel":"Qwen3-Embedding-0.6B-Q8_0.gguf","autoSummaryChat":false}
+[2026-04-10T06:53:17.573Z] [AI-FACTORY] BASE CONFIG: {}
+[2026-04-10T06:55:10.257Z] [AI-FACTORY] BASE CONFIG: {}
+[2026-04-10T06:55:17.853Z] [AI-FACTORY] BASE CONFIG: {}
+[2026-04-10T06:55:17.855Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf

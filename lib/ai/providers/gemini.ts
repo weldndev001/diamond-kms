@@ -133,4 +133,13 @@ export class GeminiService implements AIService {
             }
         }
     }
+
+    async rerank(query: string, documents: string[]): Promise<{ index: number; score: number }[]> {
+        // Gemini does not have a native Rerank API yet.
+        // Return original order with a mock score.
+        return documents.map((_, index) => ({
+            index,
+            score: 0.99 - (index * 0.01)
+        }))
+    }
 }

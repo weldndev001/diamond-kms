@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { getContentByIdAction, updateContentAction } from '@/lib/actions/content.actions'
-import { getDivisionsAction } from '@/lib/actions/user.actions'
+import { getGroupsAction } from '@/lib/actions/user.actions'
 import { Save, ArrowLeft, BookOpen, Search, X, CheckCircle2, Upload, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { TiptapEditor } from '@/components/editor/TiptapEditor'
@@ -15,22 +15,22 @@ export default function EditContentPage() {
     const router = useRouter()
     const params = useParams()
     const id = params.id as string
-    const { user, organization, role, division } = useCurrentUser()
+    const { user, organization, role, group } = useCurrentUser()
 
     const [loading, setLoading] = useState(true)
     const [title, setTitle] = useState('')
     const [category, setCategory] = useState('Standard Operating Procedure')
-    const [divisionId, setDivisionId] = useState('')
+    const [groupId, setGroupId] = useState('')
     const [bodyHtml, setBodyHtml] = useState('')
     const [isMandatory, setIsMandatory] = useState(false)
     const [headerImage, setHeaderImage] = useState('')
     const [uploadingHeader, setUploadingHeader] = useState(false)
     const [status, setStatus] = useState({ type: '', msg: '' })
-    const [divisions, setDivisions] = useState<any[]>([])
+    const [groups, setGroups] = useState<any[]>([])
     const [contentData, setContentData] = useState<any>(null)
 
     const isSuperAdmin = role === Role.SUPER_ADMIN || role === Role.MAINTAINER
-    const isDivisionLocked = role === Role.SUPERVISOR || role === Role.GROUP_ADMIN
+    const isGroupLocked = role === Role.SUPERVISOR || role === Role.GROUP_ADMIN
 
     useEffect(() => {
         async function loadContent() {
@@ -41,7 +41,7 @@ export default function EditContentPage() {
                 setContentData(c)
                 
                 // RBAC Check for Edit
-                const canEdit = isSuperAdmin || (role === Role.GROUP_ADMIN && c.division_id === division?.id) || (role === Role.SUPERVISOR && c.division_id === division?.id)
+                const canEdit = isSuperAdmin || (role === Role.GROUP_ADMIN && c.group_id === group?.id) || (role === Role.SUPERVISOR && c.group_id === group?.id)
                 
                 if (!canEdit) {
                     router.push('/dashboard/content')
@@ -50,7 +50,7 @@ export default function EditContentPage() {
 
                 setTitle(c.title)
                 setCategory(c.category)
-                setDivisionId(c.division_id || 'global')
+                setGroupId(c.group_id || 'global')
                 setBodyHtml(c.body)
                 setIsMandatory(c.is_mandatory_read)
                 setHeaderImage(c.image_url || '')
@@ -60,22 +60,22 @@ export default function EditContentPage() {
             setLoading(false)
         }
         loadContent()
-    }, [id, isSuperAdmin, role, division?.id, router])
+    }, [id, isSuperAdmin, role, group?.id, router])
 
     useEffect(() => {
         if (organization?.id) {
-            getDivisionsAction(organization.id).then(res => {
-                if (res.success && res.data) setDivisions(res.data)
+            getGroupsAction(organization.id).then(res => {
+                if (res.success && res.data) setGroups(res.data)
             })
             // Fetch documents for sources
-            const divFilter = !isSuperAdmin ? division?.id : undefined
-            fetch(`/api/documents?orgId=${organization.id}${divFilter ? `&divisionId=${divFilter}` : ''}`)
+            const groupFilter = !isSuperAdmin ? group?.id : undefined
+            fetch(`/api/documents?orgId=${organization.id}${groupFilter ? `&groupId=${groupFilter}` : ''}`)
                 .then(res => res.json())
                 .then(res => {
                     if (res.success) setDocuments(res.data || [])
                 })
         }
-    }, [organization?.id, isSuperAdmin, division?.id])
+    }, [organization?.id, isSuperAdmin, group?.id])
 
     // Source Selection Modal
     const [isSourceModalOpen, setIsSourceModalOpen] = useState(false)
@@ -136,7 +136,7 @@ export default function EditContentPage() {
             title,
             body: bodyHtml,
             category,
-            divisionId: divisionId === 'global' ? null : divisionId,
+            groupId: groupId === 'global' ? 'global' : groupId,
             isMandatory,
             imageUrl: headerImage
         })
@@ -271,25 +271,25 @@ export default function EditContentPage() {
                                 <h3 className="font-bold text-navy-900 font-display pb-3 border-b border-surface-200">Metadata / Attributes</h3>
 
                                 <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-text-700">Division / Target Audience <span className="text-danger">*</span></label>
+                                    <label className="block text-sm font-medium text-text-700">Group / Target Audience <span className="text-danger">*</span></label>
                                     <select
                                         required
-                                        value={divisionId}
-                                        onChange={(e) => setDivisionId(e.target.value)}
-                                        disabled={isDivisionLocked}
-                                        className={`w-full border-surface-200 border rounded-md p-2.5 focus:ring-navy-600 focus:border-navy-600 bg-white ${isDivisionLocked ? 'opacity-60 cursor-not-allowed bg-surface-50' : ''}`}
+                                        value={groupId}
+                                        onChange={(e) => setGroupId(e.target.value)}
+                                        disabled={isGroupLocked}
+                                        className={`w-full border-surface-200 border rounded-md p-2.5 focus:ring-navy-600 focus:border-navy-600 bg-white ${isGroupLocked ? 'opacity-60 cursor-not-allowed bg-surface-50' : ''}`}
                                     >
-                                        <option value="" disabled>Select Division...</option>
+                                        <option value="" disabled>Select Group...</option>
                                         {isSuperAdmin && (
                                             <option value="global" className="font-bold">🌐 Global Organization (All)</option>
                                         )}
-                                        {divisions.map(d => (
+                                        {groups.map(d => (
                                             <option key={d.id} value={d.id}>{d.name}</option>
                                         ))}
                                     </select>
-                                    {isDivisionLocked && (
+                                    {isGroupLocked && (
                                         <p className="text-xs text-text-400">
-                                            🔒 Division restricted.
+                                            🔒 Group restricted.
                                         </p>
                                     )}
                                 </div>
@@ -407,9 +407,9 @@ export default function EditContentPage() {
                                                         {doc.ai_title || doc.file_name}
                                                     </h3>
                                                     <div className="mt-2.5 flex gap-2">
-                                                        {doc.division?.name && (
+                                                        {doc.group?.name && (
                                                             <span className="text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded bg-surface-100 text-text-600">
-                                                                {doc.division.name}
+                                                                {doc.group.name}
                                                             </span>
                                                         )}
                                                     </div>

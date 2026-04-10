@@ -9,22 +9,22 @@ export async function getUsersAction(orgId: string, filters: any = {}) {
     try {
         const queryFilters: any = { organization_id: orgId }
         
-        // Handle specific division filter
-        if (filters.divisionId) {
-            queryFilters.user_divisions = {
+        // Handle specific group filter
+        if (filters.groupId) {
+            queryFilters.user_groups = {
                 some: {
-                    division_id: filters.divisionId,
+                    group_id: filters.groupId,
                     is_primary: true
                 }
             }
-            delete filters.divisionId
+            delete filters.groupId
         }
 
         const users = await prisma.user.findMany({
             where: { ...queryFilters, ...filters },
             include: {
-                user_divisions: {
-                    include: { division: true }
+                user_groups: {
+                    include: { group: true }
                 }
             },
             orderBy: { created_at: 'desc' }
@@ -41,7 +41,7 @@ export async function updateUserAction(data: {
     email: string,
     jobTitle: string,
     role: Role,
-    divisionId: string,
+    groupId: string,
     password?: string
 }) {
     try {
@@ -52,23 +52,23 @@ export async function updateUserAction(data: {
         if (!session?.user) return { success: false, error: 'Unauthorized' }
         
         const requesterRole = (session.user as any).role
-        const requesterDivisionId = (session.user as any).division?.id
+        const requesterGroupId = (session.user as any).groupId
 
         // Security Check: GROUP_ADMIN scoping
         if (requesterRole === Role.GROUP_ADMIN) {
-            // Can only manage users in their own division
-            if (data.divisionId !== requesterDivisionId) {
-                return { success: false, error: 'Anda hanya dapat mengelola user di divisi Anda sendiri.' }
+            // Can only manage users in their own group
+            if (data.groupId !== requesterGroupId) {
+                return { success: false, error: 'Anda hanya dapat mengelola user di grup Anda sendiri.' }
             }
             
-            // Check if user being updated is in the same division
+            // Check if user being updated is in the same group
             const targetUser = await prisma.user.findUnique({
                 where: { id: data.id },
-                include: { user_divisions: { where: { is_primary: true } } }
+                include: { user_groups: { where: { is_primary: true } } }
             })
             
-            const targetDivId = targetUser?.user_divisions[0]?.division_id
-            if (targetDivId !== requesterDivisionId) {
+            const targetGroupId = targetUser?.user_groups[0]?.group_id
+            if (targetGroupId !== requesterGroupId) {
                 return { success: false, error: 'Anda tidak memiliki akses untuk mengubah user ini.' }
             }
 
@@ -94,14 +94,14 @@ export async function updateUserAction(data: {
                 where: { id: data.id },
                 data: updateData
             }),
-            // Update or Recreate Division & Role
-            prisma.userDivision.deleteMany({
+            // Update or Recreate Group & Role
+            prisma.userGroup.deleteMany({
                 where: { user_id: data.id, is_primary: true }
             }),
-            prisma.userDivision.create({
+            prisma.userGroup.create({
                 data: {
                     user_id: data.id,
-                    division_id: data.divisionId,
+                    group_id: data.groupId,
                     role: data.role,
                     is_primary: true
                 }
@@ -118,7 +118,7 @@ export async function updateUserAction(data: {
     }
 }
 
-export async function updateUserRoleAction(userId: string, role: Role, divisionId: string) {
+export async function updateUserRoleAction(userId: string, role: Role, groupId: string) {
     try {
         const { getServerSession } = await import('next-auth')
         const { authOptions } = await import('@/lib/auth')
@@ -126,22 +126,22 @@ export async function updateUserRoleAction(userId: string, role: Role, divisionI
         if (!session?.user) return { success: false, error: 'Unauthorized' }
 
         const requesterRole = (session.user as any).role
-        const requesterDivisionId = (session.user as any).division?.id
+        const requesterGroupId = (session.user as any).groupId
 
         if (requesterRole === Role.GROUP_ADMIN) {
-            if (divisionId !== requesterDivisionId || role === Role.SUPER_ADMIN) {
+            if (groupId !== requesterGroupId || role === Role.SUPER_ADMIN) {
                 return { success: false, error: 'Akses terbatas untuk Group Admin.' }
             }
         }
 
         await prisma.$transaction([
-            prisma.userDivision.deleteMany({
+            prisma.userGroup.deleteMany({
                 where: { user_id: userId, is_primary: true }
             }),
-            prisma.userDivision.create({
+            prisma.userGroup.create({
                 data: {
                     user_id: userId,
-                    division_id: divisionId,
+                    group_id: groupId,
                     role,
                     is_primary: true
                 }
@@ -162,14 +162,14 @@ export async function deactivateUserAction(userId: string) {
         if (!session?.user) return { success: false, error: 'Unauthorized' }
 
         const requesterRole = (session.user as any).role
-        const requesterDivisionId = (session.user as any).division?.id
+        const requesterGroupId = (session.user as any).groupId
 
         if (requesterRole === Role.GROUP_ADMIN) {
             const targetUser = await prisma.user.findUnique({
                 where: { id: userId },
-                include: { user_divisions: { where: { is_primary: true } } }
+                include: { user_groups: { where: { is_primary: true } } }
             })
-            if (targetUser?.user_divisions[0]?.division_id !== requesterDivisionId) {
+            if (targetUser?.user_groups[0]?.group_id !== requesterGroupId) {
                 return { success: false, error: 'Anda tidak memiliki akses untuk menonaktifkan user ini.' }
             }
         }
@@ -185,45 +185,45 @@ export async function deactivateUserAction(userId: string) {
     }
 }
 
-export async function getDivisionsAction(orgId: string) {
+export async function getGroupsAction(orgId: string) {
     try {
-        const divisions = await prisma.division.findMany({
+        const groups = await prisma.group.findMany({
             where: { organization_id: orgId },
             include: {
-                _count: { select: { user_divisions: true } }
+                _count: { select: { user_groups: true } }
             }
         })
-        return { success: true, data: divisions }
+        return { success: true, data: groups }
     } catch (error: any) {
         return { success: false, error: error.message }
     }
 }
 
-export async function createDivisionAction(data: { name: string, description: string, orgId: string }) {
+export async function createGroupAction(data: { name: string, description: string, orgId: string }) {
     try {
-        const div = await prisma.division.create({
+        const group = await prisma.group.create({
             data: {
                 name: data.name,
                 description: data.description,
                 organization_id: data.orgId
             }
         })
-        revalidatePath('/dashboard/hrd/users/divisions')
-        return { success: true, data: div }
+        revalidatePath('/dashboard/hrd/users/groups')
+        return { success: true, data: group }
     } catch (error: any) {
         return { success: false, error: error.message }
     }
 }
 
-export async function deleteDivisionAction(divisionId: string) {
+export async function deleteGroupAction(groupId: string) {
     try {
-        const count = await prisma.userDivision.count({ where: { division_id: divisionId } })
-        if (count > 0) return { success: false, error: 'Cannot delete division with active users' }
+        const count = await prisma.userGroup.count({ where: { group_id: groupId } })
+        if (count > 0) return { success: false, error: 'Cannot delete group with active users' }
 
-        await prisma.division.delete({
-            where: { id: divisionId }
+        await prisma.group.delete({
+            where: { id: groupId }
         })
-        revalidatePath('/dashboard/hrd/users/divisions')
+        revalidatePath('/dashboard/hrd/users/groups')
         return { success: true }
     } catch (error: any) {
         return { success: false, error: error.message }

@@ -107,7 +107,7 @@ export async function getOrganizationAction(orgId: string) {
                 _count: {
                     select: {
                         users: true,
-                        divisions: true,
+                        groups: true,
                         documents: true,
                         contents: true
                     }
@@ -122,7 +122,7 @@ export async function getOrganizationAction(orgId: string) {
 
 export async function updateOrganizationAction(orgId: string, data: {
     name?: string
-    crossDivisionQueryEnabled?: boolean
+    crossGroupQueryEnabled?: boolean
     appName?: string
     slogan?: string
     logoUrl?: string
@@ -133,7 +133,7 @@ export async function updateOrganizationAction(orgId: string, data: {
             where: { id: orgId },
             data: {
                 name: data.name,
-                cross_division_query_enabled: data.crossDivisionQueryEnabled,
+                cross_group_query_enabled: data.crossGroupQueryEnabled,
                 app_name: data.appName,
                 slogan: data.slogan,
                 logo_url: data.logoUrl,

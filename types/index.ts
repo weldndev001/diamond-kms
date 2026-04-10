@@ -1,13 +1,13 @@
-import { User, Role, Organization, Division, ContentStatus } from '@prisma/client'
+import { User, Role, Organization, Group, ContentStatus } from '@prisma/client'
 
 export type UserWithRole = User & {
     role?: Role
     organization?: Organization & {
         industry_segment?: string
         ai_provider_config?: any
-        cross_division_query_enabled?: boolean
+        cross_group_query_enabled?: boolean
     }
-    division?: Division
+    group?: Group
 }
 
 export type APIResponse<T = any> = {

@@ -20,9 +20,9 @@ export async function isAdmin() {
 }
 
 /**
- * Checks if the user is a GROUP_ADMIN for a specific division
+ * Checks if the user is a GROUP_ADMIN for a specific group
  */
-export async function isGroupAdmin(divisionId?: string) {
+export async function isGroupAdmin(groupId?: string) {
     const user = await getSessionUser()
     if (!user) return false
     
@@ -30,15 +30,15 @@ export async function isGroupAdmin(divisionId?: string) {
     if (user.role === Role.SUPER_ADMIN || user.role === Role.MAINTAINER) return true
     
     if (user.role !== Role.GROUP_ADMIN) return false
-    if (divisionId && user.divisionId !== divisionId) return false
+    if (groupId && user.groupId !== groupId) return false
     
     return true
 }
 
 /**
- * Checks if the user is a SUPERVISOR for a specific division
+ * Checks if the user is a SUPERVISOR for a specific group
  */
-export async function isSupervisor(divisionId?: string) {
+export async function isSupervisor(groupId?: string) {
     const user = await getSessionUser()
     if (!user) return false
     
@@ -46,19 +46,19 @@ export async function isSupervisor(divisionId?: string) {
     if (user.role === Role.SUPER_ADMIN || user.role === Role.MAINTAINER || user.role === Role.GROUP_ADMIN) return true
     
     if (user.role !== Role.SUPERVISOR) return false
-    if (divisionId && user.divisionId !== divisionId) return false
+    if (groupId && user.groupId !== groupId) return false
     
     return true
 }
 
 /**
- * Checks if the user has at least READ access to a division
+ * Checks if the user has at least READ access to a group
  */
-export async function hasAccessToDivision(divisionId: string) {
+export async function hasAccessToGroup(groupId: string) {
     const user = await getSessionUser()
     if (!user) return false
     
     if (user.role === Role.SUPER_ADMIN || user.role === Role.MAINTAINER) return true
     
-    return user.divisionId === divisionId
+    return user.groupId === groupId
 }

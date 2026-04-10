@@ -16,7 +16,7 @@ export interface HybridSearchResult {
     source: 'semantic' | 'fulltext' | 'both'
     pageStart?: number | null
     pageEnd?: number | null
-    divisionName?: string
+    groupName?: string
 }
 
 export async function hybridSearch(params: {
@@ -24,10 +24,10 @@ export async function hybridSearch(params: {
     orgId: string
     userId: string
     userRole: Role
-    divisionId: string
-    crossDivisionEnabled: boolean
+    groupId: string
+    crossGroupEnabled: boolean
 }): Promise<HybridSearchResult[]> {
-    const { query, orgId, userRole, divisionId, crossDivisionEnabled } = params
+    const { query, orgId, userRole, groupId, crossGroupEnabled } = params
 
     // Run full-text and semantic search in parallel
     const [ftResults, semResults] = await Promise.allSettled([
@@ -35,16 +35,16 @@ export async function hybridSearch(params: {
             query,
             orgId,
             userRole,
-            divisionId,
-            crossDivisionEnabled,
+            groupId,
+            crossGroupEnabled,
         }),
         semanticSearch({
             query,
             orgId,
             userId: params.userId,
             userRole,
-            divisionId,
-            crossDivisionEnabled,
+            groupId,
+            crossGroupEnabled,
         }),
     ])
 
@@ -61,11 +61,11 @@ async function fullTextSearch(params: {
     query: string
     orgId: string
     userRole: Role
-    divisionId: string
-    crossDivisionEnabled: boolean
+    groupId: string
+    crossGroupEnabled: boolean
 }): Promise<HybridSearchResult[]> {
-    const { query, orgId, userRole, divisionId, crossDivisionEnabled } = params
-    const scopedToDiv = !crossDivisionEnabled && (userRole === 'STAFF' || userRole === 'SUPERVISOR')
+    const { query, orgId, userRole, groupId, crossGroupEnabled } = params
+    const scopedToGroup = !crossGroupEnabled && (userRole === 'STAFF' || userRole === 'SUPERVISOR')
 
     const words = query.trim().split(/\s+/).filter(w => w.length > 2)
     const exactQuery = query.trim()
@@ -108,21 +108,21 @@ async function fullTextSearch(params: {
         ],
     }
 
-    if (scopedToDiv) {
-        docWhereClause.division_id = divisionId
-        contentWhereClause.division_id = divisionId
+    if (scopedToGroup) {
+        docWhereClause.group_id = groupId
+        contentWhereClause.group_id = groupId
     }
 
     const [docRows, contentRows] = await Promise.all([
         prisma.document.findMany({
             where: docWhereClause as any,
-            include: { division: { select: { name: true } } },
+            include: { group: { select: { name: true } } },
             take: 10,
             orderBy: { created_at: 'desc' },
         }),
         prisma.content.findMany({
             where: contentWhereClause as any,
-            include: { division: { select: { name: true } } },
+            include: { group: { select: { name: true } } },
             take: 10,
             orderBy: { created_at: 'desc' },
         })
@@ -135,7 +135,7 @@ async function fullTextSearch(params: {
         excerpt: r.ai_summary?.slice(0, 200) || '',
         score: 0.5, // Base score for full-text match
         source: 'fulltext' as const,
-        divisionName: r.division?.name,
+        groupName: r.group?.name,
     }))
 
     const contentResults = contentRows.map((r) => ({
@@ -145,7 +145,7 @@ async function fullTextSearch(params: {
         excerpt: r.body.replace(/<[^>]*>?/gm, '').slice(0, 200), // Strip HTML and limit
         score: 0.5,
         source: 'fulltext' as const,
-        divisionName: r.division?.name,
+        groupName: r.group?.name,
     }))
 
     return [...docResults, ...contentResults]
@@ -182,7 +182,7 @@ function mergeResults(
                 source: 'semantic',
                 pageStart: sem.pageStart,
                 pageEnd: sem.pageEnd,
-                divisionName: sem.divisionName,
+                groupName: sem.groupName,
             })
         }
     })
