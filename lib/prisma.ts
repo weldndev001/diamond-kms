@@ -8,7 +8,21 @@ const prismaClientSingleton = () => {
         const host = connectionString?.split('@')[1]?.split('/')[0] || 'unknown'
         console.log(`[PRISMA] Initializing client for: ${host}`)
         
-        const pool = new Pool({ connectionString })
+        const pool = new Pool({ 
+            connectionString,
+            ssl: {
+                rejectUnauthorized: false // Required for many hosted PostgreSQL instances
+            },
+            max: parseInt(process.env.DB_POOL_MAX || "2"), // Lower max connections for serverless
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 5000,
+        })
+        
+        // Error handling for the pool
+        pool.on('error', (err) => {
+            console.error('[PRISMA] Unexpected error on idle client', err)
+        })
+
         const adapter = new PrismaPg(pool)
         const prisma = new PrismaClient({ adapter })
         

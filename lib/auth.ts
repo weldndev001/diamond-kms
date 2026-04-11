@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
@@ -20,41 +21,52 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email dan password diperlukan");
-        }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-          include: {
-            user_groups: {
-              where: { is_primary: true },
-              include: { group: true }
-            }
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            throw new Error("Email dan password diperlukan");
           }
-        });
 
-        if (!user || !user.password_hash) {
-          throw new Error("Email atau password salah");
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+            include: {
+              user_groups: {
+                where: { is_primary: true },
+                include: { group: true }
+              }
+            }
+          });
+
+          if (!user || !user.password_hash) {
+            console.warn(`[AUTH] Login failed: User ${credentials?.email} not found or no password hash`);
+            throw new Error("Email atau password salah");
+          }
+
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            user.password_hash
+          );
+
+          if (!isPasswordValid) {
+            console.warn(`[AUTH] Login failed: Invalid password for ${credentials?.email}`);
+            throw new Error("Email atau password salah");
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.full_name,
+            role: user.user_groups[0]?.role,
+            organizationId: user.organization_id,
+            groupId: user.user_groups[0]?.group_id
+          };
+        } catch (error: any) {
+          console.error("[AUTH] Authorize Error:", error.message);
+          // Re-throw meaningful errors or return null
+          if (error.message.includes("Connection terminated unexpectedly")) {
+             throw new Error("Database connection error. Please try again later.");
+          }
+          throw error;
         }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password_hash
-        );
-
-        if (!isPasswordValid) {
-          throw new Error("Email atau password salah");
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.full_name,
-          role: user.user_groups[0]?.role,
-          organizationId: user.organization_id,
-          groupId: user.user_groups[0]?.group_id
-        };
       }
     })
   ],
