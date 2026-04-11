@@ -22,7 +22,7 @@ export async function isAdmin() {
 /**
  * Checks if the user is a GROUP_ADMIN for a specific group
  */
-export async function isGroupAdmin(groupId?: string) {
+export async function isGroupAdmin(groupId?: string | null) {
     const user = await getSessionUser()
     if (!user) return false
     
@@ -38,7 +38,7 @@ export async function isGroupAdmin(groupId?: string) {
 /**
  * Checks if the user is a SUPERVISOR for a specific group
  */
-export async function isSupervisor(groupId?: string) {
+export async function isSupervisor(groupId?: string | null) {
     const user = await getSessionUser()
     if (!user) return false
     
@@ -54,7 +54,7 @@ export async function isSupervisor(groupId?: string) {
 /**
  * Checks if the user has at least READ access to a group
  */
-export async function hasAccessToGroup(groupId: string) {
+export async function hasAccessToGroup(groupId: string | null) {
     const user = await getSessionUser()
     if (!user) return false
     
