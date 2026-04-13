@@ -131,3 +131,36 @@
 [2026-04-13T07:54:16.865Z] Got AI service: ollama-self-hosted
 [2026-04-13T07:54:16.867Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
 [2026-04-13T08:42:08.962Z] [AI-FACTORY] BASE CONFIG: {}
+[2026-04-13T08:50:15.815Z] [PROCESS-BG] STARTED for 06c20a71-d083-44c3-acb4-162f1dd8f8c8
+[2026-04-13T08:50:16.512Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-13T08:50:16.533Z] [AI-FACTORY] BASE CONFIG: {}
+[2026-04-13T08:50:16.560Z] Got AI service: ollama-self-hosted
+[2026-04-13T08:50:16.562Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-04-13T08:50:30.419Z] [PROCESS-BG] STARTED for ccc50c11-2446-4901-9315-69253288117c
+[2026-04-13T08:50:30.493Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-13T08:50:30.514Z] [AI-FACTORY] BASE CONFIG: {}
+[2026-04-13T08:50:30.538Z] Got AI service: ollama-self-hosted
+[2026-04-13T08:50:30.539Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-04-13T08:50:55.575Z] [PROCESS-BG] STARTED for 2a430616-f38a-465e-9699-7b1b626b00fe
+[2026-04-13T08:50:55.680Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-13T08:50:55.706Z] [AI-FACTORY] BASE CONFIG: {}
+[2026-04-13T08:50:55.740Z] Got AI service: ollama-self-hosted
+[2026-04-13T08:50:55.743Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-04-13T09:20:38.658Z] [PROCESS-BG] STARTED for 2e694fd2-f30d-44c4-9f0e-aa1889a46960
+[2026-04-13T09:20:39.180Z] [PROCESS-BG] STARTED for 2a430616-f38a-465e-9699-7b1b626b00fe
+[2026-04-13T09:20:39.199Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-13T09:20:39.219Z] [AI-FACTORY] BASE CONFIG: {}
+[2026-04-13T09:20:39.247Z] Got AI service: ollama-self-hosted
+[2026-04-13T09:20:39.249Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-04-13T09:20:39.264Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-13T09:20:39.285Z] [AI-FACTORY] BASE CONFIG: {}
+[2026-04-13T09:20:39.383Z] Got AI service: ollama-self-hosted
+[2026-04-13T09:20:39.385Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-04-13T09:20:48.467Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-04-13T09:20:52.720Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-04-13T09:24:05.313Z] [PROCESS-BG] STARTED for 82a1a680-3319-4d7b-9bb2-e8281d57497b
+[2026-04-13T09:24:05.381Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-13T09:24:05.400Z] [AI-FACTORY] BASE CONFIG: {}
+[2026-04-13T09:24:05.420Z] Got AI service: ollama-self-hosted
+[2026-04-13T09:24:05.421Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-04-13T09:24:09.666Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
