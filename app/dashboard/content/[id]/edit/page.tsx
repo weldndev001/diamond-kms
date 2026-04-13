@@ -10,6 +10,8 @@ import Link from 'next/link'
 import { TiptapEditor } from '@/components/editor/TiptapEditor'
 import { uploadFileAction } from '@/lib/actions/storage.actions'
 import { Role } from '@prisma/client'
+import ImageCropper from '@/components/shared/ImageCropper'
+import { Scissors } from 'lucide-react'
 
 export default function EditContentPage() {
     const router = useRouter()
@@ -26,6 +28,11 @@ export default function EditContentPage() {
     const [headerImage, setHeaderImage] = useState('')
     const [uploadingHeader, setUploadingHeader] = useState(false)
     const [status, setStatus] = useState({ type: '', msg: '' })
+
+    // Image Cropping State
+    const [tempImage, setTempImage] = useState<string | null>(null)
+    const [isCropperOpen, setIsCropperOpen] = useState(false)
+    const [originalFileName, setOriginalFileName] = useState('')
     const [groups, setGroups] = useState<any[]>([])
     const [contentData, setContentData] = useState<any>(null)
 
@@ -99,10 +106,28 @@ export default function EditContentPage() {
         const file = e.target.files?.[0]
         if (!file || !organization?.id) return
 
+        setOriginalFileName(file.name)
+        const reader = new FileReader()
+        reader.onload = (event) => {
+            setTempImage(event.target?.result as string)
+            setIsCropperOpen(true)
+        }
+        reader.readAsDataURL(file)
+        
+        // Reset input to allow re-uploading same file
+        e.target.value = ''
+    }
+
+    const handleCropComplete = async (croppedBlob: Blob) => {
+        if (!organization?.id) return
+
         setUploadingHeader(true)
+        setIsCropperOpen(false)
         try {
-            const storagePath = `${organization.id}/header_images/${Date.now()}_${file.name}`
+            const fileName = originalFileName.replace(/\.[^/.]+$/, "") + "_header.jpg"
+            const storagePath = `${organization.id}/header_images/${Date.now()}_${fileName}`
             
+            const file = new File([croppedBlob], fileName, { type: 'image/jpeg' })
             const formData = new FormData()
             formData.append('file', file)
             formData.append('path', storagePath)
@@ -118,6 +143,14 @@ export default function EditContentPage() {
             alert('Gagal mengunggah header image')
         } finally {
             setUploadingHeader(false)
+            setTempImage(null)
+        }
+    }
+
+    const handleRecrop = () => {
+        if (headerImage) {
+            setTempImage(headerImage)
+            setIsCropperOpen(true)
         }
     }
 
@@ -177,6 +210,18 @@ export default function EditContentPage() {
             </div>
 
             <div className="card p-6 md:p-8">
+                {isCropperOpen && tempImage && (
+                    <ImageCropper
+                        image={tempImage}
+                        title="Adjust Header Image"
+                        onCancel={() => {
+                            setIsCropperOpen(false)
+                            setTempImage(null)
+                        }}
+                        onCropComplete={handleCropComplete}
+                        aspect={21 / 9}
+                    />
+                )}
                 {status.msg && (
                     <div className={`p-4 rounded-md mb-6 text-sm font-medium ${status.type === 'error' ? 'bg-danger-bg text-danger border border-red-200' :
                         status.type === 'success' ? 'bg-success-bg text-green-700 border border-green-200' :
@@ -207,6 +252,14 @@ export default function EditContentPage() {
                                     <div className="relative aspect-[21/9] w-full overflow-hidden rounded-xl border border-surface-200 bg-surface-50 group">
                                         <img src={headerImage} alt="Header" className="h-full w-full object-cover" />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={handleRecrop}
+                                                className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-md"
+                                                title="Recrop Image"
+                                            >
+                                                <Scissors size={20} />
+                                            </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setHeaderImage('')}

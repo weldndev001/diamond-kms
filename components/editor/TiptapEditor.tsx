@@ -47,14 +47,18 @@ export function TiptapEditor({ content, onChange, onOpenSources, orgId }: Tiptap
         },
         editorProps: {
             attributes: {
-                class: 'prose prose-slate max-w-none min-h-[400px] p-4 focus:outline-none',
+                class: 'tiptap prose prose-slate max-w-none min-h-[400px] p-4 focus:outline-none',
             },
         },
     })
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
-        if (!file || !orgId || !editor) return
+        if (!file || !editor) return
+        if (!orgId) {
+            alert('ID Organisasi tidak ditemukan. Silakan muat ulang halaman.')
+            return
+        }
 
         setUploading(true)
         try {
@@ -72,7 +76,7 @@ export function TiptapEditor({ content, onChange, onOpenSources, orgId }: Tiptap
             editor.chain().focus().setImage({ src: res.publicUrl! }).run()
         } catch (error) {
             console.error('Image upload failed:', error)
-            alert('Failed to upload image')
+            alert('Gagal mengunggah gambar content body')
         } finally {
             setUploading(false)
             if (fileInputRef.current) fileInputRef.current.value = ''

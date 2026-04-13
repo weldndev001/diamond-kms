@@ -113,6 +113,10 @@ export const translations = {
             saving: 'Saving...',
             delete_confirm: 'Delete this FAQ?',
             quota_full: 'FAQ Quota Full (Max 20)',
+            image_too_large: 'Image size is too large (Max 2MB)',
+            invalid_file_type: 'Invalid file type. Only JPEG, PNG and WEBP are allowed.',
+            crop_image: 'Crop Image',
+            save_crop: 'Save & Upload',
         },
         knowledge_base: {
             title: 'Knowledge Base Management',
@@ -219,6 +223,8 @@ export const translations = {
             delete_failed: 'Failed to delete content',
             mandatory_read: 'Mandatory Read',
             global: 'Global',
+            publish_confirm: 'Are you sure you want to publish this content?',
+            not_found: 'Content not found',
         },
         approvals: {
             title: 'Article Approvals',
@@ -637,6 +643,10 @@ export const translations = {
             saving: 'Menyimpan...',
             delete_confirm: 'Hapus FAQ ini?',
             quota_full: 'Kuota FAQ Penuh (Maks 20)',
+            image_too_large: 'Ukuran gambar terlalu besar (Maks 2MB)',
+            invalid_file_type: 'Tipe file tidak valid. Hanya JPEG, PNG, dan WEBP yang diperbolehkan.',
+            crop_image: 'Potong Gambar',
+            save_crop: 'Simpan & Unggah',
         },
         knowledge_base: {
             title: 'Manajemen Basis Pengetahuan',
@@ -743,6 +753,8 @@ export const translations = {
             delete_failed: 'Gagal menghapus konten',
             mandatory_read: 'Bacaan Wajib',
             global: 'Global',
+            publish_confirm: 'Apakah Anda yakin ingin mempublikasikan konten ini?',
+            not_found: 'Konten tidak ditemukan',
         },
         approvals: {
             title: 'Persetujuan Artikel',

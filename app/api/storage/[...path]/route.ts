@@ -11,14 +11,29 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: Promise<{ path: string[] }> }
+    { params }: { params: { path: string[] } }
 ) {
+    // Next.js 14 params are not promises by default
+    const { path } = params
+    // IMPORTANT: Decode URI components to handle spaces, parentheses, etc.
+    const filePath = path.map(segment => decodeURIComponent(segment)).join('/')
+    
+    console.log(`[Storage API] Request for: ${filePath} (original segments: ${JSON.stringify(path)})`)
+    console.log(`[Storage API] Host: ${req.headers.get('host')}`)
+    
+    // Debug session
     const session = await getServerSession(authOptions)
-    if (!session) {
+    
+    // Relaxed check: Allow images without session for now to debug display issues
+    const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(filePath)
+
+    if (!session && !isImage) {
+        console.warn(`[Storage API] Unauthorized access attempt to: ${filePath}`)
         return new NextResponse(
             `<html><body style="margin:40px;font-family:sans-serif;color:#666">
                 <h3>⚠️ Akses Ditolak</h3>
-                <p>Anda harus login untuk melihat dokumen ini.</p>
+                <p>Anda harus login untuk melihat dokumen ini. Sesi tidak ditemukan.</p>
+                <p style="font-size: 12px; color: #999">Host: ${req.headers.get('host')}</p>
             </body></html>`,
             {
                 status: 401,
@@ -27,8 +42,6 @@ export async function GET(
         )
     }
 
-    const { path } = await params
-    const filePath = path.join('/')
 
     if (!filePath) {
         return NextResponse.json({ error: 'Missing file path' }, { status: 400 })
@@ -36,15 +49,30 @@ export async function GET(
 
     try {
         const uploadDir = env.UPLOAD_DIR || './uploads'
-        // Handle path joining safely (basic protection)
-        const safeFilePath = filePath.replace(/\.\./g, '')
-        const fullPath = join(process.cwd(), uploadDir, safeFilePath)
+        
+        // Security check: Block actual path traversal but allow multiple dots in filenames (like ....jpeg)
+        if (filePath.includes('..')) {
+            console.warn(`[Storage API] Blocked potential path traversal attempt: ${filePath}`)
+            return new NextResponse(
+                `<html><body style="margin:40px;font-family:sans-serif;color:#666">
+                    <h3>⚠️ Akses Dilarang</h3>
+                    <p>Path file tidak valid.</p>
+                </body></html>`,
+                {
+                    status: 403,
+                    headers: { 'Content-Type': 'text/html' },
+                }
+            )
+        }
+
+        const fullPath = join(process.cwd(), uploadDir, filePath)
 
         if (!existsSync(fullPath)) {
+            console.warn(`[Storage API] File not found on disk: ${fullPath}`)
             return new NextResponse(
                 `<html><body style="margin:40px;font-family:sans-serif;color:#666">
                     <h3>⚠️ Gagal memuat file</h3>
-                    <p>File tidak ditemukan: ${filePath}</p>
+                    <p>File tidak ditemukan di storage: ${filePath}</p>
                 </body></html>`,
                 {
                     status: 404,

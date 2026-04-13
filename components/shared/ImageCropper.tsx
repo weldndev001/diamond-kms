@@ -9,9 +9,10 @@ interface ImageCropperProps {
     onCropComplete: (croppedImage: Blob) => void
     onCancel: () => void
     aspect?: number
+    title?: string
 }
 
-export default function ImageCropper({ image, onCropComplete, onCancel, aspect = 1 }: ImageCropperProps) {
+export default function ImageCropper({ image, onCropComplete, onCancel, aspect = 1, title }: ImageCropperProps) {
     const [crop, setCrop] = useState({ x: 0, y: 0 })
     const [zoom, setZoom] = useState(1)
     const [rotation, setRotation] = useState(0)
@@ -116,7 +117,7 @@ export default function ImageCropper({ image, onCropComplete, onCancel, aspect =
                     <div className="p-2 bg-navy-800 rounded-lg">
                         <Check size={20} className="text-amber-400" />
                     </div>
-                    <span className="font-bold font-display tracking-wide">Adjust Your Logo</span>
+                    <span className="font-bold font-display tracking-wide">{title || "Adjust Your Image"}</span>
                 </div>
                 <button onClick={onCancel} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                     <X size={24} />

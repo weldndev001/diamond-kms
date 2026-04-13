@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider   = "postgresql"
-//   extensions = [uuid_ossp(map: "uuid-ossp"), vector]
+  extensions = [uuid_ossp(map: "uuid-ossp"), vector]
 }
 
 model Organization {
@@ -183,7 +183,7 @@ model DocumentChunk {
   document_id String
   chunk_index Int
   content     String                      @db.Text
-//   embedding     Unsupported("vector")?
+  embedding     Unsupported("vector")?
   token_count Int
   page_number Int?
   page_end    Int?
@@ -525,7 +525,7 @@ model ContentChunk {
   content_id  String
   chunk_index Int
   content     String                      @db.Text
-//   embedding     Unsupported("vector")?
+  embedding     Unsupported("vector")?
   token_count Int
   created_at  DateTime                    @default(now())
 

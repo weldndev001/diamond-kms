@@ -8,6 +8,9 @@ import { existsSync } from 'fs'
 /**
  * Uploads a file to the local filesystem.
  * This is a self-hosted replacement for external storage.
+ * 
+ * IMPORTANT: Returns a RELATIVE publicUrl (e.g. /api/storage/faqs/image.png)
+ * so it works on any domain (localhost, vercel, custom domain).
  */
 export async function uploadFileAction(formData: FormData) {
     try {
@@ -15,7 +18,10 @@ export async function uploadFileAction(formData: FormData) {
         const bucket = formData.get('bucket') as string || 'documents'
         const path = formData.get('path') as string
 
+        console.log(`[Storage] Uploading to bucket: ${bucket}, path: ${path}`)
+
         if (!file || !path) {
+            console.error('[Storage] Missing file or path')
             return { success: false, error: 'File and path are required' }
         }
 
@@ -27,14 +33,19 @@ export async function uploadFileAction(formData: FormData) {
         const fullPath = join(process.cwd(), uploadDir, bucket, path)
         const dirPath = join(fullPath, '..')
 
+        console.log(`[Storage] Target full path: ${fullPath}`)
+
         if (!existsSync(dirPath)) {
+            console.log(`[Storage] Creating directory: ${dirPath}`)
             await mkdir(dirPath, { recursive: true })
         }
 
         await writeFile(fullPath, buffer)
+        console.log(`[Storage] Successfully wrote file to disk`)
 
-        // Get public URL using our local storage API
-        const publicUrl = `${env.NEXT_PUBLIC_APP_URL}/api/storage/${bucket}/${path}`
+        // ALWAYS use relative URL — works on any domain
+        const publicUrl = `/api/storage/${bucket}/${path}`
+        console.log(`[Storage] Generated public URL: ${publicUrl}`)
 
         return { success: true, publicUrl }
     } catch (error: any) {
