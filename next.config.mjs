@@ -6,6 +6,14 @@ const nextConfig = {
         serverActions: {
             bodySizeLimit: '10mb',
         },
+        outputFileTracingExcludes: {
+            '*': [
+                '.next/cache/**',
+                'node_modules/@swc/core-linux-x64-gnu/**',
+                'node_modules/@swc/core-linux-x64-musl/**',
+                'node_modules/@esbuild/linux-x64/**',
+            ],
+        },
     },
 };
 
