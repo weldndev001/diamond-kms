@@ -41,4 +41,9 @@ export const env = {
     INSTANCE_KEY: getEnv('INSTANCE_KEY') || 'DKMS-DEFAULT',
     INSTANCE_NAME: getEnv('INSTANCE_NAME') || 'Diamond KMS',
     MONITORING_CENTER_URL: getEnv('MONITORING_CENTER_URL') || '',
+
+    // License & Activation
+    LICENSE_KEY: getEnv('LICENSE_KEY') || '',
+    LICENSE_SECRET: getEnv('LICENSE_SECRET') || '',
+    ACTIVATION_MODE: getEnv('ACTIVATION_MODE') || 'offline',
 } as const
