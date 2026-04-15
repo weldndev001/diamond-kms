@@ -22,22 +22,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, error: 'Missing file atau organization' }, { status: 400 })
         }
 
-        const buffer = Buffer.from(await file.arrayBuffer())
-        const uploadDir = env.UPLOAD_DIR || './uploads'
-        const orgDir = join(uploadDir, 'organization')
-
-        if (!existsSync(orgDir)) {
-            await mkdir(orgDir, { recursive: true })
-        }
-
-        const fileName = `logo_${orgId}_${Date.now()}.png`
-        const filePath = join(orgDir, fileName)
-
-        await writeFile(filePath, buffer)
-
-        // Update organization logo_url
-        // The URL should point to our storage serve API
-        const logoUrl = `api/storage/organization/${fileName}`
+        const buffer = await file.arrayBuffer()
+        const base64 = Buffer.from(buffer).toString('base64')
+        const contentType = file.type || 'image/png'
+        const logoUrl = `data:${contentType};base64,${base64}`
 
         await prisma.organization.update({
             where: { id: orgId },
