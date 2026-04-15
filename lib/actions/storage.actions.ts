@@ -29,10 +29,15 @@ export async function uploadFileAction(formData: FormData) {
         const buffer = Buffer.from(arrayBuffer)
         
         // Ensure upload directory exists
-        const uploadDir = env.UPLOAD_DIR || './uploads'
-        const fullPath = join(process.cwd(), uploadDir, bucket, path)
+        const IS_VERCEL = process.env.VERCEL === '1' || !!process.env.VERCEL_URL
+        const uploadDir = IS_VERCEL ? '/tmp/uploads' : (env.UPLOAD_DIR || './uploads')
+        
+        // Ensure path uses forward slashes and doesn't escape
+        const safePath = path.replace(/\\/g, '/').replace(/\.\./g, '')
+        const fullPath = join(uploadDir, bucket, safePath)
         const dirPath = join(fullPath, '..')
 
+        console.log(`[Storage] Environment: ${IS_VERCEL ? 'Vercel' : 'Local'}`)
         console.log(`[Storage] Target full path: ${fullPath}`)
 
         if (!existsSync(dirPath)) {

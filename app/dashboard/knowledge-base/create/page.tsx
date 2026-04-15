@@ -111,24 +111,19 @@ export default function CreateContentPage() {
         setUploadingHeader(true)
         setIsCropperOpen(false)
         try {
-            const fileName = originalFileName.replace(/\.[^/.]+$/, "") + "_header.jpg"
-            const storagePath = `${organization.id}/header_images/${Date.now()}_${fileName}`
-            
-            const file = new File([croppedBlob], fileName, { type: 'image/jpeg' })
-            const formData = new FormData()
-            formData.append('file', file)
-            formData.append('path', storagePath)
-            formData.append('bucket', 'documents')
-
-            const res = await uploadFileAction(formData)
-
-            if (!res.success) throw new Error(res.error)
-
-            setHeaderImage(res.publicUrl!)
+            // Convert to base64 Data URL instead of uploading to local storage
+            // This ensures it works perfectly on Vercel's ephemeral filesystem
+            const reader = new FileReader()
+            reader.readAsDataURL(croppedBlob)
+            reader.onloadend = () => {
+                const base64data = reader.result as string
+                setHeaderImage(base64data)
+                setUploadingHeader(false)
+                setTempImage(null)
+            }
         } catch (error) {
             console.error('Header upload failed:', error)
             alert('Gagal mengunggah header image')
-        } finally {
             setUploadingHeader(false)
             setTempImage(null)
         }

@@ -48,24 +48,10 @@ export async function GET(
     }
 
     try {
-        const uploadDir = env.UPLOAD_DIR || './uploads'
+        const IS_VERCEL = process.env.VERCEL === '1' || !!process.env.VERCEL_URL
+        const uploadDir = IS_VERCEL ? '/tmp/uploads' : (env.UPLOAD_DIR || './uploads')
         
-        // Security check: Block actual path traversal but allow multiple dots in filenames (like ....jpeg)
-        if (filePath.includes('..')) {
-            console.warn(`[Storage API] Blocked potential path traversal attempt: ${filePath}`)
-            return new NextResponse(
-                `<html><body style="margin:40px;font-family:sans-serif;color:#666">
-                    <h3>⚠️ Akses Dilarang</h3>
-                    <p>Path file tidak valid.</p>
-                </body></html>`,
-                {
-                    status: 403,
-                    headers: { 'Content-Type': 'text/html' },
-                }
-            )
-        }
-
-        const fullPath = join(process.cwd(), uploadDir, filePath)
+        const fullPath = join(uploadDir, filePath)
 
         if (!existsSync(fullPath)) {
             console.warn(`[Storage API] File not found on disk: ${fullPath}`)

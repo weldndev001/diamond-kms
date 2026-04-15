@@ -97,9 +97,11 @@ async function processDocumentInBackground(documentId: string, document: any) {
         let extractedText = ''
 
         try {
-            const uploadDir = env.UPLOAD_DIR || './uploads'
-            const safeFilePath = document.file_path.replace(/\.\./g, '')
-            const fullPath = join(process.cwd(), uploadDir, 'documents', safeFilePath)
+            const IS_VERCEL = process.env.VERCEL === '1' || !!process.env.VERCEL_URL
+            const uploadDir = IS_VERCEL ? '/tmp/uploads' : (env.UPLOAD_DIR || './uploads')
+            
+            const safeFilePath = document.file_path.replace(/\\/g, '/').replace(/\.\./g, '')
+            const fullPath = join(uploadDir, 'documents', safeFilePath)
 
             if (existsSync(fullPath)) {
                 fileBuffer = await readFile(fullPath)
