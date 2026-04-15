@@ -29,11 +29,18 @@ export default function FAQsPage() {
     const normalizeUrl = (url?: string) => {
         if (!url) return ''
         if (url.startsWith('blob:')) return url // Handle local previews
+        if (url.startsWith('http://') || url.startsWith('https://')) return url
         
         // If it's an absolute internal storage URL, keep only the relative part
         if (url.includes('/api/storage/')) {
             return url.substring(url.indexOf('/api/storage/'))
         }
+        
+        // Fallback for older data that might just be "faqs/filename.jpg" or "filename.jpg"
+        if (!url.startsWith('/')) {
+            return url.includes('/') ? `/api/storage/${url}` : `/api/storage/faqs/${url}`
+        }
+        
         return url
     }
 
@@ -328,8 +335,11 @@ export default function FAQsPage() {
                                                         className="w-full h-auto object-cover max-h-[300px]"
                                                         onError={(e) => {
                                                             console.error('Image load error:', faq.image_url);
-                                                            // Optional: hide or show fallback
-                                                            (e.target as HTMLImageElement).style.display = 'none';
+                                                            // Instead of hiding it completely which confuses users,
+                                                            // show a broken image state
+                                                            const target = e.target as HTMLImageElement;
+                                                            target.style.opacity = '0.3';
+                                                            target.title = 'Image not found or missing from local storage';
                                                         }}
                                                     />
                                                 </div>
