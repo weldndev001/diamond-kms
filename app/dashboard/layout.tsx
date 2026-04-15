@@ -156,7 +156,6 @@ const getNavEntries = (role: string | undefined, t: (key: string) => string): Na
                 children: [
                     { label: t('common.billing'), href: '/dashboard/hrd/billing' },
                     { label: t('common.ai_management'), href: '/dashboard/hrd/ai' },
-                    { label: t('common.maintenance'), href: '/dashboard/hrd/maintenance' },
                     { label: t('common.activation'), href: '/dashboard/hrd/otp' },
                     { label: t('common.application'), href: '/dashboard/hrd/website' },
                 ],
