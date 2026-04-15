@@ -23,9 +23,20 @@ export async function getCroppedImg(
         return null
     }
 
+    // Set maximum dimensions to keep file size small (for base64 DB storage on Vercel)
+    let targetWidth = pixelCrop.width
+    let targetHeight = pixelCrop.height
+    const MAX_WIDTH = 800
+    
+    if (targetWidth > MAX_WIDTH) {
+        const ratio = MAX_WIDTH / targetWidth
+        targetWidth = MAX_WIDTH
+        targetHeight = Math.round(targetHeight * ratio)
+    }
+
     // set canvas size to match the desired crop size
-    canvas.width = pixelCrop.width
-    canvas.height = pixelCrop.height
+    canvas.width = targetWidth
+    canvas.height = targetHeight
 
     // draw the cropped image onto the canvas
     ctx.drawImage(
@@ -36,8 +47,8 @@ export async function getCroppedImg(
         pixelCrop.height,
         0,
         0,
-        pixelCrop.width,
-        pixelCrop.height
+        targetWidth,
+        targetHeight
     )
 
     // as a blob

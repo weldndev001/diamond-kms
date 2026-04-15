@@ -28,6 +28,7 @@ export default function FAQsPage() {
     // Helper to make URLs dynamic/relative
     const normalizeUrl = (url?: string) => {
         if (!url) return ''
+        if (url.startsWith('data:')) return url // Hande base64 DB storage
         if (url.startsWith('blob:')) return url // Handle local previews
         if (url.startsWith('http://') || url.startsWith('https://')) return url
         
@@ -132,32 +133,21 @@ export default function FAQsPage() {
             const croppedUrl = URL.createObjectURL(croppedBlob)
             setLocalPreview(croppedUrl)
 
-            const uploadFormData = new FormData()
-            const fileExt = '.webp' // We use webp in getCroppedImg
-            uploadFormData.append('file', new File([croppedBlob], `cropped-${originalFileName}`, { type: 'image/webp' }))
-            uploadFormData.append('bucket', 'faqs')
-            
-            const cleanName = originalFileName
-                .toLowerCase()
-                .substring(0, originalFileName.lastIndexOf('.'))
-                .replace(/[^a-z0-9]/g, '-')
-                .substring(0, 30) // Limit length
-            
-            const finalPath = `image-${Date.now()}-${cleanName}${fileExt}`
-            uploadFormData.append('path', finalPath)
-
-            const res = await uploadFileAction(uploadFormData)
-            if (res.success && res.publicUrl) {
-                setFormData(prev => ({ ...prev, image_url: res.publicUrl! }))
-            } else {
-                alert(res.error || t('common.error'))
-                setLocalPreview(null)
+            // Convert to base64 Data URL instead of uploading to local storage
+            // This ensures it works perfectly on Vercel's ephemeral filesystem
+            const reader = new FileReader()
+            reader.readAsDataURL(croppedBlob)
+            reader.onloadend = () => {
+                const base64data = reader.result as string
+                setFormData(prev => ({ ...prev, image_url: base64data }))
+                setSaving(false)
+                setUploadingImage(false)
+                setImageToCrop(null)
             }
         } catch (err) {
             console.error('Crop/Upload error:', err)
             alert(t('common.error'))
             setLocalPreview(null)
-        } finally {
             setSaving(false)
             setUploadingImage(false)
             setImageToCrop(null)
