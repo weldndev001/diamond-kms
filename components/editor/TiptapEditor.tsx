@@ -4,7 +4,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import Link from '@tiptap/extension-link'
-import Image from '@tiptap/extension-image'
+import TiptapImage from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import {
     Bold, Italic, Underline as UnderlineIcon, Strikethrough,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { uploadFileAction } from '@/lib/actions/storage.actions'
 import { useRef, useState } from 'react'
+import { compressImage } from '@/lib/utils/image'
 
 interface TiptapEditorProps {
     content: string
@@ -33,7 +34,7 @@ export function TiptapEditor({ content, onChange, onOpenSources, orgId }: Tiptap
             }),
             Underline,
             Link.configure({ openOnClick: false }),
-            Image.configure({
+            TiptapImage.configure({
                 allowBase64: true,
                 HTMLAttributes: {
                     class: 'rounded-lg max-w-full h-auto my-4',
@@ -60,24 +61,24 @@ export function TiptapEditor({ content, onChange, onOpenSources, orgId }: Tiptap
             return
         }
 
+        console.log('[Tiptap] Uploading image:', file.name, file.type, file.size)
         setUploading(true)
         try {
-            const storagePath = `${orgId}/content_images/${Date.now()}_${file.name}`
+            const base64data = await compressImage(file)
+            console.log('[Tiptap] Image compressed, base64 length:', base64data?.length)
             
-            const formData = new FormData()
-            formData.append('file', file)
-            formData.append('path', storagePath)
-            formData.append('bucket', 'documents')
-
-            const res = await uploadFileAction(formData)
-
-            if (!res.success) throw new Error(res.error)
-
-            editor.chain().focus().setImage({ src: res.publicUrl! }).run()
+            if (base64data) {
+                editor.chain().focus().setImage({ src: base64data }).run()
+                console.log('[Tiptap] Editor setImage executed')
+            } else {
+                throw new Error('Compression returned empty data')
+            }
+            
+            setUploading(false)
+            if (fileInputRef.current) fileInputRef.current.value = ''
         } catch (error) {
-            console.error('Image upload failed:', error)
-            alert('Gagal mengunggah gambar content body')
-        } finally {
+            console.error('[Tiptap] Image processing failed:', error)
+            alert('Gagal memproses gambar content body: ' + (error instanceof Error ? error.message : 'Unknown error'))
             setUploading(false)
             if (fileInputRef.current) fileInputRef.current.value = ''
         }

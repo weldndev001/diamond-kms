@@ -12,6 +12,7 @@ import { uploadFileAction } from '@/lib/actions/storage.actions'
 import { Role } from '@prisma/client'
 import ImageCropper from '@/components/shared/ImageCropper'
 import { Scissors } from 'lucide-react'
+import { compressImage } from '@/lib/utils/image'
 
 export default function CreateContentPage() {
     const router = useRouter()
@@ -111,16 +112,18 @@ export default function CreateContentPage() {
         setUploadingHeader(true)
         setIsCropperOpen(false)
         try {
-            // Convert to base64 Data URL instead of uploading to local storage
-            // This ensures it works perfectly on Vercel's ephemeral filesystem
-            const reader = new FileReader()
-            reader.readAsDataURL(croppedBlob)
-            reader.onloadend = () => {
-                const base64data = reader.result as string
+            console.log('[KB Create] Compressing header image')
+            const base64data = await compressImage(croppedBlob, 1200, 500, 0.8)
+            console.log('[KB Create] Header image compressed, length:', base64data?.length)
+            
+            if (base64data) {
                 setHeaderImage(base64data)
-                setUploadingHeader(false)
-                setTempImage(null)
+            } else {
+                throw new Error('Compression returned empty data')
             }
+            
+            setUploadingHeader(false)
+            setTempImage(null)
         } catch (error) {
             console.error('Header upload failed:', error)
             alert('Gagal mengunggah header image')

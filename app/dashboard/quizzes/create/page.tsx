@@ -13,6 +13,7 @@ import { TiptapEditor } from '@/components/editor/TiptapEditor'
 import { uploadFileAction } from '@/lib/actions/storage.actions'
 import ImageCropper from '@/components/shared/ImageCropper'
 import { useTranslation } from '@/hooks/useTranslation'
+import { compressImage } from '@/lib/utils/image'
 
 export default function CreateQuizPage() {
     const { t } = useTranslation()
@@ -103,14 +104,14 @@ export default function CreateQuizPage() {
     }
 
     const handleImageUpload = async (index: number, file: File) => {
-        // Placeholder simulation for image upload
-        // In real scenario, upload to local storage API and get URL
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const result = e.target?.result as string;
-            handleQuestionChange(index, 'image', result);
-        };
-        reader.readAsDataURL(file);
+        try {
+            console.log('[Quiz] Compressing question image:', file.name)
+            const base64data = await compressImage(file, 800, 800, 0.7) // Smaller for questions
+            handleQuestionChange(index, 'image', base64data)
+        } catch (error) {
+            console.error('[Quiz] Question image compression failed:', error)
+            alert('Gagal mengompres gambar pertanyaan')
+        }
     }
 
     const handleRemoveQuestion = (index: number) => {
@@ -184,18 +185,13 @@ export default function CreateQuizPage() {
 
         setIsUploadingHeader(true)
         try {
-            // Convert to base64 Data URL instead of uploading to local storage
-            // This ensures it works perfectly on Vercel's ephemeral filesystem
-            const reader = new FileReader()
-            reader.readAsDataURL(croppedBlob)
-            reader.onloadend = () => {
-                const base64data = reader.result as string
-                setHeaderImage(base64data)
-                setIsUploadingHeader(false)
-                setTempImage(null)
-            }
+            console.log('[Quiz] Compressing header image')
+            const base64data = await compressImage(croppedBlob, 1200, 400, 0.8)
+            setHeaderImage(base64data)
+            setIsUploadingHeader(false)
+            setTempImage(null)
         } catch (error) {
-            console.error('Header image upload failed:', error)
+            console.error('[Quiz] Header image compression failed:', error)
             setStatus({ type: 'error', msg: t('quizzes_create.save_failed') })
             setIsUploadingHeader(false)
             setTempImage(null)

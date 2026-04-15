@@ -10,6 +10,7 @@ import {
     Trash2, ClipboardList
 } from 'lucide-react'
 import Link from 'next/link'
+import { DocumentPreviewCard } from '@/components/documents/DocumentPreviewCard'
 
 interface ChatMessage {
     role: 'user' | 'assistant'
@@ -61,6 +62,7 @@ export default function DocumentDetailPage() {
     }, [params.id])
 
     const isPDF = doc?.mime_type === 'application/pdf'
+    const isImage = doc?.mime_type?.startsWith('image/')
 
     // Use proxy endpoint to bypass signed URL JWT issues
     const loadPdfUrl = () => {
@@ -389,11 +391,11 @@ export default function DocumentDetailPage() {
                 )}
             </div>
 
-            {/* Split Panel: Chat LEFT | PDF RIGHT */}
+            {/* Split Panel: Chat LEFT | Preview RIGHT */}
             <div className="flex gap-4" style={{ height: 'calc(100vh - 160px)' }}>
                 {/* LEFT — AI Chat */}
                 {!pdfFullscreen && (
-                    <div className="card overflow-hidden flex flex-col" style={{ width: isPDF ? '45%' : '100%', minWidth: 0 }}>
+                    <div className="card overflow-hidden flex flex-col" style={{ width: '45%', minWidth: 0 }}>
                         {/* Chat Header */}
                         <div className="px-4 py-3 border-b border-surface-200 bg-gradient-to-r from-navy-50 to-surface-50 flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-2">
@@ -531,14 +533,14 @@ export default function DocumentDetailPage() {
                     </div>
                 )}
 
-                {/* RIGHT — PDF Viewer */}
-                {isPDF && (
-                    <div className={`card overflow-hidden flex flex-col ${pdfFullscreen ? 'w-full' : ''}`} style={pdfFullscreen ? {} : { width: '55%', minWidth: 0 }}>
-                        <div className="px-4 py-3 border-b border-surface-200 bg-surface-0 flex justify-between items-center shrink-0">
-                            <h2 className="font-bold font-display text-navy-900 flex items-center gap-2 text-sm">
-                                <FileText size={15} className="text-navy-600" />
-                                PDF Viewer
-                            </h2>
+                {/* RIGHT — Preview Viewer */}
+                <div className={`card overflow-hidden flex flex-col ${pdfFullscreen ? 'w-full' : ''}`} style={pdfFullscreen ? {} : { width: '55%', minWidth: 0 }}>
+                    <div className="px-4 py-3 border-b border-surface-200 bg-surface-0 flex justify-between items-center shrink-0">
+                        <h2 className="font-bold font-display text-navy-900 flex items-center gap-2 text-sm">
+                            <FileText size={15} className="text-navy-600" />
+                            {isPDF ? 'PDF Viewer' : isImage ? 'Image Preview' : 'Preview Dokumen'}
+                        </h2>
+                        {isPDF && (
                             <button
                                 onClick={() => setPdfFullscreen(!pdfFullscreen)}
                                 className="p-1.5 text-text-500 hover:text-navy-900 hover:bg-surface-100 rounded-md transition"
@@ -546,9 +548,11 @@ export default function DocumentDetailPage() {
                             >
                                 {pdfFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
                             </button>
-                        </div>
-                        <div className="flex-1 bg-surface-100">
-                            {pdfLoading ? (
+                        )}
+                    </div>
+                    <div className="flex-1 bg-surface-100 overflow-hidden">
+                        {isPDF ? (
+                            pdfLoading ? (
                                 <div className="flex items-center justify-center h-full">
                                     <div className="text-center space-y-2">
                                         <Loader2 size={28} className="text-navy-600 animate-spin mx-auto" />
@@ -573,12 +577,6 @@ export default function DocumentDetailPage() {
                                 (() => {
                                     const pageParam = searchParams.get('page')
                                     const searchParam = searchParams.get('search')
-                                    const pdfHashParams = new URLSearchParams()
-                                    pdfHashParams.set('toolbar', '1')
-                                    pdfHashParams.set('navpanes', '0')
-                                    if (pageParam) pdfHashParams.set('page', pageParam)
-                                    if (searchParam) pdfHashParams.set('search', searchParam)
-                                    // Ensure quote marks for exact phrase search in PDF viewers
                                     const searchSuffix = searchParam ? `&search="${encodeURIComponent(searchParam)}"` : ''
                                     
                                     return (
@@ -596,10 +594,20 @@ export default function DocumentDetailPage() {
                                         <p className="text-xs text-text-500">PDF tidak tersedia</p>
                                     </div>
                                 </div>
-                            )}
-                        </div>
+                            )
+                        ) : isImage ? (
+                            <div className="w-full h-full flex items-center justify-center p-4">
+                                <img 
+                                    src={`/api/documents/pdf/${doc.file_path}`} 
+                                    alt={doc.file_name}
+                                    className="max-w-full max-h-full object-contain shadow-lg rounded-lg"
+                                />
+                            </div>
+                        ) : (
+                            <DocumentPreviewCard doc={doc} />
+                        )}
                     </div>
-                )}
+                </div>
             </div>
         </div>
     )

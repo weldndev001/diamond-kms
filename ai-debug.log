@@ -164,3 +164,6 @@
 [2026-04-13T09:24:05.420Z] Got AI service: ollama-self-hosted
 [2026-04-13T09:24:05.421Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
 [2026-04-13T09:24:09.666Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-04-15T08:01:15.490Z] [AI-FACTORY] BASE CONFIG: {"provider":"managed","autoSummaryChat":false}
+[2026-04-15T08:01:20.743Z] [AI-FACTORY] BASE CONFIG: {"provider":"managed","autoSummaryChat":false}
+[2026-04-15T08:01:20.745Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf

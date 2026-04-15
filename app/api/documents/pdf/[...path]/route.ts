@@ -70,10 +70,21 @@ export async function GET(
         }
 
         const buffer = await readFile(fullPath)
+        
+        let mimeType = 'application/pdf'
+        try {
+            const mime = require('mime-types')
+            const lookup = mime.lookup(safeFilePath)
+            if (lookup) {
+                mimeType = lookup
+            }
+        } catch (e) {
+            // fallback
+        }
 
         return new NextResponse(buffer, {
             headers: {
-                'Content-Type': 'application/pdf',
+                'Content-Type': mimeType,
                 'Content-Disposition': 'inline',
                 'Cache-Control': 'private, max-age=3600',
                 'Content-Length': buffer.byteLength.toString(),

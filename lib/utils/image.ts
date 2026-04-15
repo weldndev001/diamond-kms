@@ -1,60 +1,57 @@
 /**
- * Utility to help with image cropping using canvas
+ * Compresses an image file/blob and returns a Base64 string.
+ * Resizes the image to stay within max dimensions while maintaining aspect ratio.
  */
+export async function compressImage(
+    file: File | Blob,
+    maxWidth: number = 1200,
+    maxHeight: number = 1200,
+    quality: number = 0.8
+): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
 
-export const createImage = (url: string): Promise<HTMLImageElement> =>
-    new Promise((resolve, reject) => {
-        const image = new Image()
-        image.addEventListener('load', () => resolve(image))
-        image.addEventListener('error', (error) => reject(error))
-        image.setAttribute('crossOrigin', 'anonymous') // needed to avoid cross-origin issues
-        image.src = url
-    })
+                // Calculate new dimensions
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width *= maxHeight / height;
+                        height = maxHeight;
+                    }
+                }
 
-export async function getCroppedImg(
-    imageSrc: string,
-    pixelCrop: { x: number; y: number; width: number; height: number }
-): Promise<Blob | null> {
-    const image = await createImage(imageSrc)
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
+                canvas.width = width;
+                canvas.height = height;
 
-    if (!ctx) {
-        return null
-    }
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Failed to get canvas context'));
+                    return;
+                }
 
-    // Set maximum dimensions to keep file size small (for base64 DB storage on Vercel)
-    let targetWidth = pixelCrop.width
-    let targetHeight = pixelCrop.height
-    const MAX_WIDTH = 800
-    
-    if (targetWidth > MAX_WIDTH) {
-        const ratio = MAX_WIDTH / targetWidth
-        targetWidth = MAX_WIDTH
-        targetHeight = Math.round(targetHeight * ratio)
-    }
-
-    // set canvas size to match the desired crop size
-    canvas.width = targetWidth
-    canvas.height = targetHeight
-
-    // draw the cropped image onto the canvas
-    ctx.drawImage(
-        image,
-        pixelCrop.x,
-        pixelCrop.y,
-        pixelCrop.width,
-        pixelCrop.height,
-        0,
-        0,
-        targetWidth,
-        targetHeight
-    )
-
-    // as a blob
-    return new Promise((resolve) => {
-        canvas.toBlob((blob) => {
-            resolve(blob)
-        }, 'image/webp', 0.8) // Use webp for efficiency
-    })
+                // Draw and compress
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Use webp if supported, otherwise jpeg for compression
+                const dataUrl = canvas.toDataURL('image/webp', quality);
+                
+                // If weight is still too low or not compressed as expected, double check
+                resolve(dataUrl);
+            };
+            img.onerror = (error) => reject(error);
+        };
+        reader.onerror = (error) => reject(error);
+    });
 }
