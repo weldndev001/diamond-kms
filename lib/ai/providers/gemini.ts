@@ -134,6 +134,27 @@ export class GeminiService implements AIService {
         }
     }
 
+    // ─── Image Description (Vision/Multimodal) ────────────────
+    async describeImage(base64Data: string, context?: string): Promise<string> {
+        const model = this.genAI.getGenerativeModel({ model: this.chatModel })
+
+        // Strip data URL prefix if present
+        const base64Clean = base64Data.replace(/^data:image\/\w+;base64,/, '')
+        const mimeMatch = base64Data.match(/^data:(image\/\w+);base64,/)
+        const mimeType = mimeMatch?.[1] || 'image/jpeg'
+
+        const prompt = context
+            ? `Analyze and describe this image in detail. Context: this image is part of a knowledge article about "${context}". Describe what you see, including any text, diagrams, charts, tables, or visual information. Respond in Bahasa Indonesia.`
+            : `Analyze and describe this image in detail. Describe what you see, including any text, diagrams, charts, tables, or visual information. Respond in Bahasa Indonesia.`
+
+        const result = await model.generateContent([
+            { inlineData: { data: base64Clean, mimeType } },
+            prompt,
+        ])
+
+        return result.response.text()
+    }
+
     async rerank(query: string, documents: string[]): Promise<{ index: number; score: number }[]> {
         // Gemini does not have a native Rerank API yet.
         // Return original order with a mock score.

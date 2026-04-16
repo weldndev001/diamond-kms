@@ -6,6 +6,7 @@ import { ApiResponse } from '@/lib/api/response'
 import { logger } from '@/lib/logging/redact'
 import { getAIServiceForOrg } from '@/lib/ai/get-ai-service'
 import { chunkDocument } from '@/lib/ai/chunker'
+import { analyzeContentImages } from '@/lib/ai/image-extractor'
 import { env } from '@/lib/env'
 
 export const maxDuration = 120 // Allow up to 2 minutes for large articles
@@ -82,14 +83,38 @@ async function processContentInBackground(contentId: string, content: any) {
 
         const rawText = stripHtml(content.body) || 'Artikel kosong.'
 
-        // Treat the whole article as a single "page" for chunker
-        const pages = [{ pageNum: 1, text: `${content.title}\n\n${rawText}` }]
-
         console.log(`✅ [PROCESS] Extracted article text, ${rawText.length} chars from ${content.title}`)
 
-        // STEP 2: Get AI service for this organization
+        // STEP 2: Get AI service for this organization (needed for image analysis & embedding)
         const ai = await getAIServiceForOrg(content.organization_id)
         console.log(`✅ [PROCESS] Got AI service: ${ai.providerName}, embedding: ${ai.embeddingModel}`)
+
+        // STEP 1.5: Analyze images in article content using AI Vision (Qwen 3.5)
+        const msgImg = 'Menganalisis gambar dalam artikel dengan AI Vision...'
+        await updateProcessingLog(contentId, 'processing', msgImg, 25)
+
+        let imageDescriptions = ''
+        try {
+            imageDescriptions = await analyzeContentImages(
+                ai, content.image_url, content.body, content.title
+            )
+            if (imageDescriptions) {
+                console.log(`✅ [PROCESS] Image analysis complete for "${content.title}", ${imageDescriptions.length} chars of descriptions`)
+            } else {
+                console.log(`ℹ️ [PROCESS] No images found or no descriptions generated for "${content.title}"`)
+            }
+        } catch (imgErr) {
+            console.error(`⚠️ [PROCESS] Image analysis failed (non-fatal):`, imgErr)
+            // Non-fatal: continue processing without image descriptions
+        }
+
+        // Combine article text with image descriptions
+        const enrichedText = imageDescriptions
+            ? `${rawText}\n\n--- Deskripsi Visual dari Gambar ---\n${imageDescriptions}`
+            : rawText
+
+        // Treat the whole article as a single "page" for chunker
+        const pages = [{ pageNum: 1, text: `${content.title}\n\n${enrichedText}` }]
 
         // STEP 3: Update Content with AI embedding model
         await prisma.content.update({

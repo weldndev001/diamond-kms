@@ -156,6 +156,45 @@ export class OpenAICompatService implements AIService {
         }
     }
 
+    async describeImage(base64Data: string, context?: string): Promise<string> {
+        try {
+            // Ensure proper data URL format
+            const mimeMatch = base64Data.match(/^data:(image\/\w+);base64,/)
+            const imageUrl = mimeMatch ? base64Data : `data:image/jpeg;base64,${base64Data}`
+
+            const prompt = context
+                ? `Analyze and describe this image in detail. Context: this image is part of a knowledge article about "${context}". Describe what you see, including any text, diagrams, charts, tables, or visual information. Respond in Bahasa Indonesia.`
+                : `Analyze and describe this image in detail. Describe what you see, including any text, diagrams, charts, tables, or visual information. Respond in Bahasa Indonesia.`
+
+            const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+                {
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: prompt },
+                        { type: 'image_url', image_url: { url: imageUrl } }
+                    ]
+                }
+            ]
+
+            console.log(`[AI-SELFHOSTED] Analyzing image with vision model: ${this.chatModel}`)
+            const startTime = Date.now()
+
+            const response = await this.client.chat.completions.create({
+                model: this.chatModel,
+                messages,
+                max_tokens: 500,
+                temperature: 0.3, // Lower temperature for more factual descriptions
+            })
+
+            const description = response.choices[0]?.message.content ?? ''
+            console.log(`[AI-SELFHOSTED] Image analysis completed in ${Date.now() - startTime}ms, description length: ${description.length}`)
+            return description
+        } catch (err: any) {
+            console.error(`[AI-SELFHOSTED] Image analysis error:`, err.message)
+            throw err
+        }
+    }
+
     async rerank(query: string, documents: string[]): Promise<{ index: number; score: number }[]> {
         return withRetry(async () => {
             const baseUrl = this.client.baseURL.replace(/\/$/, '')

@@ -38,6 +38,9 @@ export interface AIService {
         documents: string[]
     ): Promise<{ index: number; score: number }[]>
 
+    /** Analyze an image and return a text description (Vision/Multimodal) */
+    describeImage?(base64Data: string, context?: string): Promise<string>
+
     /** Provider name for logging */
     readonly providerName: string
     readonly embeddingModel: string
