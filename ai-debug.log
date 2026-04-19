@@ -167,3 +167,17 @@
 [2026-04-15T08:01:15.490Z] [AI-FACTORY] BASE CONFIG: {"provider":"managed","autoSummaryChat":false}
 [2026-04-15T08:01:20.743Z] [AI-FACTORY] BASE CONFIG: {"provider":"managed","autoSummaryChat":false}
 [2026-04-15T08:01:20.745Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-04-16T08:30:13.246Z] [AI-FACTORY] BASE CONFIG: {"provider":"managed","autoSummaryChat":false}
+[2026-04-16T08:30:32.670Z] [AI-FACTORY] BASE CONFIG: {"provider":"managed","autoSummaryChat":false}
+[2026-04-16T08:30:43.028Z] [AI-FACTORY] BASE CONFIG: {"provider":"managed","autoSummaryChat":false}
+[2026-04-16T08:55:10.808Z] [PROCESS-BG] STARTED for 41f8e94a-9747-4cb1-be69-9cee0557b8ab
+[2026-04-16T08:55:10.971Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-16T08:55:11.012Z] [AI-FACTORY] BASE CONFIG: {"provider":"managed","autoSummaryChat":false}
+[2026-04-16T08:55:11.038Z] Got AI service: ollama-self-hosted
+[2026-04-16T08:55:11.040Z] [AI-CLIENT] Using baseURL: https://llm01.weldn.ai/olla/openai/v1, model: Qwen3.5-4B-Q4_K_M-unsloth.gguf
+[2026-04-16T09:18:11.229Z] [PROCESS-BG] STARTED for abdf9f69-02ee-4a68-b129-7a889f3dcbe4
+[2026-04-16T09:18:11.736Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-16T09:18:11.793Z] Got AI service: ollama-self-hosted
+[2026-04-19T12:58:02.715Z] [PROCESS-BG] STARTED for 94fceafa-97a8-4989-bfbb-b4a3b04f0b98
+[2026-04-19T12:58:05.073Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-19T12:58:05.126Z] Got AI service: ollama-self-hosted

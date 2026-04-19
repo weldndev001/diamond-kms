@@ -9,12 +9,8 @@ import type { AIProviderConfig, AIService } from './types'
 // Default Olla load balancer endpoint (self-hosted)
 const OLLA_DEFAULT = 'https://llm01.weldn.ai/olla/openai/v1'
 
-import { appendFileSync } from 'fs'
-import { join } from 'path'
-
 export function getAIService(config: AIProviderConfig): AIService {
-    const logMsg = `[${new Date().toISOString()}] [AI-FACTORY] BASE CONFIG: ${JSON.stringify(config)}\n`
-    appendFileSync(join(process.cwd(), 'ai-debug.log'), logMsg)
+    console.log(`[AI-FACTORY] BASE CONFIG: ${JSON.stringify(config)}`)
     
     const provider = process.env.AI_PROVIDER || config.provider || 'managed'
 

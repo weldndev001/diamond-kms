@@ -63,3 +63,47 @@ function splitIntoPages(text: string, pageCount: number): PageText[] {
     }
     return pages
 }
+
+/**
+ * Extract text from DOCX files using mammoth
+ */
+export async function extractDocxText(
+    fileBuffer: Buffer,
+    fileName: string
+): Promise<ExtractedDocument> {
+    const mammoth = require('mammoth');
+    const result = await mammoth.extractRawText({ buffer: fileBuffer });
+    const text = result.value || '';
+    
+    return {
+        fullText: text,
+        pages: [{ pageNum: 1, text }],
+        pageCount: 1,
+    };
+}
+
+/**
+ * Extract text from XLSX files using xlsx
+ */
+export async function extractXlsxText(
+    fileBuffer: Buffer,
+    fileName: string
+): Promise<ExtractedDocument> {
+    const xlsx = require('xlsx');
+    const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
+    let text = `File: ${fileName}\n\n`;
+    
+    for (const sheetName of workbook.SheetNames) {
+        const sheet = workbook.Sheets[sheetName];
+        text += `--- SpreadSheet: ${sheetName} ---\n`;
+        // Convert sheet to CSV string representation to maintain basic row/col structure
+        text += xlsx.utils.sheet_to_csv(sheet);
+        text += `\n\n`;
+    }
+    
+    return {
+        fullText: text,
+        pages: [{ pageNum: 1, text }],
+        pageCount: 1,
+    };
+}

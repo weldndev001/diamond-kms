@@ -120,12 +120,28 @@ async function processDocumentInBackground(documentId: string, document: any) {
         const isText = ['text/plain', 'text/markdown', 'text/csv', 'text/x-sql', 'application/sql', 'text/sql'].includes(
             document.mime_type
         )
+        const isDocx = document.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+                       document.file_name.toLowerCase().endsWith('.docx')
+        const isXlsx = document.mime_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+                       document.file_name.toLowerCase().endsWith('.xlsx')
 
         let pages: { pageNum: number; text: string }[]
         let pageCount: number
 
         if (fileBuffer && isPDF) {
             const extracted = await extractPDFText(fileBuffer)
+            extractedText = extracted.fullText
+            pages = extracted.pages
+            pageCount = extracted.pageCount
+        } else if (fileBuffer && isDocx) {
+            const { extractDocxText } = await import('@/lib/ai/pdf-extractor')
+            const extracted = await extractDocxText(fileBuffer, document.file_name)
+            extractedText = extracted.fullText
+            pages = extracted.pages
+            pageCount = extracted.pageCount
+        } else if (fileBuffer && isXlsx) {
+            const { extractXlsxText } = await import('@/lib/ai/pdf-extractor')
+            const extracted = await extractXlsxText(fileBuffer, document.file_name)
             extractedText = extracted.fullText
             pages = extracted.pages
             pageCount = extracted.pageCount

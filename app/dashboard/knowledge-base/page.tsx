@@ -45,9 +45,20 @@ interface KnowledgeBase {
     messageCount: number
 }
 
+interface Citation {
+    documentId: string
+    documentTitle: string
+    pageStart: number
+    pageEnd: number
+    groupName: string
+    chunkContent: string
+    sourceType?: 'DOCUMENT' | 'ARTICLE'
+}
+
 interface ChatMessage {
     role: 'user' | 'assistant'
     content: string
+    citations?: Citation[]
 }
 
 interface ChatSession {
@@ -340,7 +351,7 @@ function CreateKBView({ allDocs, onBack, onCreateDone }: {
 /* ═══════════════════════════════════════════
    VIEW: KB CHAT
    ═══════════════════════════════════════════ */
-function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSession, canEdit }: {
+function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSession, canEdit, onRefreshSessions }: {
     kb: KnowledgeBase
     onBack: () => void
     onAddDoc: () => void
@@ -348,6 +359,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
     chatSessions: ChatSession[]
     onNewSession: () => void
     canEdit: boolean
+    onRefreshSessions?: () => void
 }) {
     const { t } = useTranslation()
     const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -356,12 +368,98 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
     const [showSidebar, setShowSidebar] = useState(true)
     const [sidebarTab, setSidebarTab] = useState<'docs' | 'history'>('docs')
     const [showNewSessionModal, setShowNewSessionModal] = useState(false)
+    const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
     const endRef = useRef<HTMLDivElement>(null)
+
+    const loadSession = async (sessionId: string) => {
+        try {
+            const res = await fetch(`/api/chat/sessions/${sessionId}`)
+            if (res.ok) {
+                const data = await res.json()
+                setActiveSessionId(sessionId)
+                setMessages(
+                    data.session.messages.map((m: any) => ({
+                        role: m.role as 'user' | 'assistant',
+                        content: m.content,
+                        citations: m.citations ? (typeof m.citations === 'string' ? JSON.parse(m.citations) : m.citations) : undefined
+                    }))
+                )
+            }
+        } catch { /* ignore */ }
+    }
 
     const isDraft = kb.status === ContentStatus.DRAFT
 
+    const renderCitations = (citationList?: Citation[]) => {
+        if (!citationList || citationList.length === 0) return null
+        return (
+            <div className="mt-4 pt-3 border-t border-surface-200 dark:border-slate-700/50">
+                <p className="text-[10px] font-bold text-text-400 uppercase tracking-wider mb-2">
+                    {t('ai_assistant.reference_sources') || 'SUMBER DOKUMEN'}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {citationList.slice(0, 4).map((c, i) => {
+                        const isArticle = c.sourceType === 'ARTICLE'
+                        const cleanText = c.chunkContent.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim()
+                        const searchSnippet = cleanText.substring(0, 35)
+                        const encodedKeyword = encodeURIComponent(searchSnippet)
+
+                        const href = isArticle
+                            ? `/dashboard/knowledge-base/${c.documentId}#:~:text=${encodedKeyword}`
+                            : `/dashboard/documents/${c.documentId}?page=${c.pageStart}&search=${encodedKeyword}`
+
+                        const pathSegments = isArticle
+                            ? ['Basis Pengetahuan', c.documentTitle]
+                            : ['Dokumen', c.documentTitle]
+                        const locationLabel = isArticle
+                            ? `Bagian ${c.pageStart}`
+                            : `Hal. ${c.pageStart}${c.pageEnd > c.pageStart ? `–${c.pageEnd}` : ''}`
+                        
+                        return (
+                            <a
+                                key={i}
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group flex flex-col bg-white dark:bg-slate-800 border border-surface-200 dark:border-slate-700 rounded-lg p-3 hover:border-navy-400 dark:hover:border-navy-400 shadow-sm hover:shadow-md transition-all"
+                            >
+                                <div className="flex items-start gap-2.5">
+                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isArticle ? 'bg-amber-100 text-amber-600' : 'bg-navy-100 dark:bg-navy-900 text-navy-600 dark:text-navy-400'}`}>
+                                        <FileText size={13} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-bold text-navy-900 dark:text-white text-[11px] truncate group-hover:text-navy-700 dark:group-hover:text-navy-300 leading-tight">
+                                            {c.documentTitle}
+                                        </p>
+                                        <div className="flex items-center gap-1 mt-1">
+                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-tight ${isArticle ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-navy-50 text-navy-600 border border-navy-200'}`}>
+                                                {locationLabel}
+                                            </span>
+                                            {c.groupName && (
+                                                <span className="text-[9px] text-text-400 font-medium truncate">
+                                                    · {c.groupName}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1 mt-1.5 text-[9px] text-text-400 group-hover:text-navy-500 transition-colors">
+                                            <span className="opacity-70">📂</span>
+                                            <span className="font-medium truncate">
+                                                {pathSegments[0]} › {pathSegments[1]?.substring(0, 30)}{(pathSegments[1]?.length || 0) > 30 ? '...' : ''} › {locationLabel}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        )
+                    })}
+                </div>
+            </div>
+        )
+    }
+
     const handleConfirmNewSession = () => {
         setMessages([])
+        setActiveSessionId(null)
         onNewSession()
         setShowNewSessionModal(false)
     }
@@ -374,6 +472,27 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
         const q = input.trim()
         if (!q || isTyping || isDraft) return
         
+        let currentSessionId = activeSessionId
+        if (!currentSessionId) {
+            try {
+                const res = await fetch('/api/chat/sessions', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ knowledgeBaseId: kb.id }) 
+                })
+                if (res.ok) {
+                    const data = await res.json()
+                    currentSessionId = data.session.id
+                    setActiveSessionId(data.session.id)
+                    if (onRefreshSessions) {
+                        onRefreshSessions()
+                    }
+                }
+            } catch {
+                return
+            }
+        }
+
         const newHistory = [...messages, { role: 'user' as const, content: q }]
         setMessages(newHistory)
         setInput('')
@@ -385,7 +504,8 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     question: q,
-                    history: messages,
+                    history: messages.slice(-6),
+                    sessionId: currentSessionId,
                     knowledgeBaseId: kb.id
                 })
             })
@@ -394,33 +514,67 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
             const reader = res.body?.getReader()
             const decoder = new TextDecoder()
             let aiText = ''
-            setMessages([...newHistory, { role: 'assistant' as const, content: '' }])
+            let receivedCitations: Citation[] = []
+            let sseBuffer = ''
+
+            setMessages([...newHistory, { role: 'assistant' as const, content: '', citations: [] }])
 
             if (reader) {
                 while (true) {
                     const { done, value } = await reader.read()
                     if (done) break
-                    const chunk = decoder.decode(value)
-                    const lines = chunk.split('\n')
+                    
+                    sseBuffer += decoder.decode(value, { stream: true })
+                    const lines = sseBuffer.split('\n')
+                    sseBuffer = lines.pop() || ''
+
+                    let currentEvent = ''
                     for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.slice(6)
-                            if (data === '[DONE]') continue
+                        if (line.startsWith('event: ')) {
+                            currentEvent = line.slice(7).trim()
+                        } else if (line.startsWith('data: ') && currentEvent) {
                             try {
-                                const parsed = JSON.parse(data)
-                                if (parsed.text) {
-                                    aiText += parsed.text
+                                const json = JSON.parse(line.slice(6))
+                                if (currentEvent === 'chunk' && json.text) {
+                                    aiText += json.text
                                     setMessages(prev => {
                                         const next = [...prev]
-                                        next[next.length - 1] = { role: 'assistant', content: aiText }
+                                        next[next.length - 1] = { role: 'assistant', content: aiText, citations: receivedCitations }
                                         return next
                                     })
+                                } else if (currentEvent === 'citations' && json.citations) {
+                                    receivedCitations = json.citations
+                                    setMessages(prev => {
+                                        const next = [...prev]
+                                        next[next.length - 1].citations = receivedCitations
+                                        return next
+                                    })
+                                } else if (currentEvent === 'title_updated' && json.title) {
+                                    if (onRefreshSessions) {
+                                        onRefreshSessions()
+                                    }
                                 }
                             } catch {}
+                            currentEvent = ''
                         }
                     }
                 }
             }
+
+            if (currentSessionId && aiText) {
+                try {
+                    await fetch(`/api/chat/sessions/${currentSessionId}/messages`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userMessage: q,
+                            assistantMessage: aiText,
+                            citations: receivedCitations.length > 0 ? receivedCitations : null,
+                        }),
+                    })
+                } catch { /* ignore */ }
+            }
+
         } catch (e) {
             setMessages(prev => [...prev, { role: 'assistant', content: 'Maaf, terjadi kesalahan.' }])
         } finally {
@@ -445,6 +599,10 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
                         </div>
                     </div>
                     <div className="flex items-center gap-1 bg-surface-100 p-1 rounded-xl">
+                        <button onClick={handleConfirmNewSession}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 text-text-400 hover:text-navy-600`}>
+                            <Plus size={14} /> New Chat
+                        </button>
                         <button onClick={() => { setShowSidebar(true); setSidebarTab('docs') }}
                             className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 ${showSidebar && sidebarTab === 'docs' ? 'bg-white shadow-sm text-navy-600' : 'text-text-400'}`}>
                             <FileText size={14} /> {t('common.sources')}
@@ -472,7 +630,8 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
                     {messages.map((msg, i) => (
                         <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`rounded-2xl px-4 py-2.5 max-w-[80%] text-sm ${msg.role === 'user' ? 'bg-navy-600 text-white' : 'bg-surface-100 text-navy-900'}`}>
-                                {msg.content}
+                                <p className="whitespace-pre-wrap">{msg.content}</p>
+                                {msg.role === 'assistant' && renderCitations(msg.citations)}
                             </div>
                         </div>
                     ))}
@@ -506,9 +665,10 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
                                 <FileText size={14} className="text-navy-400" /> {d.title}
                             </div>
                         )) : chatSessions.map(s => (
-                            <div key={s.id} className="p-2.5 bg-white border border-surface-200 rounded-lg text-xs font-medium text-navy-900">
+                            <button key={s.id} onClick={() => loadSession(s.id)}
+                                className={`w-full text-left p-2.5 border rounded-lg text-xs font-medium transition ${activeSessionId === s.id ? 'bg-navy-50 border-navy-200 text-navy-700' : 'bg-white border-surface-200 text-navy-900 hover:bg-surface-50'}`}>
                                 {s.title}
-                            </div>
+                            </button>
                         ))}
                     </div>
                 </div>
@@ -938,6 +1098,10 @@ export default function KnowledgeBasePage() {
                     chatSessions={chatSessions}
                     onNewSession={() => { }}
                     canEdit={isSupervisor && (isSuperAdmin || activeKB.groupName === group?.name)}
+                    onRefreshSessions={async () => {
+                        const sessions = await getKBChatSessionsAction(activeKB.id)
+                        setChatSessions(sessions)
+                    }}
                 />
             )}
             {view === 'add-docs' && activeKB && (

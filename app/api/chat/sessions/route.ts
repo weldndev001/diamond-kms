@@ -29,6 +29,12 @@ export async function POST(req: NextRequest) {
     const sessionAuth = await getServerSession(authOptions)
     if (!sessionAuth?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    let kbId: string | undefined
+    try {
+        const body = await req.json()
+        kbId = body.knowledgeBaseId
+    } catch { }
+
     const userId = (sessionAuth.user as any).id
 
     const profile = await prisma.userGroup.findFirst({
@@ -41,6 +47,7 @@ export async function POST(req: NextRequest) {
         data: {
             user_id: userId,
             organization_id: profile.user.organization_id,
+            knowledge_base_id: kbId || null,
             title: 'New Chat',
         },
     })

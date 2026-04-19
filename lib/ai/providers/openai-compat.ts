@@ -59,9 +59,7 @@ export class OpenAICompatService implements AIService {
     ): Promise<string> {
         return withRetry(async () => {
             const baseUrl = (this.client as any).baseURL
-            const logMsg = `[${new Date().toISOString()}] [AI-CLIENT] Using baseURL: ${baseUrl}, model: ${this.chatModel}\n`
-            const fs = await import('fs')
-            fs.appendFileSync('ai-debug.log', logMsg)
+            console.log(`[AI-CLIENT] Using baseURL: ${baseUrl}, model: ${this.chatModel}`)
             console.log(`[AI-SELFHOSTED] Generating completion. Model: ${this.chatModel}, Prompt length: ${prompt.length}`)
             const startTime = Date.now()
             const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = []
