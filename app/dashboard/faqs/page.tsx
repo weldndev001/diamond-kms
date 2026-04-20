@@ -9,7 +9,7 @@ import { useTranslation } from '@/hooks/useTranslation'
 import { uploadFileAction } from '@/lib/actions/storage.actions'
 import { updateFAQAction } from '@/lib/actions/faq.actions'
 import Cropper from 'react-easy-crop'
-import { getCroppedImg } from '@/lib/utils/image'
+import getCroppedImg from '@/lib/utils/cropImage'
 
 export default function FAQsPage() {
     const { organization, user, role } = useCurrentUser()
