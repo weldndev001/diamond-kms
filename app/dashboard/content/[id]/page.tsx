@@ -12,7 +12,7 @@ import {
     ArrowLeft, Edit, FileText, CheckCircle, Send, Loader2, Bot, 
     MessageSquare, Sparkles, Trash2, ClipboardList, BookOpen, 
     ShieldCheck, Clock, Globe, Maximize2, Minimize2, CheckCircle2,
-    AlertCircle, ChevronRight
+    AlertCircle, ChevronRight, User
 } from 'lucide-react'
 import Link from 'next/link'
 import { Role, ContentStatus } from '@prisma/client'
@@ -179,12 +179,12 @@ export default function ContentDetailPage() {
     const isPublished = content.status === ContentStatus.PUBLISHED
 
     return (
-        <div className="flex flex-col h-[calc(100vh-100px)] -m-6 md:-m-8">
+        <div className="flex flex-col h-[calc(100vh-60px)] -m-6 md:-m-8 bg-surface-0">
             {/* Header / Toolbar */}
-            <div className="bg-white border-b border-surface-200 px-6 py-4 flex items-center justify-between shrink-0">
+            <div className="bg-white dark:bg-surface-0 border-b border-surface-200/60 dark:border-surface-100 px-6 py-4 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => router.back()} className="p-2 text-text-400 hover:text-navy-900 hover:bg-surface-100 rounded-full transition">
-                        <ArrowLeft size={20} />
+                    <button onClick={() => router.back()} className="p-2.5 rounded-xl text-text-500 hover:text-navy-600 hover:bg-surface-100 transition-all active:scale-95 border border-transparent hover:border-surface-200 shrink-0">
+                        <ArrowLeft size={22} />
                     </button>
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2">
@@ -220,54 +220,69 @@ export default function ContentDetailPage() {
             </div>
 
             {/* Main Layout: Split AI Chat & Content */}
-            <div className="flex flex-1 overflow-hidden bg-surface-50">
+            <div className="flex flex-1 overflow-hidden bg-surface-0 border-t border-surface-200">
                 {/* AI Chat Panel (Left) */}
                 {isPublished && !articleFullscreen && (
-                    <div className="w-[380px] border-r border-surface-200 bg-white flex flex-col shrink-0">
-                        <div className="p-4 border-b border-surface-100 bg-surface-50 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-navy-600 flex items-center justify-center shadow-lg shadow-navy-100">
-                                    <Sparkles size={16} className="text-white" />
+                    <div className="w-[380px] border-r border-surface-200/60 bg-white dark:bg-surface-0 flex flex-col shrink-0">
+                        <div className="px-6 py-4 border-b border-surface-100/60 flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gradient-to-tr from-navy-600 via-navy-500 to-indigo-400 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-navy-600/10">
+                                    <Bot size={20} className="text-white drop-shadow-md" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-bold text-navy-900">AISA Assistant</h3>
-                                    <p className="text-[10px] text-text-400">Diskusi seputar artikel ini</p>
+                                    <h3 className="font-extrabold text-navy-900 text-[14px] uppercase tracking-wider leading-tight">AISA Assistant</h3>
+                                    <p className="text-[9px] font-bold text-text-400 mt-0.5 uppercase tracking-wider">Diskusi Artikel</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div className="flex-1 overflow-y-auto scrollbar-thin p-6 space-y-6 bg-surface-0">
                             {messages.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-full text-center px-6 opacity-60">
-                                    <Bot size={48} className="text-navy-200 mb-3" />
-                                    <h4 className="text-sm font-bold text-navy-900 mb-1">Tanya AISA</h4>
-                                    <p className="text-xs text-text-500">Ajukan pertanyaan tentang isi artikel ini, AISA akan menjawab berdasarkan konteks yang ada.</p>
+                                <div className="text-center py-16 text-text-400">
+                                    <div className="w-16 h-16 bg-navy-50 dark:bg-navy-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-navy-100 dark:border-navy-800">
+                                        <MessageSquare size={32} className="text-navy-600 dark:text-navy-400" />
+                                    </div>
+                                    <h3 className="font-extrabold text-navy-900 text-[14px] uppercase tracking-wider mb-2">Tanya AISA</h3>
+                                    <p className="text-xs text-text-500 mb-6 max-w-[260px] mx-auto">
+                                        Ajukan pertanyaan tentang isi artikel ini, AISA akan menjawab berdasarkan konteks yang ada.
+                                    </p>
                                 </div>
                             ) : (
                                 messages.map((msg, idx) => (
-                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
-                                            msg.role === 'user' ? 'bg-navy-600 text-white rounded-tr-none' : 'bg-surface-100 text-navy-900 rounded-tl-none'
+                                    <div key={idx} className={`flex gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        {msg.role === 'assistant' && (
+                                            <div className="w-8 h-8 bg-navy-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                                <Bot size={16} className="text-navy-600" />
+                                            </div>
+                                        )}
+                                        <div className={`rounded-2xl px-5 py-3.5 max-w-[85%] text-[14px] leading-relaxed transition-all duration-300 ${
+                                            msg.role === 'user' ? 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white font-medium corner-right shadow-sm' : 'bg-surface-50 dark:bg-surface-50 text-text-900 border border-surface-200/50'
                                         }`}>
-                                            {msg.content || <Loader2 size={14} className="animate-spin opacity-50" />}
+                                            {msg.content || <div className="flex items-center gap-2 text-text-400"><Loader2 size={14} className="animate-spin opacity-50" /></div>}
                                         </div>
+                                        {msg.role === 'user' && (
+                                            <div className="w-8 h-8 bg-surface-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1 border border-surface-200 shadow-sm overflow-hidden">
+                                                <User size={16} className="text-navy-600" />
+                                            </div>
+                                        )}
                                     </div>
                                 ))
                             )}
                             <div ref={messagesEndRef} />
                         </div>
 
-                        <div className="p-4 border-t border-surface-100">
-                            <div className="flex items-center gap-2 bg-surface-100 rounded-xl px-3 py-1.5 border border-surface-200 focus-within:border-navy-400 transition">
+                        <div className="px-6 pb-6 pt-4 flex-shrink-0 bg-white border-t border-surface-100">
+                            <div className="flex items-center gap-3 bg-surface-50 rounded-2xl px-4 py-3 border border-surface-200 focus-within:border-navy-500 focus-within:bg-white transition-all duration-300 shadow-sm focus-within:shadow-md">
                                 <textarea 
                                     ref={inputRef}
                                     value={input}
                                     onChange={e => setInput(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
                                     placeholder="Tanya sesuatu..."
-                                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm resize-none py-1.5 h-10"
+                                    rows={1}
+                                    className="flex-1 bg-transparent border-none outline-none resize-none text-[14px] font-medium placeholder:text-text-400 whitespace-pre-wrap py-1 max-h-24 scrollbar-thin"
                                 />
-                                <button onClick={sendMessage} disabled={!input.trim() || isStreaming} className="p-2 bg-navy-600 text-white rounded-lg hover:bg-navy-700 disabled:opacity-40 transition">
+                                <button onClick={sendMessage} disabled={!input.trim() || isStreaming} className="bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white hover:opacity-90 active:scale-95 disabled:grayscale disabled:opacity-50 disabled:scale-100 rounded-xl p-2.5 transition-all duration-300 shrink-0">
                                     {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                                 </button>
                             </div>

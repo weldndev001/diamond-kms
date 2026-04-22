@@ -361,14 +361,15 @@ export default function DocumentDetailPage() {
     ]
 
     return (
-        <div className="space-y-4 h-full">
+        <div className="flex flex-col h-[calc(100vh-60px)] -m-6 md:-m-8 bg-surface-0">
             {/* Header Bar */}
-            <div className="flex items-center gap-4">
-                <Link href="/dashboard/documents" className="p-2 text-text-500 hover:text-navy-900 hover:bg-surface-100 rounded-full transition shrink-0">
-                    <ArrowLeft size={20} />
+            <div className="bg-white dark:bg-surface-0 border-b border-surface-200/60 dark:border-surface-100 px-6 py-4 flex items-center gap-4 shrink-0">
+                <Link href="/dashboard/documents" className="p-2.5 rounded-xl text-text-500 hover:text-navy-600 hover:bg-surface-100 transition-all active:scale-95 border border-transparent hover:border-surface-200 shrink-0">
+                    <ArrowLeft size={22} />
                 </Link>
+                <div className="h-8 w-[1.5px] bg-surface-200 dark:bg-surface-100" />
                 <div className="flex-1 min-w-0">
-                    <h1 className="text-xl font-bold font-display text-navy-900 truncate">
+                    <h1 className="text-sm font-extrabold text-navy-900 uppercase tracking-[0.05em] leading-tight truncate">
                         {doc.ai_title || doc.file_name}
                     </h1>
                     <div className="flex items-center gap-3 mt-0.5 text-xs text-text-500 flex-wrap">
@@ -393,12 +394,12 @@ export default function DocumentDetailPage() {
             </div>
 
             {/* Split Panel: Chat LEFT | Preview RIGHT */}
-            <div className="flex gap-4" style={{ height: 'calc(100vh - 160px)' }}>
+            <div className="flex flex-1 overflow-hidden bg-surface-0">
                 {/* LEFT — AI Chat */}
                 {!pdfFullscreen && (
-                    <div className="card overflow-hidden flex flex-col" style={{ width: '45%', minWidth: 0 }}>
+                    <div className="flex flex-col border-r border-surface-200/60 bg-white dark:bg-surface-0 shrink-0" style={{ width: '45%', minWidth: 0 }}>
                         {/* Chat Header */}
-                        <div className="px-4 py-3 border-b border-surface-200 bg-gradient-to-r from-navy-50 to-surface-50 flex items-center justify-between shrink-0">
+                        <div className="px-6 py-4 border-b border-surface-100/60 flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-2">
                                 <div className="w-7 h-7 rounded-full bg-navy-600 flex items-center justify-center">
                                     <Sparkles size={14} className="text-white" />
@@ -431,7 +432,7 @@ export default function DocumentDetailPage() {
                         </div>
 
                         {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-4 bg-surface-50">
+                        <div className="flex-1 overflow-y-auto scrollbar-thin p-6 space-y-6 bg-surface-0">
                             {/* Processing banner */}
                             {!doc.is_processed && (
                                 <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 text-center space-y-2">
@@ -460,39 +461,38 @@ export default function DocumentDetailPage() {
                                 </div>
                             )}
                             {messages.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                                    <div className="w-16 h-16 rounded-2xl bg-navy-100 flex items-center justify-center mb-4">
-                                        <MessageSquare size={28} className="text-navy-600" />
+                                <div className="text-center py-16 text-text-400">
+                                    <div className="w-16 h-16 bg-navy-50 dark:bg-navy-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-navy-100 dark:border-navy-800">
+                                        <MessageSquare size={32} className="text-navy-600 dark:text-navy-400" />
                                     </div>
-                                    <h3 className="font-semibold text-navy-900 text-sm mb-1">Chat dengan Dokumen</h3>
-                                    <p className="text-xs text-text-400 mb-5 max-w-[260px]">
+                                    <h3 className="font-extrabold text-navy-900 text-[14px] uppercase tracking-wider mb-2">Chat dengan Dokumen</h3>
+                                    <p className="text-xs text-text-500 mb-6 max-w-[260px] mx-auto">
                                         Tanyakan apa saja tentang isi dokumen ini. AI akan menjawab berdasarkan konten yang ada.
                                     </p>
-                                    <div className="space-y-2 w-full max-w-[280px]">
+                                    <div className="space-y-2 w-full max-w-sm mx-auto">
                                         {suggestedQuestions.map((q, i) => (
                                             <button
                                                 key={i}
                                                 onClick={() => { setInput(q); inputRef.current?.focus() }}
-                                                className="w-full text-left px-3 py-2.5 bg-white border border-surface-200 rounded-lg text-xs text-text-600 hover:border-navy-400 hover:bg-navy-50 transition"
+                                                className="w-full text-left px-4 py-3 bg-surface-50 dark:bg-surface-0 border border-surface-200 dark:border-slate-700/50 rounded-xl text-xs font-semibold text-text-600 hover:border-navy-400 dark:hover:border-navy-400 hover:bg-white transition-all shadow-sm group"
                                             >
-                                                <span className="text-navy-600 mr-1.5">→</span> {q}
+                                                <span className="text-navy-600 mr-2 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all inline-block">→</span> {q}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
                             ) : (
                                 messages.map((msg, i) => (
-                                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[85%] ${msg.role === 'user'
-                                            ? 'bg-navy-600 text-white rounded-2xl rounded-br-md px-4 py-2.5'
-                                            : 'bg-white border border-surface-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm'
+                                    <div key={i} className={`flex gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        {msg.role === 'assistant' && (
+                                            <div className="w-8 h-8 bg-navy-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                                <Bot size={16} className="text-navy-600" />
+                                            </div>
+                                        )}
+                                        <div className={`rounded-2xl px-5 py-3.5 max-w-[85%] text-[14px] leading-relaxed transition-all duration-300 ${msg.role === 'user'
+                                            ? 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white font-medium corner-right shadow-sm'
+                                            : 'bg-surface-50 dark:bg-surface-50 text-text-900 border border-surface-200/50'
                                             }`}>
-                                            {msg.role === 'assistant' && (
-                                                <div className="flex items-center gap-1.5 mb-1.5">
-                                                    <Bot size={12} className="text-navy-600" />
-                                                    <span className="text-[10px] font-semibold text-navy-600">AI Asisten</span>
-                                                </div>
-                                            )}
                                             <div className={`text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'assistant' ? 'text-text-700' : ''}`}>
                                                 {msg.content || (
                                                     <span className="flex items-center gap-2 text-text-400">
@@ -502,6 +502,11 @@ export default function DocumentDetailPage() {
                                                 )}
                                             </div>
                                         </div>
+                                        {msg.role === 'user' && (
+                                            <div className="w-8 h-8 bg-surface-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1 border border-surface-200 shadow-sm overflow-hidden">
+                                                <User size={16} className="text-navy-600" />
+                                            </div>
+                                        )}
                                     </div>
                                 ))
                             )}
@@ -509,8 +514,8 @@ export default function DocumentDetailPage() {
                         </div>
 
                         {/* Input Area */}
-                        <div className="px-4 py-3 border-t border-surface-200 bg-white shrink-0">
-                            <div className="flex items-end gap-2">
+                        <div className="px-6 pb-6 pt-4 flex-shrink-0 bg-white border-t border-surface-100">
+                            <div className="flex items-center gap-3 bg-surface-50 rounded-2xl px-4 py-3 border border-surface-200 focus-within:border-navy-500 focus-within:bg-white transition-all duration-300 shadow-sm focus-within:shadow-md">
                                 <textarea
                                     ref={inputRef}
                                     value={input}
@@ -518,14 +523,13 @@ export default function DocumentDetailPage() {
                                     onKeyDown={handleKeyDown}
                                     placeholder="Tanya tentang dokumen ini..."
                                     rows={1}
-                                    className="flex-1 resize-none input-field py-2.5 px-3 text-sm leading-relaxed max-h-24"
+                                    className="flex-1 bg-transparent border-none outline-none resize-none text-[14px] font-medium placeholder:text-text-400 whitespace-pre-wrap py-1 max-h-24 scrollbar-thin"
                                     disabled={isStreaming}
-                                    style={{ minHeight: '42px' }}
                                 />
                                 <button
                                     onClick={sendMessage}
                                     disabled={!input.trim() || isStreaming}
-                                    className="btn btn-primary p-2.5 shrink-0 disabled:opacity-40"
+                                    className="bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white hover:opacity-90 active:scale-95 disabled:grayscale disabled:opacity-50 disabled:scale-100 rounded-xl p-2.5 transition-all duration-300 shrink-0"
                                 >
                                     {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                                 </button>
@@ -535,8 +539,8 @@ export default function DocumentDetailPage() {
                 )}
 
                 {/* RIGHT — Preview Viewer */}
-                <div className={`card overflow-hidden flex flex-col ${pdfFullscreen ? 'w-full' : ''}`} style={pdfFullscreen ? {} : { width: '55%', minWidth: 0 }}>
-                    <div className="px-4 py-3 border-b border-surface-200 bg-surface-0 flex justify-between items-center shrink-0">
+                <div className={`flex flex-col bg-surface-100 relative ${pdfFullscreen ? 'w-full' : 'flex-1'}`}>
+                    <div className="px-6 py-4 border-b border-surface-200/60 bg-white flex justify-between items-center shrink-0">
                         <h2 className="font-bold font-display text-navy-900 flex items-center gap-2 text-sm">
                             <FileText size={15} className="text-navy-600" />
                             {isPDF ? 'PDF Viewer' : isImage ? 'Image Preview' : isAudio ? 'Audio Player' : 'Preview Dokumen'}

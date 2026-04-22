@@ -110,9 +110,75 @@ async function processContentInBackground(contentId: string, content: any) {
         }
 
         // Combine article text with image descriptions
-        const enrichedText = imageDescriptions
+        let enrichedText = imageDescriptions
             ? `${rawText}\n\n--- Deskripsi Visual dari Gambar ---\n${imageDescriptions}`
             : rawText
+
+        // STEP 1.7: Include text from linked source_documents (if any)
+        const sourceDocIds = content.source_documents || []
+        if (sourceDocIds.length > 0) {
+            try {
+                const msgLinked = 'Membaca dokumen sumber terlampir...'
+                await updateProcessingLog(contentId, 'processing', msgLinked, 30)
+
+                const linkedDocs = await prisma.document.findMany({
+                    where: {
+                        id: { in: sourceDocIds },
+                        is_processed: true,
+                    },
+                    select: { id: true, file_name: true, ai_title: true, ai_summary: true },
+                })
+
+                if (linkedDocs.length > 0) {
+                    // Fetch existing chunks from linked documents to get their text
+                    const linkedChunks = await prisma.$queryRawUnsafe<
+                        { document_id: string; doc_title: string; content: string }[]
+                    >(
+                        `SELECT
+                            dc.document_id,
+                            COALESCE(d.ai_title, d.file_name) AS doc_title,
+                            dc.content
+                        FROM document_chunks dc
+                        JOIN documents d ON dc.document_id = d.id
+                        WHERE dc.document_id IN (${linkedDocs.map(d => `'${d.id}'`).join(',')})
+                          AND dc.chunk_type = 'text'
+                        ORDER BY dc.document_id, dc.chunk_index
+                        LIMIT 50`
+                    )
+
+                    if (linkedChunks.length > 0) {
+                        // Group by document
+                        const docTexts = new Map<string, { title: string; texts: string[] }>()
+                        for (const chunk of linkedChunks) {
+                            const entry = docTexts.get(chunk.document_id) || { title: chunk.doc_title, texts: [] }
+                            entry.texts.push(chunk.content)
+                            docTexts.set(chunk.document_id, entry)
+                        }
+
+                        let linkedText = '\n\n--- Konteks dari Dokumen Sumber Terlampir ---'
+                        for (const [, docData] of docTexts) {
+                            // Limit each document's text to prevent overly large chunks
+                            const docContent = docData.texts.join('\n').slice(0, 8000)
+                            linkedText += `\n\n[Dokumen: ${docData.title}]\n${docContent}`
+                        }
+
+                        enrichedText += linkedText
+                        console.log(`✅ [PROCESS] Included text from ${docTexts.size} linked document(s) for "${content.title}"`)
+                    }
+
+                    // Also include summaries of linked documents
+                    const summaries = linkedDocs
+                        .filter(d => d.ai_summary)
+                        .map(d => `- ${d.ai_title || d.file_name}: ${d.ai_summary}`)
+                    if (summaries.length > 0) {
+                        enrichedText += `\n\n--- Ringkasan Dokumen Sumber ---\n${summaries.join('\n')}`
+                    }
+                }
+            } catch (linkedErr) {
+                console.warn(`⚠️ [PROCESS] Failed to include linked documents (non-fatal):`, linkedErr)
+                // Non-fatal: continue processing without linked document text
+            }
+        }
 
         // Treat the whole article as a single "page" for chunker
         const pages = [{ pageNum: 1, text: `${content.title}\n\n${enrichedText}` }]
