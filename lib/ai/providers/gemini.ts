@@ -155,6 +155,30 @@ export class GeminiService implements AIService {
         return result.response.text()
     }
 
+    // ─── Audio Transcription (Audio/Speech-to-Text) ────────────
+    async transcribeAudio(fileBuffer: Buffer, fileName: string, mimeType: string): Promise<string> {
+        const model = this.genAI.getGenerativeModel({ model: this.chatModel })
+        
+        try {
+            const prompt = `Please transcribe this audio file accurately in its original language. Do not summarize, just provide the exact transcription of what is spoken.`
+            
+            const result = await model.generateContent([
+                {
+                    inlineData: {
+                        data: fileBuffer.toString('base64'),
+                        mimeType: mimeType || 'audio/mpeg',
+                    },
+                },
+                prompt,
+            ])
+            
+            return result.response.text().trim()
+        } catch (error: any) {
+            logger.error(`Gemini audio transcription failed for ${fileName}:`, error.message)
+            throw new Error(`Voice transcription failed: ${error.message}`)
+        }
+    }
+
     async rerank(query: string, documents: string[]): Promise<{ index: number; score: number }[]> {
         // Gemini does not have a native Rerank API yet.
         // Return original order with a mock score.

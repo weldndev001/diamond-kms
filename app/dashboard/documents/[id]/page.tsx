@@ -63,6 +63,7 @@ export default function DocumentDetailPage() {
 
     const isPDF = doc?.mime_type === 'application/pdf'
     const isImage = doc?.mime_type?.startsWith('image/')
+    const isAudio = doc?.mime_type?.startsWith('audio/') || /\.(mp3|wav|ogg|m4a)$/i.test(doc?.file_name || '')
 
     // Use proxy endpoint to bypass signed URL JWT issues
     const loadPdfUrl = () => {
@@ -538,7 +539,7 @@ export default function DocumentDetailPage() {
                     <div className="px-4 py-3 border-b border-surface-200 bg-surface-0 flex justify-between items-center shrink-0">
                         <h2 className="font-bold font-display text-navy-900 flex items-center gap-2 text-sm">
                             <FileText size={15} className="text-navy-600" />
-                            {isPDF ? 'PDF Viewer' : isImage ? 'Image Preview' : 'Preview Dokumen'}
+                            {isPDF ? 'PDF Viewer' : isImage ? 'Image Preview' : isAudio ? 'Audio Player' : 'Preview Dokumen'}
                         </h2>
                         {isPDF && (
                             <button
@@ -602,6 +603,25 @@ export default function DocumentDetailPage() {
                                     alt={doc.file_name}
                                     className="max-w-full max-h-full object-contain shadow-lg rounded-lg"
                                 />
+                            </div>
+                        ) : isAudio ? (
+                            <div className="w-full h-full flex flex-col items-center justify-center p-8 bg-surface-100">
+                                <div className="w-24 h-24 rounded-full bg-white shadow-sm border border-surface-200 flex items-center justify-center mb-6">
+                                    <FileText size={40} className="text-navy-600" />
+                                </div>
+                                <div className="text-center space-y-2 mb-8">
+                                    <h3 className="font-semibold text-navy-900 text-lg max-w-sm truncate px-4" title={doc.file_name}>{doc.file_name}</h3>
+                                    <p className="text-sm text-text-500">Audio Preview</p>
+                                </div>
+                                <div className="w-full max-w-md bg-white p-6 rounded-2xl shadow-sm border border-surface-200">
+                                    <audio 
+                                        controls 
+                                        className="w-full outline-none"
+                                        src={`/api/documents/pdf/${doc.file_path}`} 
+                                    >
+                                        Browser Anda tidak mendukung elemen audio.
+                                    </audio>
+                                </div>
                             </div>
                         ) : (
                             <DocumentPreviewCard doc={doc} />

@@ -132,3 +132,102 @@ export async function analyzeContentImages(
     console.log(`[IMAGE-EXTRACTOR] ✅ Generated ${validDescriptions.length} image description(s) for "${articleTitle}"`)
     return validDescriptions.join('\n\n')
 }
+
+/**
+ * Embed all images in a content article using Vision Embedding model (Multimodal).
+ * Returns an array of image embedding data that can be saved as separate image chunks.
+ * 
+ * @param ai - AI service instance (must support generateImageEmbedding)
+ * @param headerImage - Base64 header image (from content.image_url), or null
+ * @param bodyHtml - HTML body of the content article
+ * @param articleTitle - Title of the article (for logging)
+ * @returns Array of { embedding, label, src } for each successfully embedded image
+ */
+export interface ImageEmbeddingResult {
+    embedding: number[]
+    label: string
+    src: string       // original base64 src (for reference)
+    source: 'header' | 'body'
+    index: number
+}
+
+export async function embedContentImages(
+    ai: AIService,
+    headerImage: string | null,
+    bodyHtml: string,
+    articleTitle: string
+): Promise<ImageEmbeddingResult[]> {
+    if (!ai.generateImageEmbedding) {
+        console.log(`[IMAGE-EXTRACTOR] AI provider does not support image embedding, skipping.`)
+        return []
+    }
+
+    // Collect all images
+    const allImages: ExtractedImage[] = []
+
+    // 1. Header image
+    if (headerImage && headerImage.startsWith('data:image')) {
+        allImages.push({
+            src: headerImage,
+            alt: 'Header image',
+            index: 0,
+            source: 'header',
+        })
+    }
+
+    // 2. Body images (base64 embedded in Tiptap HTML)
+    const bodyImages = extractImagesFromHtml(bodyHtml)
+    allImages.push(...bodyImages)
+
+    if (allImages.length === 0) {
+        console.log(`[IMAGE-EXTRACTOR] No images found for embedding in "${articleTitle}"`)
+        return []
+    }
+
+    console.log(`[IMAGE-EXTRACTOR] Found ${allImages.length} image(s) to embed in "${articleTitle}"`)
+
+    // Limit to max 10 images to prevent excessive processing
+    const imagesToProcess = allImages.slice(0, 10)
+    if (allImages.length > 10) {
+        console.log(`[IMAGE-EXTRACTOR] Limiting embedding to first 10 of ${allImages.length} images`)
+    }
+
+    // Process images with concurrency limit of 2
+    const pLimit = (await import('p-limit')).default
+    const limit = pLimit(2)
+
+    const results: ImageEmbeddingResult[] = []
+
+    await Promise.all(
+        imagesToProcess.map((img, i) =>
+            limit(async () => {
+                try {
+                    const label = img.source === 'header'
+                        ? 'Gambar Header Artikel'
+                        : `Gambar ${img.index + 1} di Body Artikel`
+
+                    console.log(`[IMAGE-EXTRACTOR] Embedding ${label}...`)
+                    const startTime = Date.now()
+
+                    const embedding = await ai.generateImageEmbedding!(img.src)
+
+                    console.log(`[IMAGE-EXTRACTOR] ✅ ${label} embedded in ${Date.now() - startTime}ms (${embedding.length} dims)`)
+
+                    results.push({
+                        embedding,
+                        label,
+                        src: img.src.substring(0, 100) + '...', // truncate for storage
+                        source: img.source,
+                        index: img.index,
+                    })
+                } catch (err) {
+                    console.error(`[IMAGE-EXTRACTOR] ❌ Failed to embed image ${i}:`, err)
+                    // Non-fatal: skip this image and continue
+                }
+            })
+        )
+    )
+
+    console.log(`[IMAGE-EXTRACTOR] ✅ Embedded ${results.length}/${imagesToProcess.length} image(s) for "${articleTitle}"`)
+    return results
+}

@@ -41,9 +41,19 @@ export interface AIService {
     /** Analyze an image and return a text description (Vision/Multimodal) */
     describeImage?(base64Data: string, context?: string): Promise<string>
 
+    /** Generate embedding vector from an image (Vision Embedding / Multimodal) */
+    generateImageEmbedding?(base64Data: string): Promise<number[]>
+
+    /** Generate embedding vector from text using the vision embedding model (for cross-modal search) */
+    generateVisionQueryEmbedding?(text: string): Promise<number[]>
+
+    /** Transcribe audio to text */
+    transcribeAudio?(fileBuffer: Buffer, fileName: string, mimeType: string): Promise<string>
+
     /** Provider name for logging */
     readonly providerName: string
     readonly embeddingModel: string
+    readonly visionEmbedModel?: string
 }
 
 export interface DocumentMetadata {

@@ -47,6 +47,7 @@ export function getAIService(config: AIProviderConfig): AIService {
                 apiKey,
                 chatModel: process.env.AI_CHAT_MODEL || config.chatModel || 'llama3.3:70b',
                 embedModel: process.env.AI_EMBED_MODEL || config.embedModel || 'nomic-embed-text',
+                visionEmbedModel: env.AI_VISION_EMBED_MODEL || undefined,
                 providerName: 'ollama-self-hosted',
             })
 

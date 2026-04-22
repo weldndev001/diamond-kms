@@ -185,6 +185,93 @@ export async function ragQuery(
                 relevantChunks = relevantChunks.filter(c => c.similarity > threshold)
             }
 
+            // ── STEP 2.5: Vision Embedding Search (Cross-Modal) ──────────
+            // Search image chunks using VL model text embedding
+            if (useVector && ai.generateVisionQueryEmbedding && ai.visionEmbedModel) {
+                try {
+                    console.log(`[RAG-PIPELINE] Running cross-modal image search with VL model...`)
+                    const visionQueryEmbedding = await ai.generateVisionQueryEmbedding(question)
+                    const visionVectorStr = JSON.stringify(visionQueryEmbedding)
+
+                    const docGroupFilter = scopedToGroup ? `AND d.group_id = '${groupId}'` : ''
+                    const contentGroupFilter = scopedToGroup ? `AND (c.group_id = '${groupId}' OR c.group_id IS NULL)` : ''
+                    const docKBJoin = knowledgeBaseId ? `JOIN knowledge_base_sources kbs ON kbs.source_id = d.id AND kbs.source_type = 'document' AND kbs.knowledge_base_id = '${knowledgeBaseId}'` : ''
+                    const contentKBJoin = knowledgeBaseId ? `JOIN knowledge_base_sources kbs2 ON kbs2.source_id = c.id AND kbs2.source_type = 'content' AND kbs2.knowledge_base_id = '${knowledgeBaseId}'` : ''
+
+                    const imageChunks = await prisma.$queryRawUnsafe<any[]>(
+                        `
+                        WITH doc_image_chunks AS (
+                            SELECT
+                                dc.id AS chunk_id,
+                                d.id AS document_id,
+                                COALESCE(d.ai_title, d.file_name) AS doc_title,
+                                dc.content,
+                                1 - (dc.image_embedding <=> $1::vector) AS similarity,
+                                dc.page_number AS page_start,
+                                COALESCE(dc.page_end, dc.page_number) AS page_end,
+                                g.name AS group_name,
+                                'DOCUMENT' AS source_type
+                            FROM document_chunks dc
+                            JOIN documents d ON dc.document_id = d.id
+                            JOIN groups g ON d.group_id = g.id
+                            ${docKBJoin}
+                            WHERE d.organization_id = $2
+                            AND d.is_processed = true
+                            AND dc.image_embedding IS NOT NULL
+                            AND dc.chunk_type = 'image'
+                            ${docGroupFilter}
+                            ORDER BY similarity DESC
+                            LIMIT 5
+                        ),
+                        content_image_chunks AS (
+                            SELECT
+                                cc.id AS chunk_id,
+                                c.id AS document_id,
+                                c.title AS doc_title,
+                                cc.content,
+                                1 - (cc.image_embedding <=> $1::vector) AS similarity,
+                                cc.chunk_index AS page_start,
+                                cc.chunk_index AS page_end,
+                                COALESCE(g.name, 'Global') AS group_name,
+                                'ARTICLE' AS source_type
+                            FROM content_chunks cc
+                            JOIN contents c ON cc.content_id = c.id
+                            LEFT JOIN groups g ON c.group_id = g.id
+                            ${contentKBJoin}
+                            WHERE c.organization_id = $2
+                            AND c.status = 'PUBLISHED'
+                            AND c.is_processed = true
+                            AND cc.image_embedding IS NOT NULL
+                            AND cc.chunk_type = 'image'
+                            ${contentGroupFilter}
+                            ORDER BY similarity DESC
+                            LIMIT 5
+                        )
+                        SELECT * FROM doc_image_chunks
+                        UNION ALL
+                        SELECT * FROM content_image_chunks
+                        ORDER BY similarity DESC
+                        LIMIT 3
+                        `,
+                        visionVectorStr,
+                        orgId
+                    )
+
+                    // Filter by threshold and merge with text results
+                    const imageThreshold = Number(env.AI_SIMILARITY_THRESHOLD) || 0.40
+                    const relevantImageChunks = imageChunks.filter(c => c.similarity > imageThreshold)
+
+                    if (relevantImageChunks.length > 0) {
+                        console.log(`[RAG-PIPELINE] Found ${relevantImageChunks.length} relevant image chunk(s)`)
+                        // Add image chunks to results (they'll be included in context)
+                        relevantChunks.push(...relevantImageChunks)
+                    }
+                } catch (visionErr) {
+                    console.warn('⚠️ [RAG] Vision embedding search failed (non-fatal):', visionErr)
+                    // Non-fatal: continue with text-only results
+                }
+            }
+
             // ── STEP 3.5: Graph Expansion (Graph RAG) ──────────────────
             if (useGraph) {
                 try {

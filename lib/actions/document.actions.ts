@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { Role } from '@prisma/client'
 import { getSessionUser, isGroupAdmin, isSupervisor } from '@/lib/auth/server-utils'
+import { env } from '@/lib/env'
 
 export async function getDocumentsAction(orgId: string, groupId?: string) {
     try {
@@ -229,5 +230,33 @@ export async function searchDocumentsAction(
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Search failed'
         return { success: false, error: message }
+    }
+}
+
+export async function reprocessDocumentAction(docId: string) {
+    try {
+        const user = await getSessionUser()
+        if (!user) return { success: false, error: 'Unauthorized' }
+
+        const baseUrl = env.NEXT_PUBLIC_APP_URL || 'http://localhost:7000'
+        
+        const response = await fetch(`${baseUrl}/api/ai/process-document`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-internal-secret': env.CRON_SECRET || '',
+            },
+            body: JSON.stringify({ documentId: docId }),
+        })
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}))
+            return { success: false, error: errData.message || 'Gagal memicu proses ulang' }
+        }
+
+        revalidatePath('/dashboard/documents')
+        return { success: true }
+    } catch (error: any) {
+        return { success: false, error: error.message }
     }
 }

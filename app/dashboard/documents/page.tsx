@@ -2,11 +2,40 @@
 
 import { useState, useEffect } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { getDocumentsAction, deleteDocumentAction } from '@/lib/actions/document.actions'
+import { getDocumentsAction, deleteDocumentAction, reprocessDocumentAction } from '@/lib/actions/document.actions'
 import { getGroupsAction } from '@/lib/actions/user.actions'
-import { Search, Filter, FileText, MoreVertical, Eye, Trash2, CheckCircle, Clock, Loader2, AlertCircle, FileSpreadsheet, FileArchive, Upload, LayoutGrid, List, ChevronRight } from 'lucide-react'
+import { Search, Filter, FileText, MoreVertical, Eye, Trash2, CheckCircle, Clock, Loader2, AlertCircle, FileSpreadsheet, FileArchive, Upload, LayoutGrid, List, ChevronRight, RefreshCw } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import Link from 'next/link'
+import { Skeleton } from '@/components/ui/skeleton'
+
+function DocumentsSkeleton() {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="card flex flex-col overflow-hidden">
+                    <div className="p-5 flex-1 bg-surface-0 space-y-4">
+                        <div className="flex items-start gap-3">
+                            <Skeleton className="w-10 h-10 rounded-lg" />
+                            <div className="flex-1 space-y-2">
+                                <Skeleton className="h-4 w-3/4 rounded-md" />
+                                <Skeleton className="h-3 w-1/2 rounded-md" />
+                            </div>
+                        </div>
+                        <Skeleton className="h-12 w-full rounded-md" />
+                        <div className="flex gap-2">
+                            <Skeleton className="h-4 w-12 rounded-full" />
+                            <Skeleton className="h-4 w-16 rounded-full" />
+                        </div>
+                    </div>
+                    <div className="border-t border-surface-200 bg-surface-50 p-4 shrink-0">
+                        <Skeleton className="h-9 w-full rounded-lg" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    )
+}
 
 const getFileIcon = (mimeType: string) => {
     if (mimeType?.includes('pdf')) return <FileText size={20} className="text-red-500" />
@@ -39,6 +68,19 @@ export default function DocumentsPage() {
     const isAdmin = role === 'SUPER_ADMIN' || role === 'MAINTAINER'
     const [filterGroup, setFilterGroup] = useState('')
     const [initialized, setInitialized] = useState(false)
+    const [processingMap, setProcessingMap] = useState<Record<string, boolean>>({})
+
+    const handleReprocess = async (docId: string) => {
+        setProcessingMap(prev => ({ ...prev, [docId]: true }))
+        const res = await reprocessDocumentAction(docId)
+        if (res.success) {
+            // Processing will be picked up by the polling useEffect
+            await loadData()
+        } else {
+            alert(res.error || "Gagal memproses ulang dokumen")
+            setProcessingMap(prev => ({ ...prev, [docId]: false }))
+        }
+    }
 
     useEffect(() => {
         if (!initialized && group?.id) {
@@ -143,10 +185,7 @@ export default function DocumentsPage() {
 
                 <div className="p-6 bg-surface-50 min-h-[50vh]">
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center py-20">
-                            <div className="w-10 h-10 border-4 border-navy-200 border-t-navy-600 rounded-full animate-spin mb-4" />
-                            <p className="text-text-500 font-medium">{t('documents.loading_docs')}</p>
-                        </div>
+                        <DocumentsSkeleton />
                     ) : filteredDocs.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-center">
                             <div className="w-16 h-16 bg-surface-200 text-text-300 rounded-full flex items-center justify-center mb-4">
@@ -196,6 +235,16 @@ export default function DocumentsPage() {
                                         <a href={`/dashboard/documents/${doc.id}`} className="btn btn-primary flex-1 justify-center text-sm">
                                             <Eye size={14} /> {t('common.view')}
                                         </a>
+                                        {(!doc.is_processed && doc.processing_status !== 'processing') && (
+                                            <button
+                                                onClick={() => handleReprocess(doc.id)}
+                                                disabled={processingMap[doc.id]}
+                                                className="btn bg-warning-bg text-warning border border-amber-200 hover:opacity-80 px-3 transition shrink-0"
+                                                title={t('common.process') || 'Process'}
+                                            >
+                                                {processingMap[doc.id] ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                                            </button>
+                                        )}
                                         {['SUPER_ADMIN', 'GROUP_ADMIN'].includes(role || '') && (
                                             <button
                                                 onClick={() => handleDelete(doc.id)}
@@ -235,6 +284,16 @@ export default function DocumentsPage() {
                                             <span className="text-[10px] px-2 py-0.5 bg-surface-100 text-text-500 rounded-full">+{doc.ai_tags.length - 2}</span>
                                         )}
                                     </div>
+                                    {(!doc.is_processed && doc.processing_status !== 'processing') && (
+                                        <button
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleReprocess(doc.id); }}
+                                            disabled={processingMap[doc.id]}
+                                            className="p-1.5 rounded-lg bg-warning-bg text-warning hover:opacity-80 transition shrink-0"
+                                            title={t('common.process') || 'Process'}
+                                        >
+                                            {processingMap[doc.id] ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                                        </button>
+                                    )}
                                     <ChevronRight size={16} className="text-text-300 group-hover:text-navy-600 transition shrink-0" />
                                 </a>
                             ))}

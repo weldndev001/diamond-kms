@@ -428,8 +428,8 @@ function DashboardLayoutInner({ children }: { children: ReactNode }) {
                 </header>
 
                 {/* Page Content area */}
-                <main className="flex-1 overflow-auto bg-surface-50 p-6 md:p-8">
-                    <div className="max-w-6xl mx-auto fade-in">
+                <main className={`flex-1 overflow-auto ${pathname === '/dashboard/ai-assistant' ? 'bg-surface-0 p-0' : 'bg-surface-50 p-6 md:p-8'}`}>
+                    <div className={`${pathname === '/dashboard/ai-assistant' ? 'max-w-none h-full' : 'max-w-6xl mx-auto fade-in'}`}>
                         {children}
                     </div>
                 </main>

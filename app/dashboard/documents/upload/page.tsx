@@ -323,7 +323,7 @@ export default function UploadDocumentPage() {
                             id="file-input"
                             type="file"
                             className="hidden"
-                            accept=".pdf,.doc,.docx,.txt,.md,.csv,.xlsx,.pptx,.sql"
+                            accept=".pdf,.doc,.docx,.txt,.md,.csv,.xlsx,.pptx,.sql,.mp3,.wav,.ogg,.m4a"
                             onChange={handleFileChange}
                         />
 
@@ -345,7 +345,7 @@ export default function UploadDocumentPage() {
                                 </div>
                                 <div className="space-y-1">
                                     <p className="font-bold text-navy-900">{t('documents.drop_file_hint')}</p>
-                                    <p className="text-sm text-text-500">{t('documents.file_types_hint')}</p>
+                                    <p className="text-sm text-text-500">{t('documents.file_types_hint')} + Audio (.mp3, .wav, .m4a)</p>
                                 </div>
                             </div>
                         )}

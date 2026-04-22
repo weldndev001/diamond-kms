@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getQuizCompletionStatsAction } from '@/lib/actions/quiz.actions'
 import { useTranslation } from '@/hooks/useTranslation'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface DashboardStats {
     totalDocuments: number
@@ -22,6 +23,48 @@ interface DashboardStats {
         rate: number
     }
     role: string
+}
+
+function DashboardSkeleton() {
+    return (
+        <div className="space-y-8">
+            {/* Header Skeleton */}
+            <div>
+                <Skeleton className="h-[34px] w-[250px] mb-2" />
+                <Skeleton className="h-4 w-[400px]" />
+            </div>
+
+            {/* Reading Tracker Banner Skeleton */}
+            <Skeleton className="h-48 w-full rounded-3xl" />
+
+            {/* Stats Cards Skeleton */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+                {[1, 2, 3, 4].map((i) => (
+                    <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+                ))}
+            </div>
+
+            {/* Quiz Tracking Section Skeleton */}
+            <div className="space-y-4">
+                <Skeleton className="h-7 w-[200px]" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+                    ))}
+                </div>
+            </div>
+
+            {/* Quick Actions Skeleton */}
+            <div className="card p-6 border-none shadow-none bg-transparent">
+                <Skeleton className="h-7 w-[150px] mb-4" />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[1, 2, 3, 4].map((i) => (
+                        <Skeleton key={i} className="h-24 w-full rounded-xl" />
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
 }
 
 export default function DashboardPage() {
@@ -57,12 +100,7 @@ export default function DashboardPage() {
     if (role === 'MAINTAINER') return null
 
     if (isLoading || loading) {
-        return (
-            <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-10 h-10 border-4 border-navy-200 border-t-navy-600 rounded-full animate-spin mb-4" />
-                <p className="text-text-500 font-medium">{t('common.loading')}</p>
-            </div>
-        )
+        return <DashboardSkeleton />
     }
 
     if (!user) return null

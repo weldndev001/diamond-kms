@@ -7,6 +7,30 @@ import { getGroupsAction, deleteGroupAction } from '@/lib/actions/user.actions'
 import { Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useTranslation } from '@/hooks/useTranslation'
+import { Skeleton } from '@/components/ui/skeleton'
+
+function GroupsSkeleton() {
+    return (
+        <>
+            {[1, 2, 3, 4, 5].map((i) => (
+                <tr key={i} className="border-b last:border-0">
+                    <td className="p-4">
+                        <Skeleton className="h-5 w-40 rounded-md" />
+                    </td>
+                    <td className="p-4">
+                        <Skeleton className="h-4 w-full max-w-xs rounded-md" />
+                    </td>
+                    <td className="p-4">
+                        <Skeleton className="h-6 w-24 rounded border" />
+                    </td>
+                    <td className="p-4">
+                        <Skeleton className="h-9 w-9 rounded-md" />
+                    </td>
+                </tr>
+            ))}
+        </>
+    )
+}
 
 export default function GroupsPage() {
     const { organization } = useCurrentUser()
@@ -68,7 +92,7 @@ export default function GroupsPage() {
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={4} className="p-8 text-center text-text-500">{t('groups.loading')}</td></tr>
+                                <GroupsSkeleton />
                             ) : groups.length === 0 ? (
                                 <tr><td colSpan={4} className="p-8 text-center text-text-500">{t('groups.no_groups')}</td></tr>
                             ) : (

@@ -11,18 +11,21 @@ export interface OpenAICompatConfig {
     apiKey: string
     chatModel: string    // 'google/gemini-2.5-flash', 'llama3.3:70b', etc.
     embedModel: string   // 'nomic-embed-text', or fallback to Gemini
+    visionEmbedModel?: string // 'qwen3-vl-embedding-2b' for multimodal embedding
     providerName: string
 }
 
 export class OpenAICompatService implements AIService {
     readonly providerName: string
     readonly embeddingModel: string
+    readonly visionEmbedModel?: string
     private client: OpenAI
     private chatModel: string
 
     constructor(config: OpenAICompatConfig) {
         this.providerName = config.providerName
         this.embeddingModel = config.embedModel
+        this.visionEmbedModel = config.visionEmbedModel
         this.chatModel = config.chatModel
         this.client = new OpenAI({
             baseURL: config.baseURL,
@@ -128,22 +131,23 @@ export class OpenAICompatService implements AIService {
         const content = input.text ?? `[File: ${input.fileName}]`
         const safeContent = content.slice(0, 2500)
         console.log(`[AI-SELFHOSTED] Generating metadata for document: ${input.fileName}, text length: ${safeContent.length}`)
-        const raw = await this.generateCompletion(
-            `Document content:\n${safeContent}`,
-            {
-                systemPrompt:
-                    'You analyze documents. Return ONLY valid JSON with fields: title (string, max 80 chars), summary (string, 2-3 paragraphs), tags (string array, 5 items), language ("id"|"en"|"mixed"), docType ("sop"|"policy"|"guide"|"report"|"regulation"|"other"). IMPORTANT: DO NOT USE ANY MARKDOWN OR STARS (no **, no *). USE PLAIN TEXT ONLY. For lists, use numbered format (1., 2.) or letters (a., b.) instead of bullet points.',
-                jsonMode: true,
-            }
-        )
-
+        
         try {
+            const raw = await this.generateCompletion(
+                `Document content:\n${safeContent}`,
+                {
+                    systemPrompt:
+                        'You analyze documents. Return ONLY valid JSON with fields: title (string, max 80 chars), summary (string, 2-3 paragraphs), tags (string array, 5 items), language ("id"|"en"|"mixed"), docType ("sop"|"policy"|"guide"|"report"|"regulation"|"other"). IMPORTANT: DO NOT USE ANY MARKDOWN OR STARS (no **, no *). USE PLAIN TEXT ONLY. For lists, use numbered format (1., 2.) or letters (a., b.) instead of bullet points.',
+                    jsonMode: true,
+                }
+            )
+
             const parsed = JSON.parse(raw) as DocumentMetadata
             console.log(`[AI-SELFHOSTED] Metadata parse SUCCESS:`, parsed.title)
             return parsed
-        } catch (parseError) {
-            logger.error('Failed to parse metadata response:', raw)
-            console.log(`[AI-SELFHOSTED] Metadata parse FAILED. Raw output:`, raw.substring(0, 100))
+        } catch (error: any) {
+            logger.error('Failed to parse (or generate) metadata response:', error.message || error)
+            console.log(`[AI-SELFHOSTED] Metadata generation FAILED, using fallback.`)
             return {
                 title: input.fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
                 summary: content.slice(0, 200),
@@ -193,6 +197,32 @@ export class OpenAICompatService implements AIService {
         }
     }
 
+    async transcribeAudio(fileBuffer: Buffer, fileName: string, mimeType: string): Promise<string> {
+        return withRetry(async () => {
+            console.log(`[AI-SELFHOSTED] Transcribing audio file: ${fileName}`)
+            try {
+                // Use the configured chat model (Gemma) for multimodal audio if AI_AUDIO_MODEL isn't specifically set
+                const audioModel = env.AI_AUDIO_MODEL || this.chatModel || 'gemma-4-E2B-it-Q4_K_M-unsloth.gguf'
+                
+                // Convert Buffer to File object acceptable by openai SDK in Next.js
+                // We use global File which is available in Next.js 13+ Node/Edge runtime
+                const file = new File([fileBuffer], fileName, { type: mimeType || 'audio/mpeg' })
+                
+                const response = await this.client.audio.transcriptions.create({
+                    file: file,
+                    model: audioModel,
+                    response_format: 'json',
+                })
+                
+                // When response_format is 'json', OpenAI returns an object: { text: "..." }
+                return (response as any).text as string
+            } catch (err: any) {
+                console.error(`[AI-SELFHOSTED] Audio Transcription Error:`, err.message)
+                throw new Error(`Voice transcription failed: ${err.message}`)
+            }
+        })
+    }
+
     async rerank(query: string, documents: string[]): Promise<{ index: number; score: number }[]> {
         return withRetry(async () => {
             const baseUrl = this.client.baseURL.replace(/\/$/, '')
@@ -232,6 +262,109 @@ export class OpenAICompatService implements AIService {
                 }))
             } catch (err: any) {
                 console.error(`[AI-SELFHOSTED] Rerank Error:`, err.message)
+                throw err
+            }
+        })
+    }
+
+    // ─── Vision Embedding (Multimodal) ───────────────────────────
+
+    /**
+     * Generate embedding vector from an image using the VL embedding model.
+     * Sends multimodal input (image) to /v1/embeddings endpoint.
+     * Returns a 768-dim vector (truncated from model's native 2048 via MRL).
+     */
+    async generateImageEmbedding(base64Data: string): Promise<number[]> {
+        if (!this.visionEmbedModel) {
+            throw new Error('[AI-SELFHOSTED] Vision embed model not configured')
+        }
+
+        return withRetry(async () => {
+            try {
+                // Ensure proper data URL format
+                const mimeMatch = base64Data.match(/^data:(image\/\w+);base64,/)
+                const imageUrl = mimeMatch ? base64Data : `data:image/jpeg;base64,${base64Data}`
+
+                const baseUrl = this.client.baseURL.replace(/\/$/, '')
+                const url = baseUrl.includes('/v1') ? `${baseUrl}/embeddings` : `${baseUrl}/v1/embeddings`
+
+                console.log(`[AI-SELFHOSTED] Generating image embedding with VL model: ${this.visionEmbedModel}`)
+                const startTime = Date.now()
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.client.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: this.visionEmbedModel,
+                        input: [
+                            {
+                                type: 'image_url',
+                                image_url: { url: imageUrl }
+                            }
+                        ],
+                        dimensions: 768
+                    })
+                })
+
+                if (!response.ok) {
+                    const errorText = await response.text()
+                    throw new Error(`Image embedding request failed (${response.status}): ${errorText}`)
+                }
+
+                const data = await response.json()
+                const embedding = data.data?.[0]?.embedding
+                if (!embedding) throw new Error('No embedding returned from VL model')
+
+                console.log(`[AI-SELFHOSTED] Image embedding generated in ${Date.now() - startTime}ms, dims: ${embedding.length}`)
+                return embedding
+            } catch (err: any) {
+                console.error(`[AI-SELFHOSTED] Image Embedding Error:`, err.message)
+                throw err
+            }
+        })
+    }
+
+    /**
+     * Generate embedding for text query using the VL embedding model.
+     * This allows cross-modal search (text query → image embedding space).
+     */
+    async generateVisionQueryEmbedding(text: string): Promise<number[]> {
+        if (!this.visionEmbedModel) {
+            throw new Error('[AI-SELFHOSTED] Vision embed model not configured')
+        }
+
+        return withRetry(async () => {
+            try {
+                const baseUrl = this.client.baseURL.replace(/\/$/, '')
+                const url = baseUrl.includes('/v1') ? `${baseUrl}/embeddings` : `${baseUrl}/v1/embeddings`
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.client.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: this.visionEmbedModel,
+                        input: text,
+                        dimensions: 768
+                    })
+                })
+
+                if (!response.ok) {
+                    const errorText = await response.text()
+                    throw new Error(`Vision query embedding failed (${response.status}): ${errorText}`)
+                }
+
+                const data = await response.json()
+                const embedding = data.data?.[0]?.embedding
+                if (!embedding) throw new Error('No embedding returned from VL model for text query')
+                return embedding
+            } catch (err: any) {
+                console.error(`[AI-SELFHOSTED] Vision Query Embedding Error:`, err.message)
                 throw err
             }
         })

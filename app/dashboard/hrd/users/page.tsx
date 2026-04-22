@@ -7,6 +7,39 @@ import { getUsersAction } from '@/lib/actions/user.actions'
 import { Search, Plus, UserPlus } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import Link from 'next/link'
+import { Skeleton } from '@/components/ui/skeleton'
+
+function UsersSkeleton() {
+    return (
+        <>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <tr key={i} className="border-b last:border-none">
+                    <td className="p-4">
+                        <div className="space-y-2">
+                            <Skeleton className="h-5 w-40 rounded-md" />
+                            <Skeleton className="h-4 w-32 rounded-md" />
+                        </div>
+                    </td>
+                    <td className="p-4">
+                        <Skeleton className="h-6 w-24 rounded border" />
+                    </td>
+                    <td className="p-4">
+                        <Skeleton className="h-4 w-32 rounded-md" />
+                    </td>
+                    <td className="p-4">
+                        <div className="flex items-center gap-2">
+                            <Skeleton className="w-2 h-2 rounded-full" />
+                            <Skeleton className="h-4 w-16 rounded-md" />
+                        </div>
+                    </td>
+                    <td className="p-4">
+                        <Skeleton className="h-4 w-12 rounded-md" />
+                    </td>
+                </tr>
+            ))}
+        </>
+    )
+}
 
 export default function UsersPage() {
     const { organization, role, group } = useCurrentUser()
@@ -86,7 +119,7 @@ export default function UsersPage() {
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={5} className="p-8 text-center text-text-500">{t('common.loading')}</td></tr>
+                                <UsersSkeleton />
                             ) : filteredUsers.length === 0 ? (
                                 <tr><td colSpan={5} className="p-8 text-center text-text-500">{t('users.no_users')}</td></tr>
                             ) : (

@@ -8,6 +8,40 @@ import { Search, Filter, FileText, Plus, LayoutGrid, List, ChevronRight, Clock, 
 import { useTranslation } from '@/hooks/useTranslation'
 import Link from 'next/link'
 import { Role } from '@prisma/client'
+import { Skeleton } from '@/components/ui/skeleton'
+
+function ContentSkeleton() {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="card flex flex-col overflow-hidden">
+                    <div className="p-5 flex-1 bg-surface-0 space-y-4">
+                        <div className="flex items-start justify-between">
+                            <Skeleton className="w-10 h-10 rounded-xl" />
+                            <Skeleton className="h-6 w-24 rounded-full" />
+                        </div>
+                        <div className="space-y-2">
+                            <Skeleton className="h-5 w-full rounded-md" />
+                            <Skeleton className="h-5 w-2/3 rounded-md" />
+                        </div>
+                        <Skeleton className="h-3 w-1/3 rounded-md" />
+                        <div className="flex gap-2">
+                            <Skeleton className="h-4 w-20 rounded-full" />
+                            <Skeleton className="h-4 w-24 rounded-full" />
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <Skeleton className="h-4 flex-1 rounded-md" />
+                            <Skeleton className="h-4 flex-1 rounded-md" />
+                        </div>
+                    </div>
+                    <div className="border-t border-surface-200 bg-surface-50 p-4 shrink-0">
+                        <Skeleton className="h-10 w-full rounded-lg" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    )
+}
 
 const getStatusBadge = (status: string, t: any) => {
     switch (status) {
@@ -144,10 +178,7 @@ export default function ContentListPage() {
 
                 <div className="p-6 bg-surface-50 min-h-[50vh]">
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center py-20">
-                            <div className="w-10 h-10 border-4 border-navy-200 border-t-navy-600 rounded-full animate-spin mb-4" />
-                            <p className="text-text-500 font-medium">{t('content.loading_content')}</p>
-                        </div>
+                        <ContentSkeleton />
                     ) : filteredContents.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-center">
                             <div className="w-16 h-16 bg-surface-200 text-text-300 rounded-full flex items-center justify-center mb-4">

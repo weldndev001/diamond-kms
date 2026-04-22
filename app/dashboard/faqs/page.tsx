@@ -11,6 +11,30 @@ import { updateFAQAction } from '@/lib/actions/faq.actions'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '@/lib/utils/cropImage'
 
+import { Skeleton } from '@/components/ui/skeleton'
+
+function FAQSkeleton() {
+    return (
+        <div className="max-w-4xl mx-auto space-y-6">
+            <Skeleton className="h-[200px] w-full rounded-[32px] mb-8" />
+            
+            <div className="space-y-4">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="h-[1px] flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                    <Skeleton className="h-4 w-32" />
+                    <div className="h-[1px] flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                </div>
+                
+                <div className="space-y-3">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export default function FAQsPage() {
     const { organization, user, role } = useCurrentUser()
     const { t } = useTranslation()
@@ -261,10 +285,7 @@ export default function FAQsPage() {
             </div>
 
             {loading ? (
-                <div className="text-center py-12 flex flex-col items-center gap-4">
-                    <div className="w-10 h-10 border-4 border-navy-500/20 border-t-navy-500 rounded-full animate-spin"></div>
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{t('faq.loading')}</p>
-                </div>
+                <FAQSkeleton />
             ) : filteredFaqs.length === 0 ? (
                 <div className="text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[32px] py-16 text-slate-400">
                     <HelpCircle size={48} className="mx-auto text-slate-200 dark:text-slate-800 mb-4" />

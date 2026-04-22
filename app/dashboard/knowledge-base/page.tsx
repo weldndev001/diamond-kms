@@ -20,6 +20,44 @@ import {
 } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { ContentStatus, Role } from '@prisma/client'
+import { Skeleton } from '@/components/ui/skeleton'
+
+function KBSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                    <Skeleton className="h-8 w-48 rounded-md" />
+                    <Skeleton className="h-4 w-64 rounded-md" />
+                </div>
+                <Skeleton className="h-10 w-40 rounded-lg" />
+            </div>
+            <div className="flex items-center justify-between gap-4">
+                <Skeleton className="h-10 w-full max-w-md rounded-xl" />
+                <Skeleton className="h-10 w-24 rounded-lg" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="card p-5 space-y-4">
+                        <div className="flex items-start justify-between">
+                            <Skeleton className="w-10 h-10 rounded-xl" />
+                            <Skeleton className="h-5 w-5 rounded-md" />
+                        </div>
+                        <div className="space-y-2">
+                            <Skeleton className="h-5 w-full rounded-md" />
+                            <Skeleton className="h-4 w-2/3 rounded-md" />
+                        </div>
+                        <Skeleton className="h-6 w-24 rounded-md" />
+                        <div className="flex gap-4">
+                            <Skeleton className="h-3 w-16 rounded-md" />
+                            <Skeleton className="h-3 w-16 rounded-md" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
 
 /* ═══════════════════════════════════════════
    TYPES
@@ -1049,12 +1087,7 @@ export default function KnowledgeBasePage() {
     }
 
     if (loading) {
-        return (
-            <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-                <Loader2 className="w-10 h-10 text-navy-600 animate-spin" />
-                <p className="text-text-400 font-medium">{t('common.loading')} Knowledge Base...</p>
-            </div>
-        )
+        return <KBSkeleton />
     }
 
     return (

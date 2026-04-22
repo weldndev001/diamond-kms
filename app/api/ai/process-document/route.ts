@@ -1,13 +1,14 @@
 // app/api/ai/process-document/route.ts
 // REPLACES dummy simulateAIProcessing() with real AI pipeline
 // Pipeline: download file → extract text → AI metadata → chunk → embed → save
+// + Vision Embedding: extract and embed images from PDFs for cross-modal retrieval
 // NOW: writes progress to DB so clients can poll for status
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { ApiResponse } from '@/lib/api/response'
 import { logger } from '@/lib/logging/redact'
 import { getAIServiceForOrg } from '@/lib/ai/get-ai-service'
-import { extractPDFText, extractPlainText } from '@/lib/ai/pdf-extractor'
+import { extractPDFText, extractPlainText, extractPDFImages } from '@/lib/ai/pdf-extractor'
 import { chunkDocument } from '@/lib/ai/chunker'
 import { env } from '@/lib/env'
 import { join } from 'path'
@@ -124,6 +125,8 @@ async function processDocumentInBackground(documentId: string, document: any) {
                        document.file_name.toLowerCase().endsWith('.docx')
         const isXlsx = document.mime_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
                        document.file_name.toLowerCase().endsWith('.xlsx')
+        const isAudio = document.mime_type.startsWith('audio/') || 
+                       /\.(mp3|wav|ogg|m4a)$/i.test(document.file_name)
 
         let pages: { pageNum: number; text: string }[]
         let pageCount: number
@@ -136,6 +139,14 @@ async function processDocumentInBackground(documentId: string, document: any) {
         } else if (fileBuffer && isDocx) {
             const { extractDocxText } = await import('@/lib/ai/pdf-extractor')
             const extracted = await extractDocxText(fileBuffer, document.file_name)
+            extractedText = extracted.fullText
+            pages = extracted.pages
+            pageCount = extracted.pageCount
+        } else if (fileBuffer && isAudio) {
+            const { extractAudioText } = await import('@/lib/ai/audio-extractor')
+            sendEvent('progress', { step: 'extracting', message: 'Mentranskripsi suara ke teks...', progress: 15 })
+            await updateProcessingLog(documentId, 'processing', 'Mentranskripsi suara ke teks menggunakan AI...', 15)
+            const extracted = await extractAudioText(fileBuffer, document.file_name, document.mime_type, document.organization_id)
             extractedText = extracted.fullText
             pages = extracted.pages
             pageCount = extracted.pageCount
@@ -254,8 +265,57 @@ async function processDocumentInBackground(documentId: string, document: any) {
         )
 
         const msgFinal = 'Merapikan dan menyimpan hasil pemrosesan...'
-        sendEvent('progress', { step: 'finalizing', message: msgFinal, progress: 95 })
-        await updateProcessingLog(documentId, 'processing', msgFinal, 95)
+        sendEvent('progress', { step: 'finalizing', message: msgFinal, progress: 90 })
+        await updateProcessingLog(documentId, 'processing', msgFinal, 90)
+
+        // STEP 8.3: Vision Embedding — embed images from document (experimental)
+        if (ai.generateImageEmbedding && ai.visionEmbedModel) {
+            const msgVision = 'Membuat vektor embedding gambar dengan Vision AI (eksperimental)...'
+            await updateProcessingLog(documentId, 'processing', msgVision, 92)
+
+            try {
+                let pdfImages: import('@/lib/ai/pdf-extractor').ExtractedPDFImage[] = []
+
+                if (isPDF && fileBuffer) {
+                    pdfImages = await extractPDFImages(fileBuffer, 10)
+                }
+
+                if (pdfImages.length > 0) {
+                    console.log(`🖼️ [PROCESS] Embedding ${pdfImages.length} PDF images for "${document.file_name}"`)
+
+                    const pLimit2 = (await import('p-limit')).default
+                    const imgLimit = pLimit2(2)
+
+                    await Promise.all(
+                        pdfImages.map((pdfImg, i) =>
+                            imgLimit(async () => {
+                                try {
+                                    const embedding = await ai.generateImageEmbedding!(pdfImg.base64)
+                                    const embeddingString = `[${embedding.join(',')}]`
+                                    const imgContent = `[${pdfImg.label}] Gambar dalam dokumen "${document.file_name}"`
+
+                                    await prisma.$executeRaw`
+                                        INSERT INTO document_chunks
+                                        (id, document_id, chunk_index, content, image_embedding, token_count, page_number, page_end, chunk_type, image_source, created_at)
+                                        VALUES
+                                        (gen_random_uuid()::text, ${documentId}, ${1000 + i}, ${imgContent}, CAST(${embeddingString} AS vector), ${0}, ${pdfImg.pageNum}, ${pdfImg.pageNum}, 'image', ${pdfImg.label}, NOW())
+                                    `
+                                    console.log(`✅ [PROCESS] Image chunk saved: ${pdfImg.label}`)
+                                } catch (imgErr) {
+                                    console.error(`⚠️ [PROCESS] Failed to embed PDF image ${i}:`, imgErr)
+                                }
+                            })
+                        )
+                    )
+
+                    console.log(`✅ [PROCESS] ${pdfImages.length} PDF image chunks saved for "${document.file_name}"`)
+                } else {
+                    console.log(`ℹ️ [PROCESS] No extractable images found in document "${document.file_name}"`)
+                }
+            } catch (visionErr) {
+                console.error(`⚠️ [PROCESS] Vision embedding failed (non-fatal):`, visionErr)
+            }
+        }
 
         // STEP 8.5: Extract Graph Entities and Relationships (Graph RAG)
         const msgGraph = 'Mengekstrak entitas dan hubungan graf pengetahuan...'

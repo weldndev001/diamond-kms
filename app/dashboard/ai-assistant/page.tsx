@@ -35,6 +35,21 @@ interface ChatSessionItem {
     _count: { messages: number }
 }
 
+import { Skeleton } from '@/components/ui/skeleton'
+
+function SidebarSkeleton() {
+    return (
+        <div className="space-y-2 px-2">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="flex items-center gap-3 p-3">
+                    <Skeleton className="h-4 w-4 rounded-md" />
+                    <Skeleton className="h-4 flex-1 rounded-md" />
+                </div>
+            ))}
+        </div>
+    )
+}
+
 export default function AIAssistantPage() {
     const { t } = useTranslation()
     // Session state
@@ -371,10 +386,10 @@ export default function AIAssistantPage() {
     }
 
     return (
-        <div className="flex h-[calc(100vh-120px)] bg-surface-50 dark:bg-surface-50 overflow-hidden rounded-xl border border-surface-200 dark:border-surface-100 relative">
+        <div className="flex h-[calc(100vh-60px)] bg-white dark:bg-surface-0 overflow-hidden relative">
             {/* Collapsible Sidebar (Chat History) */}
             <div
-                className={`flex-shrink-0 bg-surface-50 dark:bg-surface-0 border-r border-surface-200 dark:border-slate-800 transition-all duration-300 ease-in-out flex flex-col ${isHistoryOpen ? 'w-72 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+                className={`flex-shrink-0 bg-slate-950 dark:bg-slate-950 border-r border-white/5 transition-all duration-300 ease-in-out flex flex-col ${isHistoryOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 pointer-events-none'
                     }`}
             >
                 <div className="p-4 flex-shrink-0">
@@ -391,9 +406,7 @@ export default function AIAssistantPage() {
                 <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
                     <p className="px-3 text-[10px] font-black text-text-400 uppercase tracking-[0.2em] mb-2">{t('ai_assistant.recent_chats')}</p>
                     {loadingSessions ? (
-                        <div className="flex justify-center py-4">
-                            <Loader2 size={24} className="animate-spin text-navy-400" />
-                        </div>
+                        <SidebarSkeleton />
                     ) : sessions.length === 0 ? (
                         <p className="px-3 text-xs text-text-400 italic py-2">{t('ai_assistant.no_history')}</p>
                     ) : (
@@ -401,8 +414,8 @@ export default function AIAssistantPage() {
                             <div
                                 key={s.id}
                                 className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${activeSessionId === s.id
-                                    ? 'bg-navy-50 dark:bg-navy-900/40 text-navy-700 dark:text-navy-400 ring-1 ring-navy-200 dark:ring-navy-700/50'
-                                    : 'hover:bg-surface-100 dark:hover:bg-surface-100 text-text-600 hover:text-navy-600'
+                                    ? 'bg-white/10 text-white ring-1 ring-white/20'
+                                    : 'hover:bg-white/5 text-slate-400 hover:text-white'
                                     }`}
                                 onClick={() => loadSession(s.id)}
                             >
@@ -427,8 +440,8 @@ export default function AIAssistantPage() {
 
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col min-w-0 bg-surface-0 relative">
-                {/* Chat Header (Glassmorphism) - High Fidelity */}
-                <div className="sticky top-0 z-30 bg-surface-0/90 dark:bg-surface-0/80 backdrop-blur-xl border-b border-surface-200 dark:border-surface-100 px-6 py-4 flex items-center justify-between flex-shrink-0 shadow-lg shadow-navy-900/5 dark:shadow-none">
+                {/* Chat Header - Clean & Minimal */}
+                <div className="sticky top-0 z-30 bg-white dark:bg-surface-0 border-b border-surface-200/60 dark:border-surface-100 px-6 py-4 flex items-center justify-between flex-shrink-0">
                     <div className="flex items-center gap-4 min-w-0">
                         {/* Sidebar Toggle Button */}
                         <button
@@ -453,9 +466,10 @@ export default function AIAssistantPage() {
                                 <p className="text-[9px] font-bold text-text-400 mt-0.5 tracking-wider hidden sm:block uppercase">{t('ai_assistant.aisa_full')}</p>
                             </div>
                         </div>
+                    </div>
 
+                    <div className="flex items-center gap-3">
                         {/* Scope Selector - Premium Styled */}
-                        <div className="h-10 w-px bg-surface-200 hidden md:block mx-2" />
                         <div className="hidden md:flex items-center gap-3 group">
                             <span className="text-[9px] font-black text-text-300 uppercase tracking-[0.2em] group-hover:text-navy-400 transition ml-2">{t('ai_assistant.context_label')}</span>
                             <div className="relative">
@@ -474,6 +488,8 @@ export default function AIAssistantPage() {
                                 </div>
                             </div>
                         </div>
+
+                        <div className="h-10 w-px bg-surface-200 hidden md:block mx-2" />
 
                         {/* RAG Settings Toggle */}
                         <div className="relative">
@@ -573,8 +589,9 @@ export default function AIAssistantPage() {
                     </div>
                 </div>
 
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                {/* Messages Container - Wider Layout */}
+                <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                    <div className="max-w-5xl mx-auto w-full space-y-6">
                     {messages.length === 0 && !streamingText && !isThinking && (
                         <div className="text-center py-16 text-text-400">
                             <div className="w-20 h-20 bg-navy-light rounded-full flex items-center justify-center mx-auto mb-4">
@@ -615,9 +632,9 @@ export default function AIAssistantPage() {
                                 </div>
                             )}
                             <div
-                                className={`rounded-2xl px-6 py-4 max-w-[85%] md:max-w-[75%] text-[15px] leading-relaxed shadow-sm transition-all duration-300 hover:shadow-md ${msg.role === 'user'
-                                    ? 'bg-gradient-to-br from-navy-600 to-navy-700 text-white font-medium corner-right'
-                                    : 'bg-surface-0 text-text-900 border border-surface-200'
+                                className={`rounded-2xl px-6 py-4 max-w-[85%] md:max-w-[80%] text-[15px] leading-relaxed transition-all duration-300 ${msg.role === 'user'
+                                    ? 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white font-medium corner-right shadow-sm'
+                                    : 'bg-surface-50 dark:bg-surface-50 text-text-900 border border-surface-200/50'
                                     }`}
                             >
                                 <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -666,26 +683,27 @@ export default function AIAssistantPage() {
                     {/* Note: Citations are now rendered directly inside assistant message bubbles using renderCitations helper. */}
 
                     <div ref={messagesEndRef} />
+                    </div>
                 </div>
 
-                {/* Input Area - Premium Floating Design */}
-                <div className="px-8 pb-8 pt-4 flex-shrink-0 bg-gradient-to-t from-surface-100 via-surface-50 to-transparent">
-                    <div className="relative max-w-4xl mx-auto group">
-                        <div className="flex items-center gap-3 bg-surface-0 rounded-[22px] px-6 py-4 border border-surface-200 focus-within:border-navy-500 focus-within:shadow-2xl focus-within:shadow-navy-600/10 transition-all duration-500 shadow-xl shadow-navy-900/5 ring-4 ring-transparent focus-within:ring-navy-600/5">
+                {/* Input Area - Integrated & Minimal */}
+                <div className="px-6 pb-8 pt-4 flex-shrink-0 bg-white dark:bg-surface-0">
+                    <div className="max-w-5xl mx-auto w-full group">
+                        <div className="flex items-center gap-4 bg-surface-50 dark:bg-surface-50 rounded-2xl px-5 py-4 border border-surface-200 focus-within:border-navy-500 focus-within:bg-white transition-all duration-300 shadow-sm focus-within:shadow-md">
                             <input
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 disabled={isStreaming}
                                 placeholder={t('ai_assistant.input_placeholder')}
-                                className="flex-1 bg-transparent translate-y-[1px] outline-none text-[15px] font-medium placeholder:text-text-300"
+                                className="flex-1 bg-transparent translate-y-[1px] outline-none text-[15px] font-medium placeholder:text-text-400"
                             />
                             <button
                                 onClick={sendMessage}
                                 disabled={!input.trim() || isStreaming}
-                                className="bg-gradient-to-br from-navy-600 to-navy-800 hover:scale-105 active:scale-95 disabled:grayscale disabled:opacity-50 disabled:scale-100 text-white rounded-xl p-3.5 transition-all duration-300 shadow-lg shadow-navy-600/30"
+                                className="bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white hover:opacity-90 active:scale-95 disabled:grayscale disabled:opacity-50 disabled:scale-100 rounded-xl p-3 transition-all duration-300"
                             >
-                                <Send size={20} className="translate-x-[1px] -translate-y-[1px]" />
+                                <Send size={18} />
                             </button>
                         </div>
                         <p className="text-center text-[9px] font-black text-text-300 mt-4 uppercase tracking-[0.2em] opacity-60">

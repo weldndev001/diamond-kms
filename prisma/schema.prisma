@@ -179,15 +179,18 @@ model KnowledgeBaseSource {
 }
 
 model DocumentChunk {
-  id          String                      @id @default(uuid())
-  document_id String
-  chunk_index Int
-  content     String                      @db.Text
-  embedding     Unsupported("vector")?
-  token_count Int
-  page_number Int?
-  page_end    Int?
-  created_at  DateTime                    @default(now())
+  id              String                      @id @default(uuid())
+  document_id     String
+  chunk_index     Int
+  content         String                      @db.Text
+  embedding       Unsupported("vector")?
+  image_embedding Unsupported("vector")?       // Vision embedding for image chunks
+  token_count     Int
+  page_number     Int?
+  page_end        Int?
+  chunk_type      String                      @default("text") // 'text' | 'image'
+  image_source    String?                     // Label/reference for image source
+  created_at      DateTime                    @default(now())
 
   document Document @relation(fields: [document_id], references: [id], onDelete: Cascade)
 
@@ -521,13 +524,16 @@ model ChatMessage {
 }
 
 model ContentChunk {
-  id          String                      @id @default(uuid())
-  content_id  String
-  chunk_index Int
-  content     String                      @db.Text
-  embedding     Unsupported("vector")?
-  token_count Int
-  created_at  DateTime                    @default(now())
+  id              String                      @id @default(uuid())
+  content_id      String
+  chunk_index     Int
+  content         String                      @db.Text
+  embedding       Unsupported("vector")?
+  image_embedding Unsupported("vector")?       // Vision embedding for image chunks
+  token_count     Int
+  chunk_type      String                      @default("text") // 'text' | 'image'
+  image_source    String?                     // Label/reference for image source
+  created_at      DateTime                    @default(now())
 
   kb_content Content @relation(fields: [content_id], references: [id], onDelete: Cascade)
 

@@ -1,12 +1,13 @@
 // app/api/ai/process-content/route.ts
 // Pipeline: strip HTML → chunk → embed → Graph RAG → save
+// + Vision Embedding: embed images directly for cross-modal retrieval
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { ApiResponse } from '@/lib/api/response'
 import { logger } from '@/lib/logging/redact'
 import { getAIServiceForOrg } from '@/lib/ai/get-ai-service'
 import { chunkDocument } from '@/lib/ai/chunker'
-import { analyzeContentImages } from '@/lib/ai/image-extractor'
+import { analyzeContentImages, embedContentImages } from '@/lib/ai/image-extractor'
 import { env } from '@/lib/env'
 
 export const maxDuration = 120 // Allow up to 2 minutes for large articles
@@ -182,7 +183,39 @@ async function processContentInBackground(contentId: string, content: any) {
         )
 
         const msgFinal = 'Merapikan dan menyimpan hasil pemrosesan...'
-        await updateProcessingLog(contentId, 'processing', msgFinal, 90)
+        await updateProcessingLog(contentId, 'processing', msgFinal, 85)
+
+        // STEP 6.5: Vision Embedding — embed images directly as vectors (experimental)
+        if (ai.generateImageEmbedding && ai.visionEmbedModel) {
+            const msgVision = 'Membuat vektor embedding gambar dengan Vision AI (eksperimental)...'
+            await updateProcessingLog(contentId, 'processing', msgVision, 87)
+
+            try {
+                const imageEmbeddings = await embedContentImages(
+                    ai, content.image_url, content.body, content.title
+                )
+
+                if (imageEmbeddings.length > 0) {
+                    console.log(`🖼️ [PROCESS] Saving ${imageEmbeddings.length} image embedding chunks for "${content.title}"`)
+
+                    for (const imgEmbed of imageEmbeddings) {
+                        const embeddingString = `[${imgEmbed.embedding.join(',')}]`
+                        const imgContent = `[${imgEmbed.label}] Gambar dalam artikel "${content.title}"`
+
+                        await prisma.$executeRaw`
+                            INSERT INTO content_chunks
+                            (id, content_id, chunk_index, content, image_embedding, token_count, chunk_type, image_source, created_at)
+                            VALUES
+                            (gen_random_uuid()::text, ${contentId}, ${1000 + imgEmbed.index}, ${imgContent}, CAST(${embeddingString} AS vector), ${0}, 'image', ${imgEmbed.label}, NOW())
+                        `
+                    }
+                    console.log(`✅ [PROCESS] ${imageEmbeddings.length} image chunks saved for "${content.title}"`)
+                }
+            } catch (visionErr) {
+                console.error(`⚠️ [PROCESS] Vision embedding failed (non-fatal):`, visionErr)
+                // Non-fatal: continue processing without image embeddings
+            }
+        }
 
         // STEP 7: Extract Graph Entities and Relationships (Graph RAG)
         const msgGraph = 'Mengekstrak entitas dan hubungan graf pengetahuan...'

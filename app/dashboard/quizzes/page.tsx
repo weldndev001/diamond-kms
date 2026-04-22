@@ -9,6 +9,94 @@ import Link from 'next/link'
 import { getLeaderboardAction } from '@/lib/actions/leaderboard.actions'
 import { getGroupsAction } from '@/lib/actions/user.actions'
 import { useSearchParams } from 'next/navigation'
+import { Skeleton } from '@/components/ui/skeleton'
+
+function QuizzesSkeleton({ viewMode }: { viewMode: 'grid' | 'list' }) {
+    return (
+        <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" : "flex flex-col gap-5"}>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className={`bg-white dark:bg-slate-800 rounded-[32px] border border-surface-200 dark:border-slate-700/50 shadow-xl overflow-hidden ${viewMode === 'list' ? 'flex items-center p-5 gap-5' : 'flex flex-col'}`}>
+                    {viewMode === 'grid' ? (
+                        <>
+                            <Skeleton className="h-32 w-full" />
+                            <div className="p-6 flex-1 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <Skeleton className="w-14 h-14 rounded-2xl" />
+                                    <Skeleton className="h-6 w-20 rounded-xl" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Skeleton className="h-5 w-full rounded-md" />
+                                    <Skeleton className="h-5 w-2/3 rounded-md" />
+                                </div>
+                                <Skeleton className="h-4 w-1/3 rounded-md" />
+                                <div className="flex gap-2">
+                                    <Skeleton className="h-6 w-24 rounded-xl" />
+                                    <Skeleton className="h-6 w-20 rounded-xl" />
+                                </div>
+                                <div className="pt-4">
+                                    <Skeleton className="h-12 w-full rounded-2xl" />
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <Skeleton className="w-14 h-14 rounded-2xl shrink-0" />
+                            <div className="flex-1 space-y-2">
+                                <Skeleton className="h-5 w-1/3 rounded-md" />
+                                <div className="flex gap-3">
+                                    <Skeleton className="h-4 w-20 rounded-md" />
+                                    <Skeleton className="h-4 w-16 rounded-md" />
+                                    <Skeleton className="h-4 w-24 rounded-md" />
+                                </div>
+                            </div>
+                            <Skeleton className="h-10 w-32 rounded-xl" />
+                        </>
+                    )}
+                </div>
+            ))}
+        </div>
+    )
+}
+
+function LeaderboardSkeleton() {
+    return (
+        <div className="bg-white dark:bg-slate-800 rounded-[40px] border border-surface-200 dark:border-slate-700 shadow-2xl overflow-hidden">
+            <div className="p-8 border-b flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                    <Skeleton className="p-3 w-12 h-12 rounded-2xl" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-6 w-40 rounded-md" />
+                        <Skeleton className="h-3 w-32 rounded-md" />
+                    </div>
+                </div>
+                <Skeleton className="h-10 w-44 rounded-xl" />
+            </div>
+            <div className="p-8">
+                <div className="space-y-4">
+                    <div className="flex justify-between border-b pb-4">
+                        <Skeleton className="h-4 w-12" />
+                        <Skeleton className="h-4 w-48" />
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-4 w-16" />
+                    </div>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="flex justify-between items-center py-4 border-b last:border-0">
+                            <Skeleton className="w-8 h-8 rounded-full" />
+                            <div className="flex items-center gap-4 w-48">
+                                <Skeleton className="w-10 h-10 rounded-full" />
+                                <Skeleton className="h-4 w-32" />
+                            </div>
+                            <Skeleton className="h-6 w-24 rounded-xl" />
+                            <Skeleton className="h-4 w-32" />
+                            <Skeleton className="h-6 w-16 rounded-md" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
 
 export default function QuizzesPage() {
     const { organization, role, group, user } = useCurrentUser()
@@ -134,12 +222,12 @@ export default function QuizzesPage() {
 
     const renderRankIcon = (index: number) => {
         switch (index) {
-            case 0: return <Trophy className="text-amber-400 drop-shadow-sm" size={24} />
-            case 1: return <Medal className="text-slate-300 drop-shadow-sm" size={22} />
-            case 2: return <Medal className="text-amber-700 drop-shadow-sm" size={20} />
-            default: return <div className="w-8 h-8 rounded-full bg-surface-100 flex items-center justify-center text-xs font-bold font-display text-text-500 border border-surface-200">{index + 1}</div>
+            case 0: return <Trophy className="text-amber-400 drop-shadow-sm" size={24} />;
+            case 1: return <Medal className="text-slate-300 drop-shadow-sm" size={22} />;
+            case 2: return <Medal className="text-amber-700 drop-shadow-sm" size={20} />;
+            default: return <div className="w-8 h-8 rounded-full bg-surface-100 flex items-center justify-center text-xs font-bold font-display text-text-500 border border-surface-200">{index + 1}</div>;
         }
-    }
+    };
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -227,10 +315,7 @@ export default function QuizzesPage() {
 
                     <div className="min-h-[50vh]">
                         {loading ? (
-                            <div className="flex flex-col items-center justify-center py-32">
-                                <div className="w-14 h-14 border-4 border-navy-100 border-t-navy-600 rounded-full animate-spin mb-6"></div>
-                                <p className="text-text-400 font-black uppercase tracking-[0.2em] text-[11px]">{t('quizzes.syncing')}</p>
-                            </div>
+                            <QuizzesSkeleton viewMode={viewMode} />
                         ) : filteredQuizzes.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-32 text-center">
                                 <div className="w-24 h-24 bg-surface-100 dark:bg-slate-800 text-text-300 dark:text-slate-600 rounded-[40px] flex items-center justify-center mb-8 shadow-inner rotate-12">
@@ -568,9 +653,16 @@ export default function QuizzesPage() {
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2" />
                             </div>
                         ) : (
-                            <div className="card p-8 flex flex-col items-center justify-center bg-surface-50 dark:bg-slate-800 h-full border-dashed border-2 dark:border-slate-700 animate-pulse rounded-[40px]">
-                                <div className="w-12 h-12 border-4 border-navy-100 dark:border-slate-700 border-t-navy-500 dark:border-t-indigo-500 rounded-full animate-spin mb-4"></div>
-                                <p className="text-text-400 text-[11px] font-black uppercase tracking-widest">{t('quizzes.syncing_leaderboard')}</p>
+                            <div className="card p-10 rounded-[40px] bg-white dark:bg-slate-800 border border-surface-200 dark:border-slate-700 flex flex-col justify-center h-full space-y-6">
+                                <Skeleton className="h-4 w-32 rounded-md" />
+                                <div className="flex items-end gap-4">
+                                    <Skeleton className="h-20 w-32 rounded-2xl" />
+                                    <Skeleton className="h-8 w-16 rounded-md mb-2" />
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <Skeleton className="h-3 flex-1 rounded-full" />
+                                    <Skeleton className="h-8 w-20 rounded-xl" />
+                                </div>
                             </div>
                         )}
                     </div>
@@ -647,7 +739,22 @@ export default function QuizzesPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-surface-100 dark:divide-slate-700">
-                                    {leaders.length === 0 ? (
+                                    {loading ? (
+                                        [1, 2, 3, 4, 5].map((i) => (
+                                            <tr key={i} className="border-b last:border-0">
+                                                <td className="p-8 text-center"><Skeleton className="w-8 h-8 rounded-full mx-auto" /></td>
+                                                <td className="p-8">
+                                                    <div className="flex items-center gap-4">
+                                                        <Skeleton className="w-10 h-10 rounded-full" />
+                                                        <Skeleton className="h-4 w-32 rounded-md" />
+                                                    </div>
+                                                </td>
+                                                <td className="p-8"><Skeleton className="h-6 w-24 rounded-xl" /></td>
+                                                <td className="p-8"><Skeleton className="h-4 w-32 rounded-md" /></td>
+                                                <td className="p-8 text-right"><Skeleton className="h-6 w-16 rounded-md ml-auto" /></td>
+                                            </tr>
+                                        ))
+                                    ) : leaders.length === 0 ? (
                                         <tr>
                                             <td colSpan={5} className="py-24 text-center">
                                                 <div className="flex flex-col items-center gap-4 opacity-30 grayscale">
