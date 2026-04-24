@@ -16,7 +16,7 @@ import {
     Plus, Search, MessageSquare, FileText, Bot, User, Send, Loader2,
     ArrowLeft, X, Check, BookOpen, File, ChevronRight, Sparkles,
     Trash2, Tags, FolderOpen, Clock, Users as UsersIcon,
-    LayoutGrid, List, Globe, Lock, ShieldCheck
+    LayoutGrid, List, Globe, Lock, ShieldCheck, ExternalLink
 } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { ContentStatus, Role } from '@prisma/client'
@@ -408,6 +408,9 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
     const [showNewSessionModal, setShowNewSessionModal] = useState(false)
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
     const endRef = useRef<HTMLDivElement>(null)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+
 
     const loadSession = async (sessionId: string) => {
         try {
@@ -534,7 +537,9 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
         const newHistory = [...messages, { role: 'user' as const, content: q }]
         setMessages(newHistory)
         setInput('')
+        if (textareaRef.current) textareaRef.current.style.height = 'auto'
         setIsTyping(true)
+
 
         try {
             const res = await fetch('/api/chat', {
@@ -679,10 +684,26 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
 
                 <div className="p-4 border-t border-surface-200 bg-surface-0">
                     <div className="flex items-center gap-3 bg-white rounded-xl px-4 py-2 border border-surface-200">
-                        <input value={input} onChange={e => setInput(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                            disabled={isTyping || isDraft} placeholder={isDraft ? "Chat dinonaktifkan untuk draft" : "Ketik pertanyaan..."}
-                            className="flex-1 bg-transparent outline-none text-sm" />
+                        <textarea
+                            ref={textareaRef}
+                            value={input}
+                            onChange={e => {
+                                setInput(e.target.value)
+                                e.target.style.height = 'auto'
+                                e.target.style.height = `${e.target.scrollHeight}px`
+                            }}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault()
+                                    sendMessage()
+                                }
+                            }}
+                            disabled={isTyping || isDraft}
+                            placeholder={isDraft ? "Chat dinonaktifkan untuk draft" : "Ketik pertanyaan..."}
+                            rows={1}
+                            className="flex-1 bg-transparent outline-none text-sm resize-none max-h-32 py-1 scrollbar-thin"
+                        />
+
                         <button onClick={sendMessage} disabled={!input.trim() || isTyping || isDraft}
                             className="bg-navy-600 text-white rounded-lg p-2 disabled:bg-surface-200">
                             <Send size={16} />
@@ -699,9 +720,17 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
                     </div>
                     <div className="flex-1 overflow-y-auto p-3 space-y-2">
                         {sidebarTab === 'docs' ? kb.documents.map(d => (
-                            <div key={d.id} className="p-2.5 bg-white border border-surface-200 rounded-lg text-xs font-medium text-navy-900 flex items-center gap-2">
-                                <FileText size={14} className="text-navy-400" /> {d.title}
-                            </div>
+                            <a 
+                                key={d.id} 
+                                href={d.type === 'document' ? `/dashboard/documents/${d.id}` : `/dashboard/knowledge-base/${d.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2.5 bg-white border border-surface-200 rounded-lg text-xs font-medium text-navy-900 flex items-center gap-2 hover:border-navy-400 hover:text-navy-600 transition-colors group"
+                            >
+                                <FileText size={14} className="text-navy-400 group-hover:text-navy-600" /> 
+                                <span className="truncate flex-1">{d.title}</span>
+                                <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 text-navy-400 transition-opacity" />
+                            </a>
                         )) : chatSessions.map(s => (
                             <button key={s.id} onClick={() => loadSession(s.id)}
                                 className={`w-full text-left p-2.5 border rounded-lg text-xs font-medium transition ${activeSessionId === s.id ? 'bg-navy-50 border-navy-200 text-navy-700' : 'bg-white border-surface-200 text-navy-900 hover:bg-surface-50'}`}>
@@ -837,21 +866,40 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc, onD
                             <p>{t('knowledge_base.no_docs_connected')}</p>
                         </div>
                     ) : kb.documents.map((doc, idx) => (
-                        <div key={doc.id} className="flex items-center gap-4 p-4 hover:bg-surface-50 transition group">
+                        <div key={doc.id} className="flex items-center gap-4 p-4 hover:bg-surface-50 transition group relative">
                             <span className="text-text-300 font-mono text-xs w-4">{idx + 1}.</span>
-                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${doc.type === 'document' ? 'bg-navy-100' : 'bg-amber-100'}`}>
-                                <FileText size={16} className={doc.type === 'document' ? 'text-navy-600' : 'text-amber-600'} />
+                            
+                            <a 
+                                href={doc.type === 'document' ? `/dashboard/documents/${doc.id}` : `/dashboard/knowledge-base/${doc.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-1 items-center gap-4 min-w-0"
+                            >
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${doc.type === 'document' ? 'bg-navy-100' : 'bg-amber-100'}`}>
+                                    <FileText size={16} className={doc.type === 'document' ? 'text-navy-600' : 'text-amber-600'} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-navy-900 text-sm truncate group-hover:text-navy-600 transition-colors">{doc.title}</p>
+                                    <p className="text-[11px] text-text-400 mt-0.5">{doc.group || 'General'} · {doc.type === 'document' ? 'PDF/Doc' : 'Article'}</p>
+                                </div>
+                            </a>
+
+                            <div className="flex items-center gap-2">
+                                <a 
+                                    href={doc.type === 'document' ? `/dashboard/documents/${doc.id}` : `/dashboard/knowledge-base/${doc.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-navy-50 text-navy-600 rounded-lg flex items-center gap-1.5 text-[11px] font-bold transition-all border border-navy-100"
+                                >
+                                    <ExternalLink size={14} /> {t('common.view') || 'VIEW'}
+                                </a>
+                                {canEdit && (
+                                    <button onClick={() => onRemoveDoc(doc.id)}
+                                        className="opacity-0 group-hover:opacity-100 p-2 text-text-300 hover:text-danger hover:bg-danger-bg rounded-lg transition">
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-bold text-navy-900 text-sm truncate">{doc.title}</p>
-                                <p className="text-[11px] text-text-400 mt-0.5">{doc.group || 'General'} · {doc.type === 'document' ? 'PDF/Doc' : 'Article'}</p>
-                            </div>
-                            {canEdit && (
-                                <button onClick={() => onRemoveDoc(doc.id)}
-                                    className="opacity-0 group-hover:opacity-100 p-2 text-text-300 hover:text-danger hover:bg-danger-bg rounded-lg transition">
-                                    <Trash2 size={16} />
-                                </button>
-                            )}
                         </div>
                     ))}
                 </div>

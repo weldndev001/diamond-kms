@@ -375,15 +375,31 @@ export async function ragQuery(
     }
 
     // ── STEP 4: Build context string from chunks ────────────────
-    context = relevantChunks
-        .map((c, i) => {
-            const isDoc = c.source_type === 'DOCUMENT'
+    // Group chunks by document to avoid AI hallucinating more files than exist
+    const groupedByDoc = new Map<string, { title: string; sourceType: string; chunks: typeof relevantChunks }>()
+    for (const c of relevantChunks) {
+        const key = `${c.document_id}::${c.source_type}`
+        if (!groupedByDoc.has(key)) {
+            groupedByDoc.set(key, { title: c.doc_title, sourceType: c.source_type, chunks: [] })
+        }
+        groupedByDoc.get(key)!.chunks.push(c)
+    }
+
+    let docIndex = 0
+    const contextParts: string[] = []
+    for (const [, group] of groupedByDoc) {
+        docIndex++
+        const isDoc = group.sourceType === 'DOCUMENT'
+        const label = isDoc ? 'Dokumen' : 'Artikel'
+        const chunkTexts = group.chunks.map((c) => {
             const location = isDoc
                 ? `Hal. ${c.page_start}${c.page_end !== c.page_start ? `-${c.page_end}` : ''}`
                 : `Bagian ${c.page_start}`
-            return `[Sumber ${i + 1}: ${c.doc_title}, ${location}]\n${c.content}`
-        })
-        .join('\n\n---\n\n')
+            return `[${location}]\n${c.content}`
+        }).join('\n\n')
+        contextParts.push(`[${label} ${docIndex}: ${group.title}]\n${chunkTexts}`)
+    }
+    context = contextParts.join('\n\n---\n\n')
 
     // ── STEP 5: Build system prompt ─────────────────────────────
     let systemPrompt = ''

@@ -76,6 +76,8 @@ export default function AIAssistantPage() {
     const [useRerank, setUseRerank] = useState(false)
     const { organization } = useCurrentUser()
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+
 
     const scrollToBottom = useCallback(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -268,6 +270,8 @@ export default function AIAssistantPage() {
         const userMessage: Message = { role: 'user', content: question }
         setMessages((prev) => [...prev, userMessage])
         setInput('')
+        if (textareaRef.current) textareaRef.current.style.height = 'auto'
+
         setStreamingText('')
         setCitations([])
         setIsStreaming(true)
@@ -690,13 +694,19 @@ export default function AIAssistantPage() {
                 <div className="px-6 pb-8 pt-4 flex-shrink-0 bg-white dark:bg-surface-0">
                     <div className="max-w-5xl mx-auto w-full group">
                         <div className="flex items-center gap-4 bg-surface-50 dark:bg-surface-50 rounded-2xl px-5 py-4 border border-surface-200 focus-within:border-navy-500 focus-within:bg-white transition-all duration-300 shadow-sm focus-within:shadow-md">
-                            <input
+                            <textarea
+                                ref={textareaRef}
                                 value={input}
-                                onChange={(e) => setInput(e.target.value)}
+                                onChange={(e) => {
+                                    setInput(e.target.value)
+                                    e.target.style.height = 'auto'
+                                    e.target.style.height = `${e.target.scrollHeight}px`
+                                }}
                                 onKeyDown={handleKeyDown}
                                 disabled={isStreaming}
                                 placeholder={t('ai_assistant.input_placeholder')}
-                                className="flex-1 bg-transparent translate-y-[1px] outline-none text-[15px] font-medium placeholder:text-text-400"
+                                rows={1}
+                                className="flex-1 bg-transparent translate-y-[1px] outline-none text-[15px] font-medium placeholder:text-text-400 resize-none max-h-32 py-1 scrollbar-thin"
                             />
                             <button
                                 onClick={sendMessage}

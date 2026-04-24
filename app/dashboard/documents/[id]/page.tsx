@@ -7,10 +7,14 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import {
     ArrowLeft, FileText, Bot, Tag, FolderOpen, User,
     Maximize2, Minimize2, Loader2, Send, MessageSquare, Sparkles,
-    Trash2, ClipboardList
+    Trash2, ClipboardList, RefreshCcw
 } from 'lucide-react'
+
 import Link from 'next/link'
 import { DocumentPreviewCard } from '@/components/documents/DocumentPreviewCard'
+import { DocxPreview } from '@/components/documents/DocxPreview'
+import { XlsxPreview } from '@/components/documents/XlsxPreview'
+import { MarkdownPreview } from '@/components/documents/MarkdownPreview'
 
 interface ChatMessage {
     role: 'user' | 'assistant'
@@ -64,6 +68,13 @@ export default function DocumentDetailPage() {
     const isPDF = doc?.mime_type === 'application/pdf'
     const isImage = doc?.mime_type?.startsWith('image/')
     const isAudio = doc?.mime_type?.startsWith('audio/') || /\.(mp3|wav|ogg|m4a)$/i.test(doc?.file_name || '')
+    const isDocx = doc?.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || doc?.file_name?.endsWith('.docx')
+    const isXlsx = doc?.mime_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+                   doc?.mime_type === 'application/vnd.ms-excel' || 
+                   doc?.mime_type === 'text/csv' ||
+                   /\.(xlsx|xls|csv)$/i.test(doc?.file_name || '') ||
+                   /\.(xlsx|xls|csv)$/i.test(doc?.file_path || '')
+    const isMarkdown = doc?.mime_type === 'text/markdown' || doc?.mime_type === 'text/x-markdown' || /\.(md|markdown)$/i.test(doc?.file_name || '') || /\.(md|markdown)$/i.test(doc?.file_path || '')
 
     // Use proxy endpoint to bypass signed URL JWT issues
     const loadPdfUrl = () => {
@@ -145,7 +156,9 @@ export default function DocumentDetailPage() {
         const newMessages = [...messages, userMsg]
         setMessages(newMessages)
         setInput('')
+        if (inputRef.current) inputRef.current.style.height = 'auto'
         setIsStreaming(true)
+
 
         // Add empty assistant message for streaming
         setMessages(prev => [...prev, { role: 'assistant', content: '' }])
@@ -409,26 +422,37 @@ export default function DocumentDetailPage() {
                                     <p className="text-[10px] text-text-400">AI akan menjawab berdasarkan isi dokumen ini</p>
                                 </div>
                             </div>
-                            {messages.length > 0 && (
                                 <div className="flex items-center gap-1">
                                     <button
-                                        onClick={handleSummary}
-                                        disabled={isStreaming || isSummarizing}
+                                        onClick={handleReprocess}
+                                        disabled={reprocessing}
                                         className="p-1.5 text-text-400 hover:text-navy-700 hover:bg-navy-50 rounded-md transition disabled:opacity-40"
-                                        title="Ringkas Percakapan"
+                                        title="Proses Ulang Dokumen dengan AI"
                                     >
-                                        <ClipboardList size={15} />
+                                        {reprocessing ? <Loader2 size={15} className="animate-spin" /> : <RefreshCcw size={15} />}
                                     </button>
-                                    <button
-                                        onClick={clearChat}
-                                        disabled={isStreaming}
-                                        className="p-1.5 text-text-400 hover:text-red-600 hover:bg-red-50 rounded-md transition disabled:opacity-40"
-                                        title="Hapus Chat"
-                                    >
-                                        <Trash2 size={15} />
-                                    </button>
+                                    {messages.length > 0 && (
+                                        <>
+                                            <button
+                                                onClick={handleSummary}
+                                                disabled={isStreaming || isSummarizing}
+                                                className="p-1.5 text-text-400 hover:text-navy-700 hover:bg-navy-50 rounded-md transition disabled:opacity-40"
+                                                title="Ringkas Percakapan"
+                                            >
+                                                <ClipboardList size={15} />
+                                            </button>
+                                            <button
+                                                onClick={clearChat}
+                                                disabled={isStreaming}
+                                                className="p-1.5 text-text-400 hover:text-red-600 hover:bg-red-50 rounded-md transition disabled:opacity-40"
+                                                title="Hapus Chat"
+                                            >
+                                                <Trash2 size={15} />
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
-                            )}
+
                         </div>
 
                         {/* Messages Area */}
@@ -519,13 +543,18 @@ export default function DocumentDetailPage() {
                                 <textarea
                                     ref={inputRef}
                                     value={input}
-                                    onChange={(e) => setInput(e.target.value)}
+                                    onChange={(e) => {
+                                        setInput(e.target.value)
+                                        e.target.style.height = 'auto'
+                                        e.target.style.height = `${e.target.scrollHeight}px`
+                                    }}
                                     onKeyDown={handleKeyDown}
                                     placeholder="Tanya tentang dokumen ini..."
                                     rows={1}
-                                    className="flex-1 bg-transparent border-none outline-none resize-none text-[14px] font-medium placeholder:text-text-400 whitespace-pre-wrap py-1 max-h-24 scrollbar-thin"
+                                    className="flex-1 bg-transparent border-none outline-none resize-none text-[14px] font-medium placeholder:text-text-400 whitespace-pre-wrap py-1 max-h-32 scrollbar-thin overflow-y-auto"
                                     disabled={isStreaming}
                                 />
+
                                 <button
                                     onClick={sendMessage}
                                     disabled={!input.trim() || isStreaming}
@@ -627,6 +656,12 @@ export default function DocumentDetailPage() {
                                     </audio>
                                 </div>
                             </div>
+                        ) : isDocx ? (
+                            <DocxPreview fileUrl={`/api/documents/pdf/${doc.file_path}`} />
+                        ) : isXlsx ? (
+                            <XlsxPreview fileUrl={`/api/documents/pdf/${doc.file_path}`} />
+                        ) : isMarkdown ? (
+                            <MarkdownPreview fileUrl={`/api/documents/pdf/${doc.file_path}`} />
                         ) : (
                             <DocumentPreviewCard doc={doc} />
                         )}

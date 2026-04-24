@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getContentByIdAction, publishContentAction } from '@/lib/actions/content.actions'
-import { submitForApprovalAction } from '@/lib/actions/approval.actions'
+import { submitForApprovalAction, reviewApprovalAction } from '@/lib/actions/approval.actions'
 import { checkAcknowledgeStatusAction, acknowledgeReadAction } from '@/lib/actions/read-tracker.actions'
 import { createSuggestionAction } from '@/lib/actions/suggestion.actions'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
@@ -12,10 +12,10 @@ import {
     ArrowLeft, Edit, FileText, CheckCircle, Send, Loader2, Bot, 
     MessageSquare, Sparkles, Trash2, ClipboardList, BookOpen, 
     ShieldCheck, Clock, Globe, Maximize2, Minimize2, CheckCircle2,
-    AlertCircle, ChevronRight, User
+    AlertCircle, ChevronRight, User, XCircle
 } from 'lucide-react'
 import Link from 'next/link'
-import { Role, ContentStatus } from '@prisma/client'
+import { Role, ContentStatus, ApprovalStatus } from '@prisma/client'
 
 interface ChatMessage {
     role: 'user' | 'assistant'
@@ -33,6 +33,8 @@ export default function ContentDetailPage() {
     const [publishing, setPublishing] = useState(false)
     const [isAcknowledged, setIsAcknowledged] = useState(false)
     const [acknowledging, setAcknowledging] = useState(false)
+    const [approving, setApproving] = useState(false)
+    const [submittingApproval, setSubmittingApproval] = useState(false)
     const [articleFullscreen, setArticleFullscreen] = useState(false)
 
     // Chat state
@@ -94,6 +96,40 @@ export default function ContentDetailPage() {
         setPublishing(false)
     }
 
+    const handleSubmitApproval = async () => {
+        if (!content || !user) return
+        setSubmittingApproval(true)
+        const res = await submitForApprovalAction(content.id, user.id)
+        if (res.success) {
+            loadContent()
+        } else {
+            alert(res.error || 'Gagal mengajukan persetujuan')
+        }
+        setSubmittingApproval(false)
+    }
+
+    const handleReviewStatus = async (status: 'APPROVED' | 'REJECTED') => {
+        const queue = content.approval_queues?.[0]
+        if (!queue || !user) return
+        
+        if (status === 'REJECTED') {
+            const note = prompt('Alasan penolakan:')
+            if (note === null) return // Cancelled
+            setApproving(true)
+            const res = await reviewApprovalAction(queue.id, user.id, ApprovalStatus.REJECTED, note)
+            if (res.success) loadContent()
+            else alert(res.error)
+            setApproving(false)
+        } else {
+            if (!confirm('Setujui dan publikasikan konten ini?')) return
+            setApproving(true)
+            const res = await reviewApprovalAction(queue.id, user.id, ApprovalStatus.APPROVED)
+            if (res.success) loadContent()
+            else alert(res.error)
+            setApproving(false)
+        }
+    }
+
     const sendMessage = async () => {
         const q = input.trim()
         if (!q || isStreaming || !content) return
@@ -102,7 +138,9 @@ export default function ContentDetailPage() {
         const newMessages = [...messages, userMsg]
         setMessages(newMessages)
         setInput('')
+        if (inputRef.current) inputRef.current.style.height = 'auto'
         setIsStreaming(true)
+
 
         setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
@@ -205,14 +243,36 @@ export default function ContentDetailPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {canPublish && content.status === ContentStatus.DRAFT && (
-                        <button onClick={handlePublish} disabled={publishing} className="btn bg-success text-white hover:bg-success-dark">
-                            {publishing ? <Loader2 size={16} className="animate-spin" /> : <Globe size={16} className="mr-2" />}
-                            {t('common.publish')}
-                        </button>
+                    {/* Draft Status Actions */}
+                    {content.status === ContentStatus.DRAFT && (
+                        <>
+                            {canPublish && (
+                                <button onClick={handlePublish} disabled={publishing} className="btn bg-success text-white hover:bg-success-dark shadow-sm">
+                                    {publishing ? <Loader2 size={16} className="animate-spin" /> : <Globe size={16} className="mr-2" />}
+                                    {t('common.publish')}
+                                </button>
+                            )}
+                            <button onClick={handleSubmitApproval} disabled={submittingApproval} className="btn bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
+                                {submittingApproval ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} className="mr-2" />}
+                                {t('content.submit_approval') || 'Ajukan Approval'}
+                            </button>
+                        </>
                     )}
+
+                    {/* Pending Approval Actions */}
+                    {content.status === ContentStatus.PENDING_APPROVAL && isGroupAdmin && (
+                        <div className="flex items-center gap-2">
+                             <button onClick={() => handleReviewStatus('REJECTED')} disabled={approving} className="btn bg-danger-bg text-danger border border-red-200 hover:bg-red-50">
+                                <XCircle size={16} className="mr-2" /> Tolak
+                            </button>
+                            <button onClick={() => handleReviewStatus('APPROVED')} disabled={approving} className="btn bg-success-bg text-success border border-green-200 hover:bg-green-50">
+                                <CheckCircle size={16} className="mr-2" /> Setujui & Terbitkan
+                            </button>
+                        </div>
+                    )}
+
                     {canEdit && (
-                        <Link href={`/dashboard/content/${content.id}/edit`} className="btn border border-navy-600 text-navy-600 hover:bg-navy-50">
+                        <Link href={`/dashboard/content/${content.id}/edit`} className="btn border border-surface-200 text-text-600 hover:bg-surface-50 bg-white">
                             <Edit size={16} className="mr-2" /> {t('common.edit')}
                         </Link>
                     )}
@@ -276,12 +336,23 @@ export default function ContentDetailPage() {
                                 <textarea 
                                     ref={inputRef}
                                     value={input}
-                                    onChange={e => setInput(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
+                                    onChange={e => {
+                                        setInput(e.target.value)
+                                        e.target.style.height = 'auto'
+                                        e.target.style.height = `${e.target.scrollHeight}px`
+                                    }}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault()
+                                            sendMessage()
+                                        }
+                                    }}
                                     placeholder="Tanya sesuatu..."
                                     rows={1}
-                                    className="flex-1 bg-transparent border-none outline-none resize-none text-[14px] font-medium placeholder:text-text-400 whitespace-pre-wrap py-1 max-h-24 scrollbar-thin"
+                                    className="flex-1 bg-transparent border-none outline-none resize-none text-[14px] font-medium placeholder:text-text-400 whitespace-pre-wrap py-1 max-h-32 scrollbar-thin overflow-y-auto"
+                                    disabled={isStreaming}
                                 />
+
                                 <button onClick={sendMessage} disabled={!input.trim() || isStreaming} className="bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white hover:opacity-90 active:scale-95 disabled:grayscale disabled:opacity-50 disabled:scale-100 rounded-xl p-2.5 transition-all duration-300 shrink-0">
                                     {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                                 </button>

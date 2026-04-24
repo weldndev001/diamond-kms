@@ -15,7 +15,7 @@ import { join } from 'path'
 import { existsSync } from 'fs'
 import { readFile } from 'fs/promises'
 
-export const maxDuration = 120 // Allow up to 2 minutes for large PDFs
+export const maxDuration = 300 // Allow up to 5 minutes for large videos/PDFs
 
 // Helper to update processing log in DB
 async function updateProcessingLog(
@@ -120,16 +120,19 @@ async function processDocumentInBackground(documentId: string, document: any) {
         const isPDF = document.mime_type === 'application/pdf'
         const isText = ['text/plain', 'text/markdown', 'text/csv', 'text/x-sql', 'application/sql', 'text/sql'].includes(
             document.mime_type
-        )
+        ) || /\.(txt|md|csv|sql|json|yml|yaml|ini|conf|log)$/i.test(document.file_name)
         const isDocx = document.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
                        document.file_name.toLowerCase().endsWith('.docx')
         const isXlsx = document.mime_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
                        document.file_name.toLowerCase().endsWith('.xlsx')
         const isAudio = document.mime_type.startsWith('audio/') || 
                        /\.(mp3|wav|ogg|m4a)$/i.test(document.file_name)
+        const isVideo = document.mime_type.startsWith('video/') ||
+                       /\.(mp4|mov|avi|mkv|webm|flv|wmv)$/i.test(document.file_name)
 
         let pages: { pageNum: number; text: string }[]
         let pageCount: number
+        let videoFrames: import('@/lib/ai/video-extractor').ExtractedVideoFrame[] = []
 
         if (fileBuffer && isPDF) {
             const extracted = await extractPDFText(fileBuffer)
@@ -142,6 +145,26 @@ async function processDocumentInBackground(documentId: string, document: any) {
             extractedText = extracted.fullText
             pages = extracted.pages
             pageCount = extracted.pageCount
+        } else if (fileBuffer && isVideo) {
+            // Video processing: extract audio transcription + key frame analysis
+            const { extractVideoContent } = await import('@/lib/ai/video-extractor')
+            sendEvent('progress', { step: 'extracting', message: 'Memproses file video (ekstraksi audio & frame)...', progress: 12 })
+            await updateProcessingLog(documentId, 'processing', 'Memproses file video dengan AI multimodal...', 12)
+            const extracted = await extractVideoContent(
+                fileBuffer,
+                document.file_name,
+                document.mime_type,
+                document.organization_id,
+                async (message, progress) => {
+                    sendEvent('progress', { step: 'extracting', message, progress })
+                    await updateProcessingLog(documentId, 'processing', message, progress)
+                }
+            )
+            extractedText = extracted.fullText
+            pages = extracted.pages
+            pageCount = extracted.pageCount
+            videoFrames = extracted.frames
+            console.log(`🎬 [PROCESS] Video processed: ${extracted.durationSeconds.toFixed(0)}s duration, ${extracted.frames.length} frames, ${extractedText.length} chars`)
         } else if (fileBuffer && isAudio) {
             const { extractAudioText } = await import('@/lib/ai/audio-extractor')
             sendEvent('progress', { step: 'extracting', message: 'Mentranskripsi suara ke teks...', progress: 15 })
@@ -314,6 +337,45 @@ async function processDocumentInBackground(documentId: string, document: any) {
                 }
             } catch (visionErr) {
                 console.error(`⚠️ [PROCESS] Vision embedding failed (non-fatal):`, visionErr)
+            }
+        }
+
+        // STEP 8.4: Vision Embedding — embed video frames (if video document)
+        if (ai.generateImageEmbedding && ai.visionEmbedModel && isVideo && videoFrames.length > 0) {
+            const msgVideoVision = `Membuat vektor embedding ${videoFrames.length} frame video dengan Vision AI...`
+            await updateProcessingLog(documentId, 'processing', msgVideoVision, 93)
+
+            try {
+                console.log(`🎬 [PROCESS] Embedding ${videoFrames.length} video frames for "${document.file_name}"`)
+
+                const pLimit3 = (await import('p-limit')).default
+                const frameLimit = pLimit3(2)
+
+                await Promise.all(
+                    videoFrames.map((frame, i) =>
+                        frameLimit(async () => {
+                            try {
+                                const embedding = await ai.generateImageEmbedding!(frame.base64)
+                                const embeddingString = `[${embedding.join(',')}]`
+                                const frameContent = `[${frame.label}] Frame dari video "${document.file_name}"`
+
+                                await prisma.$executeRaw`
+                                    INSERT INTO document_chunks
+                                    (id, document_id, chunk_index, content, image_embedding, token_count, page_number, page_end, chunk_type, image_source, created_at)
+                                    VALUES
+                                    (gen_random_uuid()::text, ${documentId}, ${2000 + i}, ${frameContent}, CAST(${embeddingString} AS vector), ${0}, ${1}, ${1}, 'image', ${frame.label}, NOW())
+                                `
+                                console.log(`✅ [PROCESS] Video frame chunk saved: ${frame.label}`)
+                            } catch (frameErr) {
+                                console.error(`⚠️ [PROCESS] Failed to embed video frame ${i}:`, frameErr)
+                            }
+                        })
+                    )
+                )
+
+                console.log(`✅ [PROCESS] ${videoFrames.length} video frame chunks saved for "${document.file_name}"`)
+            } catch (videoVisionErr) {
+                console.error(`⚠️ [PROCESS] Video frame embedding failed (non-fatal):`, videoVisionErr)
             }
         }
 

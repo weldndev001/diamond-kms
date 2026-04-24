@@ -162,7 +162,7 @@ export default function CreateContentPage() {
         })
 
         if (res.success) {
-            setStatus({ type: 'success', msg: 'Article created successfully (Draft)' })
+            setStatus({ type: 'success', msg: 'Article created and submitted for approval' })
             setTimeout(() => {
                 router.push('/dashboard/content')
             }, 1000)
@@ -376,7 +376,7 @@ export default function CreateContentPage() {
                             className="btn btn-primary shadow-md hover:-translate-y-0.5"
                         >
                             <Save size={18} />
-                            Save as draft
+                            Ajukan Approval
                         </button>
                     </div>
                 </form>

@@ -53,7 +53,14 @@ export async function getContentByIdAction(id: string) {
     try {
         const content = await prisma.content.findUnique({
             where: { id },
-            include: { group: true }
+            include: { 
+                group: true,
+                approval_queues: {
+                    where: { status: 'PENDING' },
+                    orderBy: { submitted_at: 'desc' },
+                    take: 1
+                }
+            }
         })
 
         if (!content) return { success: false, error: 'Content not found' }
@@ -81,30 +88,45 @@ export async function createContentAction(data: {
             return { success: false, error: "Unauthorized: Minimal role Supervisor diperlukan" }
         }
 
-        // Supervisor can only create DRAFT
-        const finalStatus = (await isGroupAdmin(data.groupId)) ? ContentStatus.PUBLISHED : ContentStatus.DRAFT
+        // Status is PENDING_APPROVAL initially to ensure it enters the workflow
+        const finalStatus = ContentStatus.PENDING_APPROVAL
 
-        const content = await prisma.content.create({
-            data: {
-                title: data.title,
-                body: data.body,
-                category: data.category || 'General',
-                author_id: data.authorId,
-                status: finalStatus,
-                is_mandatory_read: data.isMandatory || false,
-                image_url: data.imageUrl || null,
-                published_at: finalStatus === ContentStatus.PUBLISHED ? new Date() : null,
-                organization: {
-                    connect: { id: data.orgId }
-                },
-                ...(data.groupId !== 'global' ? {
-                    group: {
-                        connect: { id: data.groupId }
-                    }
-                } : {})
-            }
+        const content = await prisma.$transaction(async (tx) => {
+            const newContent = await tx.content.create({
+                data: {
+                    title: data.title,
+                    body: data.body,
+                    category: data.category || 'General',
+                    author_id: data.authorId,
+                    status: finalStatus,
+                    is_mandatory_read: data.isMandatory || false,
+                    image_url: data.imageUrl || null,
+                    published_at: null,
+                    organization: {
+                        connect: { id: data.orgId }
+                    },
+                    ...(data.groupId !== 'global' ? {
+                        group: {
+                            connect: { id: data.groupId }
+                        }
+                    } : {})
+                }
+            })
+
+            // Automatically create approval queue entry
+            await tx.approvalQueue.create({
+                data: {
+                    content_id: newContent.id,
+                    submitted_by: data.authorId,
+                    status: 'PENDING'
+                }
+            })
+
+            return newContent
         })
-        revalidatePath('/dashboard/contents')
+
+        revalidatePath('/dashboard/content')
+        revalidatePath('/dashboard/approvals')
         return { success: true, data: content }
     } catch (error: any) {
         return { success: false, error: error.message }

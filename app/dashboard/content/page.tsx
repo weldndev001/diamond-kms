@@ -117,10 +117,12 @@ export default function ContentListPage() {
                     <p className="text-sm text-text-500 mt-1">{t('content.subtitle')}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    {canApprove && pendingCount > 0 && (
-                        <Link href="/dashboard/approvals" className="btn bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition">
+                    {canApprove && (
+                        <Link href="/dashboard/approvals" className={`btn transition ${pendingCount > 0 ? 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100' : 'bg-surface-50 text-text-400 border border-surface-200 hover:bg-surface-100'}`}>
                             <ClipboardCheck size={16} /> {t('content.approvals')}
-                            <span className="ml-1 bg-amber-500 text-white text-[11px] font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{pendingCount}</span>
+                            {pendingCount > 0 && (
+                                <span className="ml-1 bg-amber-500 text-white text-[11px] font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{pendingCount}</span>
+                            )}
                         </Link>
                     )}
                     {canCreate && (
