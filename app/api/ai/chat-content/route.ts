@@ -10,10 +10,18 @@ export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
     try {
-        const { contentId, question, history = [] } = await req.json()
+        const { contentId, question, history = [], useVector = true, useGraph = true, useRerank = false } = await req.json()
 
         if (!contentId || !question) {
             return new Response(JSON.stringify({ error: 'Missing contentId or question' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' },
+            })
+        }
+
+        // Validation: At least Vector or Rerank must be active if useVector was explicitly passed
+        if (!useVector && !useRerank) {
+            return new Response(JSON.stringify({ error: 'Setidaknya Vektor atau Reranking harus aktif.' }), {
                 status: 400,
                 headers: { 'Content-Type': 'application/json' },
             })
@@ -46,13 +54,17 @@ export async function POST(req: NextRequest) {
         let ragContext = ''
         const docTitle = content.title
 
-        // Embed the question once for all searches
-        const questionEmbedding = await ai.generateEmbedding(question)
-        const vectorStr = JSON.stringify(questionEmbedding)
+        let vectorStr = ''
+        if (useVector || useRerank) {
+            // Embed the question once for all searches
+            const questionEmbedding = await ai.generateEmbedding(question)
+            vectorStr = JSON.stringify(questionEmbedding)
+        }
 
-        if (content.is_processed) {
-            // Cosine similarity search — top 4 chunks from THIS article only
-            const relevantChunks = await prisma.$queryRawUnsafe<
+        if (content.is_processed && (useVector || useRerank)) {
+            // Cosine similarity search — top 4-15 chunks from THIS article only
+            const limit = useRerank ? 15 : 6
+            let relevantChunks = await prisma.$queryRawUnsafe<
                 {
                     chunk_id: string
                     content: string
@@ -67,35 +79,54 @@ export async function POST(req: NextRequest) {
                 WHERE cc.content_id = $2
                   AND cc.embedding IS NOT NULL
                 ORDER BY similarity DESC
-                LIMIT 4`,
+                LIMIT $3`,
                 vectorStr,
-                contentId
+                contentId,
+                limit
             )
+
+            // Reranking if enabled
+            if (useRerank && relevantChunks.length > 0) {
+                try {
+                    const documents = relevantChunks.map(c => c.content)
+                    const reranked = await ai.rerank(question, documents)
+                    relevantChunks = reranked.map((r: any) => {
+                        const original = relevantChunks[r.index]
+                        return { ...original, similarity: r.score }
+                    }).sort((a: any, b: any) => b.similarity - a.similarity).slice(0, 5)
+                } catch (err) {
+                    console.warn('[CHAT-CONTENT] Reranking failed fallback', err)
+                }
+            } else {
+                relevantChunks = relevantChunks.slice(0, 5)
+            }
 
             ragContext = relevantChunks
                 .map((c, i) => `[Bagian Artikel ${i + 1}]\n${c.content}`)
                 .join('\n\n---\n\n')
 
             // Fetch Graph Entities & Relationships
-            const entities = await prisma.contentEntity.findMany({
-                where: { content_id: contentId },
-                take: 15
-            })
-            const relationships = await prisma.contentRelationship.findMany({
-                where: { content_id: contentId },
-                include: { source_entity: true, target_entity: true },
-                take: 30
-            })
+            if (useGraph) {
+                const entities = await prisma.contentEntity.findMany({
+                    where: { content_id: contentId },
+                    take: 15
+                })
+                const relationships = await prisma.contentRelationship.findMany({
+                    where: { content_id: contentId },
+                    include: { source_entity: true, target_entity: true },
+                    take: 30
+                })
 
-            if (entities.length > 0 || relationships.length > 0) {
-                let graphContext = `[KNOWLEDGE GRAPH ENTITAS & RELASI]\n`
-                if (entities.length > 0) {
-                    graphContext += `Entitas Utama:\n` + entities.map((e: any) => `- ${e.name} (${e.type}): ${e.description || ''}`).join('\n') + '\n\n'
+                if (entities.length > 0 || relationships.length > 0) {
+                    let graphContextPrefix = `[KNOWLEDGE GRAPH ENTITAS & RELASI]\n`
+                    if (entities.length > 0) {
+                        graphContextPrefix += `Entitas Utama:\n` + entities.map((e: any) => `- ${e.name} (${e.type}): ${e.description || ''}`).join('\n') + '\n\n'
+                    }
+                    if (relationships.length > 0) {
+                        graphContextPrefix += `Relasi Hubungan:\n` + relationships.map((r: any) => `- ${r.source_entity.name} [${r.relationship}] ${r.target_entity.name}${r.description ? ` (${r.description})` : ''}`).join('\n') + '\n\n'
+                    }
+                    ragContext = graphContextPrefix + (ragContext ? `\n[KUTIPAN TEKS ARTIKEL (Vector Search)]\n` + ragContext : '')
                 }
-                if (relationships.length > 0) {
-                    graphContext += `Relasi Hubungan:\n` + relationships.map((r: any) => `- ${r.source_entity.name} [${r.relationship}] ${r.target_entity.name}${r.description ? ` (${r.description})` : ''}`).join('\n') + '\n\n'
-                }
-                ragContext = graphContext + `\n[KUTIPAN TEKS ARTIKEL (Vector Search)]\n` + ragContext
             }
         }
 
@@ -103,7 +134,7 @@ export async function POST(req: NextRequest) {
         let linkedDocContext = ''
         const sourceDocIds = content.source_documents || []
 
-        if (sourceDocIds.length > 0) {
+        if (sourceDocIds.length > 0 && (useVector || useRerank)) {
             try {
                 // Find which of these documents are actually processed
                 const processedDocs = await prisma.document.findMany({
@@ -119,7 +150,8 @@ export async function POST(req: NextRequest) {
                     const docIdList = processedDocIds.map(id => `'${id}'`).join(',')
 
                     // Vector search across linked document chunks
-                    const linkedChunks = await prisma.$queryRawUnsafe<
+                    const limit = useRerank ? 20 : 8
+                    let linkedChunks = await prisma.$queryRawUnsafe<
                         {
                             chunk_id: string
                             document_id: string
@@ -143,9 +175,26 @@ export async function POST(req: NextRequest) {
                         WHERE dc.document_id IN (${docIdList})
                           AND dc.embedding IS NOT NULL
                         ORDER BY similarity DESC
-                        LIMIT 6`,
-                        vectorStr
+                        LIMIT $2`,
+                        vectorStr,
+                        limit
                     )
+
+                    // Reranking if enabled
+                    if (useRerank && linkedChunks.length > 0) {
+                        try {
+                            const documents = linkedChunks.map(c => c.content)
+                            const reranked = await ai.rerank(question, documents)
+                            linkedChunks = reranked.map((r: any) => {
+                                const original = linkedChunks[r.index]
+                                return { ...original, similarity: r.score }
+                            }).sort((a: any, b: any) => b.similarity - a.similarity).slice(0, 6)
+                        } catch (err) {
+                            console.warn('[CHAT-CONTENT] Reranking linked docs failed', err)
+                        }
+                    } else {
+                        linkedChunks = linkedChunks.slice(0, 6)
+                    }
 
                     // Filter by minimum similarity threshold
                     const threshold = 0.35
@@ -166,25 +215,27 @@ export async function POST(req: NextRequest) {
                     }
 
                     // Also fetch graph entities from linked documents
-                    const linkedEntities = await prisma.documentEntity.findMany({
-                        where: { document_id: { in: processedDocIds } },
-                        take: 15
-                    })
-                    const linkedRelationships = await prisma.documentRelationship.findMany({
-                        where: { document_id: { in: processedDocIds } },
-                        include: { source_entity: true, target_entity: true },
-                        take: 20
-                    })
+                    if (useGraph) {
+                        const linkedEntities = await prisma.documentEntity.findMany({
+                            where: { document_id: { in: processedDocIds } },
+                            take: 15
+                        })
+                        const linkedRelationships = await prisma.documentRelationship.findMany({
+                            where: { document_id: { in: processedDocIds } },
+                            include: { source_entity: true, target_entity: true },
+                            take: 20
+                        })
 
-                    if (linkedEntities.length > 0 || linkedRelationships.length > 0) {
-                        let linkedGraph = '\n\n[KNOWLEDGE GRAPH DARI DOKUMEN SUMBER]\n'
-                        if (linkedEntities.length > 0) {
-                            linkedGraph += `Entitas:\n` + linkedEntities.map((e: any) => `- ${e.name} (${e.type}): ${e.description || ''}`).join('\n') + '\n'
+                        if (linkedEntities.length > 0 || linkedRelationships.length > 0) {
+                            let linkedGraph = '\n\n[KNOWLEDGE GRAPH DARI DOKUMEN SUMBER]\n'
+                            if (linkedEntities.length > 0) {
+                                linkedGraph += `Entitas:\n` + linkedEntities.map((e: any) => `- ${e.name} (${e.type}): ${e.description || ''}`).join('\n') + '\n'
+                            }
+                            if (linkedRelationships.length > 0) {
+                                linkedGraph += `Relasi:\n` + linkedRelationships.map((r: any) => `- ${r.source_entity.name} [${r.relationship}] ${r.target_entity.name}`).join('\n') + '\n'
+                            }
+                            linkedDocContext += linkedGraph
                         }
-                        if (linkedRelationships.length > 0) {
-                            linkedGraph += `Relasi:\n` + linkedRelationships.map((r: any) => `- ${r.source_entity.name} [${r.relationship}] ${r.target_entity.name}`).join('\n') + '\n'
-                        }
-                        linkedDocContext += linkedGraph
                     }
                 }
             } catch (linkedErr) {
@@ -250,6 +301,7 @@ ${fullContext || 'Tidak ada teks artikel yang diproses AI ditemukan.'}`
                             } catch { /* client disconnected */ }
                         }
                     )
+
                     controller.enqueue(encoder.encode(`data: [DONE]\n\n`))
                 } catch (err) {
                     logger.error('Article chat streaming error:', err)

@@ -126,7 +126,7 @@ export class OpenAICompatService implements AIService {
     }
 
     async generateDocumentMetadata(
-        input: { text?: string; fileBuffer?: Buffer; fileName: string }
+        input: { text?: string; fileBuffer?: Buffer; imageBase64?: string; fileName: string }
     ): Promise<DocumentMetadata> {
         const content = input.text ?? `[File: ${input.fileName}]`
         const safeContent = content.slice(0, 2500)

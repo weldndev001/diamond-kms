@@ -12,7 +12,7 @@ import {
     ArrowLeft, Edit, FileText, CheckCircle, Send, Loader2, Bot, 
     MessageSquare, Sparkles, Trash2, ClipboardList, BookOpen, 
     ShieldCheck, Clock, Globe, Maximize2, Minimize2, CheckCircle2,
-    AlertCircle, ChevronRight, User, XCircle
+    AlertCircle, ChevronRight, User, XCircle, Settings, Database, Network, ArrowUpDown
 } from 'lucide-react'
 import Link from 'next/link'
 import { Role, ContentStatus, ApprovalStatus } from '@prisma/client'
@@ -41,6 +41,11 @@ export default function ContentDetailPage() {
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [input, setInput] = useState('')
     const [isStreaming, setIsStreaming] = useState(false)
+    const [isSummarizing, setIsSummarizing] = useState(false)
+    const [showSettings, setShowSettings] = useState(false)
+    const [useVector, setUseVector] = useState(true)
+    const [useGraph, setUseGraph] = useState(true)
+    const [useRerank, setUseRerank] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -141,7 +146,6 @@ export default function ContentDetailPage() {
         if (inputRef.current) inputRef.current.style.height = 'auto'
         setIsStreaming(true)
 
-
         setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
         try {
@@ -152,10 +156,25 @@ export default function ContentDetailPage() {
                     contentId: content.id,
                     question: q,
                     history: newMessages.slice(-8),
+                    useVector,
+                    useGraph,
+                    useRerank,
                 }),
             })
 
-            if (!res.ok) throw new Error('API Error')
+            if (!res.ok) {
+                const err = await res.json()
+                setMessages(prev => {
+                    const updated = [...prev]
+                    updated[updated.length - 1] = {
+                        role: 'assistant',
+                        content: `⚠️ Error: ${err.error || 'Gagal mendapatkan jawaban'}`,
+                    }
+                    return updated
+                })
+                setIsStreaming(false)
+                return
+            }
 
             const reader = res.body?.getReader()
             const decoder = new TextDecoder()
@@ -165,7 +184,7 @@ export default function ContentDetailPage() {
                 while (true) {
                     const { done, value } = await reader.read()
                     if (done) break
-                    const chunk = decoder.decode(value)
+                    const chunk = decoder.decode(value, { stream: true })
                     const lines = chunk.split('\n')
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
@@ -181,15 +200,102 @@ export default function ContentDetailPage() {
                                         return next
                                     })
                                 }
+                                if (parsed.error) {
+                                    fullText += `\n⚠️ ${parsed.error}`
+                                    setMessages(prev => {
+                                        const updated = [...prev]
+                                        updated[updated.length - 1] = { role: 'assistant', content: fullText }
+                                        return updated
+                                    })
+                                }
                             } catch {}
                         }
                     }
                 }
             }
+            await fetch('/api/chat/entity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contentId: params.id,
+                    title: content?.title || 'Article Q&A',
+                    messages: [...newMessages, { role: 'assistant', content: fullText }]
+                })
+            })
         } catch (err) {
-            setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: 'Maaf, terjadi kesalahan koneksi.' }])
+            setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: '⚠️ Koneksi terputus. Silakan coba lagi.' }])
         } finally {
             setIsStreaming(false)
+        }
+    }
+
+    const handleSummary = async () => {
+        if (messages.length === 0 || isStreaming || isSummarizing) return
+        setIsSummarizing(true)
+
+        const summaryPrompt = 'Buatkan ringkasan dari seluruh percakapan kita di atas dalam bentuk poin-poin utama.'
+        const userMsg: ChatMessage = { role: 'user', content: summaryPrompt }
+        const newMessages = [...messages, userMsg]
+        setMessages(newMessages)
+        setMessages(prev => [...prev, { role: 'assistant', content: '' }])
+
+        try {
+            const res = await fetch('/api/ai/chat-content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contentId: content.id,
+                    question: summaryPrompt,
+                    history: newMessages.slice(-20),
+                    useVector,
+                    useGraph,
+                    useRerank,
+                }),
+            })
+            if (!res.ok) {
+                setMessages(prev => {
+                    const updated = [...prev]
+                    updated[updated.length - 1] = { role: 'assistant', content: '⚠️ Gagal membuat ringkasan' }
+                    return updated
+                })
+                return
+            }
+
+            const reader = res.body?.getReader()
+            const decoder = new TextDecoder()
+            if (!reader) return
+
+            let fullText = ''
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+                const chunk = decoder.decode(value, { stream: true })
+                for (const line of chunk.split('\n')) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6)
+                        if (data === '[DONE]') continue
+                        try {
+                            const parsed = JSON.parse(data)
+                            if (parsed.text) {
+                                fullText += parsed.text
+                                setMessages(prev => {
+                                    const updated = [...prev]
+                                    updated[updated.length - 1] = { role: 'assistant', content: fullText }
+                                    return updated
+                                })
+                            }
+                        } catch { }
+                    }
+                }
+            }
+        } catch {
+            setMessages(prev => {
+                const updated = [...prev]
+                updated[updated.length - 1] = { role: 'assistant', content: '⚠️ Koneksi terputus.' }
+                return updated
+            })
+        } finally {
+            setIsSummarizing(false)
         }
     }
 
@@ -293,6 +399,103 @@ export default function ContentDetailPage() {
                                     <h3 className="font-extrabold text-navy-900 text-[14px] uppercase tracking-wider leading-tight">AISA Assistant</h3>
                                     <p className="text-[9px] font-bold text-text-400 mt-0.5 uppercase tracking-wider">Diskusi Artikel</p>
                                 </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                {/* RAG Settings Toggle */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowSettings(!showSettings)}
+                                        className={`p-1.5 rounded-md transition-all active:scale-95 border ${showSettings ? 'bg-navy-600 text-white border-navy-600' : 'text-text-400 hover:text-navy-700 hover:bg-navy-50 border-transparent'}`}
+                                        title="Konfigurasi Retrieval"
+                                    >
+                                        <Settings size={15} />
+                                    </button>
+
+                                    {showSettings && (
+                                        <div className="absolute top-10 right-0 z-[100] w-64 bg-white rounded-2xl shadow-2xl border border-surface-200 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <div className="flex items-center justify-between mb-3 px-1">
+                                                <h4 className="text-[11px] font-black text-navy-900 uppercase tracking-wider">Konfigurasi RAG</h4>
+                                                <div className="h-1 w-8 bg-navy-100 rounded-full" />
+                                            </div>
+                                            
+                                            <div className="space-y-1.5">
+                                                {/* Vector Toggle */}
+                                                <label className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all ${!useVector && !useRerank ? 'opacity-50' : 'hover:bg-surface-50'}`}>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-navy-50 flex items-center justify-center">
+                                                            <Database size={15} className="text-navy-600" />
+                                                        </div>
+                                                        <span className="text-xs font-bold text-navy-900">Vector Search</span>
+                                                    </div>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={useVector} 
+                                                        disabled={useVector && !useRerank}
+                                                        onChange={(e) => setUseVector(e.target.checked)}
+                                                        className="w-4 h-4 rounded border-surface-300 text-navy-600 focus:ring-navy-500 cursor-pointer"
+                                                    />
+                                                </label>
+
+                                                {/* Graph Toggle */}
+                                                <label className="flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all hover:bg-surface-50">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                                                            <Network size={15} className="text-indigo-600" />
+                                                        </div>
+                                                        <span className="text-xs font-bold text-navy-900">Graph Context</span>
+                                                    </div>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={useGraph} 
+                                                        onChange={(e) => setUseGraph(e.target.checked)}
+                                                        className="w-4 h-4 rounded border-surface-300 text-navy-600 focus:ring-navy-500 cursor-pointer"
+                                                    />
+                                                </label>
+
+                                                {/* Rerank Toggle */}
+                                                <label className="flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all hover:bg-surface-50">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-secondary-50 flex items-center justify-center">
+                                                            <ArrowUpDown size={15} className="text-secondary-600" />
+                                                        </div>
+                                                        <span className="text-xs font-bold text-navy-900">Reranking</span>
+                                                    </div>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={useRerank} 
+                                                        disabled={useRerank && !useVector}
+                                                        onChange={(e) => setUseRerank(e.target.checked)}
+                                                        className="w-4 h-4 rounded border-surface-300 text-navy-600 focus:ring-navy-500 cursor-pointer"
+                                                    />
+                                                </label>
+                                            </div>
+                                            <div className="mt-3 pt-3 border-t border-surface-100 text-[10px] text-text-400 px-1 italic leading-tight">
+                                                * Aturan Sistem: Vector atau Reranking harus aktif salah satu.
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {messages.length > 0 && (
+                                    <>
+                                        <button
+                                            onClick={handleSummary}
+                                            disabled={isStreaming || isSummarizing}
+                                            className="p-1.5 text-text-400 hover:text-navy-700 hover:bg-navy-50 rounded-md transition disabled:opacity-40"
+                                            title="Ringkas Percakapan"
+                                        >
+                                            <ClipboardList size={15} />
+                                        </button>
+                                        <button
+                                            onClick={() => { setMessages([]); if (params.id) fetch(`/api/chat/entity?contentId=${params.id}`, { method: 'DELETE' }).catch(() => { }) }}
+                                            disabled={isStreaming}
+                                            className="p-1.5 text-text-400 hover:text-red-600 hover:bg-red-50 rounded-md transition disabled:opacity-40"
+                                            title="Hapus Chat"
+                                        >
+                                            <Trash2 size={15} />
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
 

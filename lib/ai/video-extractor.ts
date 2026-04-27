@@ -8,6 +8,7 @@ import { writeFile, readFile, unlink, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { logger } from '@/lib/logging/redact'
+import sharp from 'sharp'
 
 // @ts-ignore
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
@@ -146,7 +147,21 @@ async function framesToBase64(framePaths: string[], durationSeconds: number, max
     for (let i = 0; i < framePaths.length; i++) {
         try {
             const buffer = await readFile(framePaths[i])
-            const base64 = `data:image/jpeg;base64,${buffer.toString('base64')}`
+            
+            // Further compress and optimize the frame with sharp
+            // Resize to max 800px width/height and JPEG 70% quality to be "lighter" for Gemma/multimodal analysis
+            const optimizedBuffer = await sharp(buffer)
+                .rotate() // Auto-rotate based on EXIF
+                .resize({
+                    width: 800,
+                    height: 800,
+                    fit: 'inside',
+                    withoutEnlargement: true
+                })
+                .jpeg({ quality: 70, mozjpeg: true })
+                .toBuffer()
+
+            const base64 = `data:image/jpeg;base64,${optimizedBuffer.toString('base64')}`
             const timestamp = i * interval
             const minutes = Math.floor(timestamp / 60)
             const seconds = timestamp % 60
@@ -156,8 +171,10 @@ async function framesToBase64(framePaths: string[], durationSeconds: number, max
                 base64,
                 label: `Frame pada ${minutes}:${String(seconds).padStart(2, '0')}`,
             })
+            
+            console.log(`[VIDEO-EXTRACTOR] Optimized Frame ${i+1}: Original ${buffer.length} bytes -> ${optimizedBuffer.length} bytes`)
         } catch (err) {
-            console.error(`[VIDEO-EXTRACTOR] Failed to read frame ${framePaths[i]}:`, err)
+            console.error(`[VIDEO-EXTRACTOR] Failed to optimize frame ${framePaths[i]}:`, err)
         }
     }
 
@@ -284,6 +301,8 @@ export async function extractVideoContent(
         }
 
         let frameDescriptions = ''
+        let visualSummary = ''
+
         if (frames.length > 0) {
             try {
                 const { getAIServiceForOrg } = await import('./get-ai-service')
@@ -320,7 +339,27 @@ export async function extractVideoContent(
                         )
                     )
 
-                    frameDescriptions = descriptions.filter(Boolean).join('\n\n')
+                    const rawFrameText = descriptions.filter(Boolean).join('\n\n')
+                    
+                    if (rawFrameText) {
+                        log(`Generating visual summary for ${descriptions.filter(Boolean).length} frames...`)
+                        if (onProgress) await onProgress('Meringkas analisis visual video...', 55)
+
+                        try {
+                            visualSummary = await ai.generateCompletion(
+                                `Berdasarkan analisis frame-by-frame dari video "${fileName}" berikut, buatlah ringkasan naratif yang koheren tentang apa yang terjadi dalam video tersebut. Fokus pada alur konten visual dan informasi penting yang terlihat.\n\nAnalisis per frame:\n${rawFrameText}`,
+                                {
+                                    systemPrompt: 'Anda adalah asisten yang ahli dalam merangkum konten video berdasarkan deskripsi visual setiap frame. Buatlah ringkasan yang padat, profesional, dan informatif dalam bahasa Indonesia.',
+                                    maxTokens: 1000
+                                }
+                            )
+                            log(`✅ Visual summary generated: ${visualSummary.length} chars`)
+                        } catch (sumErr) {
+                            log(`⚠️ Visual summary failed (non-fatal), using raw descriptions`)
+                        }
+                    }
+
+                    frameDescriptions = rawFrameText
                     log(`Generated ${descriptions.filter(Boolean).length} frame descriptions`)
                 } else {
                     log('AI provider does not support image analysis, skipping frame analysis...')
@@ -341,14 +380,24 @@ export async function extractVideoContent(
         sections.push(`Ukuran: ${(fileBuffer.length / 1024 / 1024).toFixed(1)} MB`)
         sections.push(`Jumlah Frame yang Dianalisis: ${frames.length}`)
 
+        if (visualSummary) {
+            sections.push(`\n=== RINGKASAN VISUAL VIDEO ===`)
+            sections.push(visualSummary)
+        }
+
         if (transcription) {
             sections.push(`\n=== TRANSKRIPSI AUDIO ===`)
             sections.push(transcription)
         }
 
-        if (frameDescriptions) {
+        if (frameDescriptions && !visualSummary) {
             sections.push(`\n=== ANALISIS VISUAL (Frame-by-Frame) ===`)
             sections.push(frameDescriptions)
+        } else if (frameDescriptions && visualSummary) {
+            // Include frame-by-frame as detailed info at the bottom if needed, 
+            // but we might want to truncate it if it's too huge.
+            sections.push(`\n=== DETAIL ANALISIS VISUAL (Frame-by-Frame) ===`)
+            sections.push(frameDescriptions.length > 5000 ? frameDescriptions.slice(0, 5000) + '... (dikurangi untuk efisiensi)' : frameDescriptions)
         }
 
         const fullText = sections.join('\n')
@@ -360,7 +409,12 @@ export async function extractVideoContent(
         // Page 1: Video metadata
         pages.push({ pageNum: pageNum++, text: sections.slice(0, 6).join('\n') })
 
-        // Pages 2+: Transcription (split into ~2000 char segments)
+        // Page 2: Visual Summary (if exists)
+        if (visualSummary) {
+            pages.push({ pageNum: pageNum++, text: `[Ringkasan Visual Video]\n${visualSummary}` })
+        }
+
+        // Pages 3+: Transcription (split into ~2000 char segments)
         if (transcription) {
             const transChunks = splitTextIntoSegments(transcription, 2000)
             for (const chunk of transChunks) {
@@ -368,11 +422,14 @@ export async function extractVideoContent(
             }
         }
 
-        // Pages N+: Frame descriptions
+        // Pages N+: Detailed Frame descriptions (limit to avoid circuit breaker)
         if (frameDescriptions) {
-            const frameChunks = splitTextIntoSegments(frameDescriptions, 2000)
+            // If we have a summary, we can be more aggressive with chunking or limiting descriptions
+            const frameChunks = splitTextIntoSegments(frameDescriptions, visualSummary ? 3000 : 2000)
             for (const chunk of frameChunks) {
-                pages.push({ pageNum: pageNum++, text: `[Analisis Visual]\n${chunk}` })
+                // Limit to max 2 pages of details if summary exists to keep things lighter
+                if (visualSummary && pageNum > 10) break 
+                pages.push({ pageNum: pageNum++, text: `[Detail Analisis Visual]\n${chunk}` })
             }
         }
 

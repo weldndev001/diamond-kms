@@ -82,7 +82,7 @@ export class GeminiService implements AIService {
 
     // ─── Document Metadata (Gemini-native multimodal) ───────────
     async generateDocumentMetadata(
-        input: { text?: string; fileBuffer?: Buffer; fileName: string }
+        input: { text?: string; fileBuffer?: Buffer; imageBase64?: string; fileName: string }
     ): Promise<DocumentMetadata> {
         const model = this.genAI.getGenerativeModel({ model: this.chatModel })
 
@@ -108,6 +108,21 @@ export class GeminiService implements AIService {
                     },
                 },
                 PROMPT,
+            ])
+        } else if (input.imageBase64) {
+            // Gemini multimodal: send compressed image directly
+            const base64Clean = input.imageBase64.replace(/^data:image\/\w+;base64,/, '')
+            const mimeMatch = input.imageBase64.match(/^data:(image\/\w+);base64,/)
+            const mimeType = mimeMatch?.[1] || 'image/jpeg'
+
+            result = await model.generateContent([
+                {
+                    inlineData: {
+                        data: base64Clean,
+                        mimeType,
+                    },
+                },
+                `This is an image document named "${input.fileName}". ${PROMPT}`,
             ])
         } else {
             result = await model.generateContent(

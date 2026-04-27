@@ -71,6 +71,20 @@ export async function POST(req: NextRequest) {
 }
 
 async function processDocumentInBackground(documentId: string, document: any) {
+    // Reset status, error, and logs at the beginning to ensure a clean state
+    try {
+        await prisma.document.update({
+            where: { id: documentId },
+            data: {
+                processing_status: 'processing',
+                processing_error: null,
+                processing_log: [] // Reset log for a clean start
+            }
+        })
+    } catch (resetErr) {
+        console.error(`❌ [PROCESS] Failed to reset document status:`, resetErr)
+    }
+
     const fs = await import('fs')
     fs.appendFileSync('ai-debug.log', `[${new Date().toISOString()}] [PROCESS-BG] STARTED for ${documentId}\n`)
     console.log(`\n🔄 [PROCESS] Starting background processing for ${documentId} (${document.file_name})`)
@@ -123,16 +137,22 @@ async function processDocumentInBackground(documentId: string, document: any) {
         ) || /\.(txt|md|csv|sql|json|yml|yaml|ini|conf|log)$/i.test(document.file_name)
         const isDocx = document.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
                        document.file_name.toLowerCase().endsWith('.docx')
+        const isPptx = document.mime_type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || 
+                       document.file_name.toLowerCase().endsWith('.pptx') ||
+                       document.file_name.toLowerCase().endsWith('.ppt')
         const isXlsx = document.mime_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
                        document.file_name.toLowerCase().endsWith('.xlsx')
         const isAudio = document.mime_type.startsWith('audio/') || 
                        /\.(mp3|wav|ogg|m4a)$/i.test(document.file_name)
         const isVideo = document.mime_type.startsWith('video/') ||
                        /\.(mp4|mov|avi|mkv|webm|flv|wmv)$/i.test(document.file_name)
+        const isImage = document.mime_type.startsWith('image/') ||
+                       /\.(jpg|jpeg|png|gif|webp|bmp|tiff|svg)$/i.test(document.file_name)
 
         let pages: { pageNum: number; text: string }[]
         let pageCount: number
         let videoFrames: import('@/lib/ai/video-extractor').ExtractedVideoFrame[] = []
+        let compressedImageBase64: string | null = null // For image documents
 
         if (fileBuffer && isPDF) {
             const extracted = await extractPDFText(fileBuffer)
@@ -145,6 +165,76 @@ async function processDocumentInBackground(documentId: string, document: any) {
             extractedText = extracted.fullText
             pages = extracted.pages
             pageCount = extracted.pageCount
+        } else if (fileBuffer && isImage) {
+            // Image processing: compress with sharp then analyze with AI Vision
+            sendEvent('progress', { step: 'extracting', message: 'Mengompresi dan menganalisis gambar dengan AI Vision...', progress: 12 })
+            await updateProcessingLog(documentId, 'processing', 'Mengompresi gambar sebelum analisis AI...', 12)
+
+            try {
+                const sharp = require('sharp')
+                const imgMeta = await sharp(fileBuffer).metadata()
+                const origWidth = imgMeta.width || 0
+                const origHeight = imgMeta.height || 0
+                console.log(`🖼️ [PROCESS] Original image: ${origWidth}x${origHeight} (${fileBuffer.length} bytes)`)
+
+                // Compress: resize to max 1024px on longest side, convert to JPEG 80%
+                const MAX_DIM = 1024
+                let sharpPipeline = sharp(fileBuffer).rotate() // auto-rotate based on EXIF
+                if (origWidth > MAX_DIM || origHeight > MAX_DIM) {
+                    sharpPipeline = sharpPipeline.resize({
+                        width: MAX_DIM,
+                        height: MAX_DIM,
+                        fit: 'inside',
+                        withoutEnlargement: true,
+                    })
+                }
+                const compressedBuffer = await sharpPipeline
+                    .jpeg({ quality: 80, mozjpeg: true })
+                    .toBuffer()
+
+                const compressedMeta = await sharp(compressedBuffer).metadata()
+                console.log(`🖼️ [PROCESS] Compressed image: ${compressedMeta.width}x${compressedMeta.height} (${compressedBuffer.length} bytes, saved ${Math.round((1 - compressedBuffer.length / fileBuffer.length) * 100)}%)`)
+
+                compressedImageBase64 = `data:image/jpeg;base64,${compressedBuffer.toString('base64')}`
+
+                await updateProcessingLog(documentId, 'processing', `Gambar dikompresi: ${origWidth}x${origHeight} → ${compressedMeta.width}x${compressedMeta.height}. Menganalisis isi gambar...`, 18)
+
+                // Use AI to describe the image content
+                const tempAi = await getAIServiceForOrg(document.organization_id)
+                if (tempAi.describeImage) {
+                    let description = await tempAi.describeImage(compressedImageBase64, document.file_name)
+                    
+                    // Summarize if too long to avoid Embedding 504 on Olla sidecar
+                    if (description.length > 1000) {
+                        console.log(`🖼️ [PROCESS] Deskripsi terlalu panjang (${description.length} karakter), meringkas untuk embedding...`)
+                        try {
+                            const summary = await tempAi.generateCompletion(
+                                `Ringkas deskripsi visual berikut menjadi maksimal 2 paragraf padat yang mengandung poin-poin kunci untuk indeks pencarian:\n\n${description}`,
+                                { 
+                                    systemPrompt: 'Anda adalah pakar indexing. Ringkas deskripsi visual menjadi sangat padat namun tetap informatif.',
+                                    maxTokens: 500 
+                                }
+                            )
+                            description = summary
+                            console.log(`🖼️ [PROCESS] Deskripsi berhasil diringkas menjadi ${description.length} karakter.`)
+                        } catch (sumErr) {
+                            console.error(`⚠️ [PROCESS] Gagal meringkas deskripsi, menggunakan versi asli.`, sumErr)
+                        }
+                    }
+
+                    extractedText = `[Dokumen Gambar: ${document.file_name}]\n[Dimensi: ${origWidth}x${origHeight}px]\n\nDeskripsi Visual:\n${description}`
+                    console.log(`🖼️ [PROCESS] AI image description finalized: ${description.length} chars`)
+                } else {
+                    extractedText = `[Dokumen Gambar: ${document.file_name}]\n[Dimensi: ${origWidth}x${origHeight}px]\n[Ukuran: ${fileBuffer.length} bytes]\n\nGambar ini diupload sebagai dokumen. Deskripsi visual tidak tersedia karena provider AI tidak mendukung analisis gambar.`
+                    console.log(`⚠️ [PROCESS] AI provider does not support describeImage, using basic metadata`)
+                }
+            } catch (imgErr: any) {
+                console.error(`❌ [PROCESS] Image processing failed:`, imgErr?.message)
+                extractedText = `[Dokumen Gambar: ${document.file_name}]\nGagal memproses gambar: ${imgErr?.message || 'Unknown error'}`
+            }
+
+            pages = [{ pageNum: 1, text: extractedText }]
+            pageCount = 1
         } else if (fileBuffer && isVideo) {
             // Video processing: extract audio transcription + key frame analysis
             const { extractVideoContent } = await import('@/lib/ai/video-extractor')
@@ -173,6 +263,15 @@ async function processDocumentInBackground(documentId: string, document: any) {
             extractedText = extracted.fullText
             pages = extracted.pages
             pageCount = extracted.pageCount
+        } else if (fileBuffer && isPptx) {
+            const { extractPptxText } = await import('@/lib/ai/pdf-extractor')
+            sendEvent('progress', { step: 'extracting', message: 'Mengekstrak teks dari file presentasi PowerPoint...', progress: 12 })
+            await updateProcessingLog(documentId, 'processing', 'Mengekstrak teks dari slide PowerPoint...', 12)
+            const extracted = await extractPptxText(fileBuffer, document.file_name)
+            extractedText = extracted.fullText
+            pages = extracted.pages
+            pageCount = extracted.pageCount
+            console.log(`📊 [PROCESS] PPTX processed: ${extracted.pageCount} slides, ${extractedText.length} chars`)
         } else if (fileBuffer && isXlsx) {
             const { extractXlsxText } = await import('@/lib/ai/pdf-extractor')
             const extracted = await extractXlsxText(fileBuffer, document.file_name)
@@ -210,8 +309,12 @@ async function processDocumentInBackground(documentId: string, document: any) {
                 ai.providerName === 'google-gemini' && isPDF && fileBuffer
                     ? fileBuffer
                     : undefined,
+            imageBase64:
+                ai.providerName === 'google-gemini' && isImage && compressedImageBase64
+                    ? compressedImageBase64
+                    : undefined,
             text:
-                ai.providerName !== 'google-gemini' || !isPDF || !fileBuffer
+                (ai.providerName !== 'google-gemini' || (!isPDF && !isImage) || (!fileBuffer && !compressedImageBase64))
                     ? extractedText.slice(0, 30000)
                     : undefined,
             fileName: document.file_name,
@@ -297,6 +400,28 @@ async function processDocumentInBackground(documentId: string, document: any) {
             await updateProcessingLog(documentId, 'processing', msgVision, 92)
 
             try {
+                // 8.3a: For uploaded image documents — embed the compressed image directly
+                if (isImage && compressedImageBase64) {
+                    console.log(`🖼️ [PROCESS] Embedding uploaded image document "${document.file_name}"`)
+
+                    try {
+                        const embedding = await ai.generateImageEmbedding!(compressedImageBase64)
+                        const embeddingString = `[${embedding.join(',')}]`
+                        const imgContent = `[Gambar Utama] Dokumen gambar "${document.file_name}"`
+
+                        await prisma.$executeRaw`
+                            INSERT INTO document_chunks
+                            (id, document_id, chunk_index, content, image_embedding, token_count, page_number, page_end, chunk_type, image_source, created_at)
+                            VALUES
+                            (gen_random_uuid()::text, ${documentId}, ${1000}, ${imgContent}, CAST(${embeddingString} AS vector), ${0}, ${1}, ${1}, 'image', ${'Gambar Utama'}, NOW())
+                        `
+                        console.log(`✅ [PROCESS] Uploaded image embedded successfully for "${document.file_name}"`)
+                    } catch (imgEmbErr) {
+                        console.error(`⚠️ [PROCESS] Failed to embed uploaded image:`, imgEmbErr)
+                    }
+                }
+
+                // 8.3b: For PDF documents — extract and embed images from PDF pages
                 let pdfImages: import('@/lib/ai/pdf-extractor').ExtractedPDFImage[] = []
 
                 if (isPDF && fileBuffer) {
@@ -332,12 +457,13 @@ async function processDocumentInBackground(documentId: string, document: any) {
                     )
 
                     console.log(`✅ [PROCESS] ${pdfImages.length} PDF image chunks saved for "${document.file_name}"`)
-                } else {
+                } else if (!isImage) {
                     console.log(`ℹ️ [PROCESS] No extractable images found in document "${document.file_name}"`)
                 }
-            } catch (visionErr) {
-                console.error(`⚠️ [PROCESS] Vision embedding failed (non-fatal):`, visionErr)
-            }
+        } catch (visionErr: any) {
+            console.error(`⚠️ [PROCESS] Vision embedding failed (non-fatal):`, visionErr.message || visionErr)
+            // Continue even if vision embedding fails
+        }
         }
 
         // STEP 8.4: Vision Embedding — embed video frames (if video document)
@@ -374,8 +500,8 @@ async function processDocumentInBackground(documentId: string, document: any) {
                 )
 
                 console.log(`✅ [PROCESS] ${videoFrames.length} video frame chunks saved for "${document.file_name}"`)
-            } catch (videoVisionErr) {
-                console.error(`⚠️ [PROCESS] Video frame embedding failed (non-fatal):`, videoVisionErr)
+            } catch (videoVisionErr: any) {
+                console.error(`⚠️ [PROCESS] Video frame embedding failed (non-fatal):`, videoVisionErr.message || videoVisionErr)
             }
         }
 
@@ -439,8 +565,8 @@ ${textToExtract}`
                 }
             }
             logger.info(`Graph extraction completed for ${documentId}. Entities: ${entityMap.size}.`)
-        } catch (graphErr) {
-            logger.error(`Graph Extraction failed for ${documentId}:`, graphErr)
+        } catch (graphErr: any) {
+            console.error(`⚠️ [PROCESS] Graph Extraction failed (non-fatal):`, graphErr.message || graphErr)
             // Non-fatal, do not break document processing just because graph failed
         }
 

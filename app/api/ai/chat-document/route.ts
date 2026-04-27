@@ -9,10 +9,18 @@ export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
     try {
-        const { documentId, question, history = [] } = await req.json()
+        const { documentId, question, history = [], useVector = true, useGraph = true, useRerank = false } = await req.json()
 
         if (!documentId || !question) {
             return new Response(JSON.stringify({ error: 'Missing documentId or question' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' },
+            })
+        }
+
+        // Validation: At least Vector or Rerank must be active if useVector was explicitly passed
+        if (!useVector && !useRerank) {
+            return new Response(JSON.stringify({ error: 'Setidaknya Vektor atau Reranking harus aktif.' }), {
                 status: 400,
                 headers: { 'Content-Type': 'application/json' },
             })
@@ -46,62 +54,87 @@ export async function POST(req: NextRequest) {
         const docTitle = document.ai_title || document.file_name
 
         if (document.is_processed) {
-            // Embed the question
-            const questionEmbedding = await ai.generateEmbedding(question)
-            const vectorStr = JSON.stringify(questionEmbedding)
+            let relevantChunks: any[] = []
 
-            // Cosine similarity search — top 6 chunks from THIS document only
-            const relevantChunks = await prisma.$queryRawUnsafe<
-                {
-                    chunk_id: string
-                    content: string
-                    similarity: number
-                    page_start: number
-                    page_end: number
-                }[]
-            >(
-                `SELECT
-                    dc.id AS chunk_id,
-                    dc.content,
-                    1 - (dc.embedding <=> $1::vector) AS similarity,
-                    dc.page_number AS page_start,
-                    COALESCE(dc.page_end, dc.page_number) AS page_end
-                FROM document_chunks dc
-                WHERE dc.document_id = $2
-                  AND dc.embedding IS NOT NULL
-                ORDER BY similarity DESC
-                LIMIT 4`,
-                vectorStr,
-                documentId
-            )
+            if (useVector || useRerank) {
+                // Embed the question
+                const questionEmbedding = await ai.generateEmbedding(question)
+                const vectorStr = JSON.stringify(questionEmbedding)
 
-            context = relevantChunks
-                .map(
-                    (c, i) =>
-                        `[Bagian ${i + 1}, Hal. ${c.page_start}${c.page_end !== c.page_start ? `-${c.page_end}` : ''}]\n${c.content}`
+                // Cosine similarity search — top 15 chunks (more if we want to rerank)
+                const limit = useRerank ? 15 : 6
+                relevantChunks = await prisma.$queryRawUnsafe<
+                    {
+                        chunk_id: string
+                        content: string
+                        similarity: number
+                        page_start: number
+                        page_end: number
+                    }[]
+                >(
+                    `SELECT
+                        dc.id AS chunk_id,
+                        dc.content,
+                        1 - (dc.embedding <=> $1::vector) AS similarity,
+                        dc.page_number AS page_start,
+                        COALESCE(dc.page_end, dc.page_number) AS page_end
+                    FROM document_chunks dc
+                    WHERE dc.document_id = $2
+                      AND dc.embedding IS NOT NULL
+                    ORDER BY similarity DESC
+                    LIMIT $3`,
+                    vectorStr,
+                    documentId,
+                    limit
                 )
-                .join('\n\n---\n\n')
+
+                // Reranking if enabled
+                if (useRerank && relevantChunks.length > 0) {
+                    try {
+                        const documents = relevantChunks.map(c => c.content)
+                        const reranked = await ai.rerank(question, documents)
+                        
+                        relevantChunks = reranked.map((r: any) => {
+                            const original = relevantChunks[r.index]
+                            return { ...original, similarity: r.score }
+                        }).sort((a: any, b: any) => b.similarity - a.similarity).slice(0, 6)
+                    } catch (err) {
+                        console.warn('[CHAT-DOCUMENT] Reranking failed, fallback to vector', err)
+                    }
+                } else {
+                    relevantChunks = relevantChunks.slice(0, 6)
+                }
+
+                context = relevantChunks
+                    .map(
+                        (c, i) =>
+                            `[Bagian ${i + 1}, Hal. ${c.page_start}${c.page_end !== c.page_start ? `-${c.page_end}` : ''}]\n${c.content}`
+                    )
+                    .join('\n\n---\n\n')
+            }
 
             // Fetch Graph Entities & Relationships
-            const entities = await prisma.documentEntity.findMany({
-                where: { document_id: documentId },
-                take: 15
-            })
-            const relationships = await prisma.documentRelationship.findMany({
-                where: { document_id: documentId },
-                include: { source_entity: true, target_entity: true },
-                take: 30
-            })
+            if (useGraph) {
+                const entities = await prisma.documentEntity.findMany({
+                    where: { document_id: documentId },
+                    take: 15
+                })
+                const relationships = await prisma.documentRelationship.findMany({
+                    where: { document_id: documentId },
+                    include: { source_entity: true, target_entity: true },
+                    take: 30
+                })
 
-            if (entities.length > 0 || relationships.length > 0) {
-                let graphContext = `[KNOWLEDGE GRAPH ENTITAS & RELASI]\n`
-                if (entities.length > 0) {
-                    graphContext += `Entitas Utama:\n` + entities.map((e: any) => `- ${e.name} (${e.type}): ${e.description || ''}`).join('\n') + '\n\n'
+                if (entities.length > 0 || relationships.length > 0) {
+                    let graphContext = `[KNOWLEDGE GRAPH ENTITAS & RELASI]\n`
+                    if (entities.length > 0) {
+                        graphContext += `Entitas Utama:\n` + entities.map((e: any) => `- ${e.name} (${e.type}): ${e.description || ''}`).join('\n') + '\n\n'
+                    }
+                    if (relationships.length > 0) {
+                        graphContext += `Relasi Hubungan:\n` + relationships.map((r: any) => `- ${r.source_entity.name} [${r.relationship}] ${r.target_entity.name}${r.description ? ` (${r.description})` : ''}`).join('\n') + '\n\n'
+                    }
+                    context = graphContext + (context ? `\n[KUTIPAN TEKS (Vector Search)]\n` + context : '')
                 }
-                if (relationships.length > 0) {
-                    graphContext += `Relasi Hubungan:\n` + relationships.map((r: any) => `- ${r.source_entity.name} [${r.relationship}] ${r.target_entity.name}${r.description ? ` (${r.description})` : ''}`).join('\n') + '\n\n'
-                }
-                context = graphContext + `\n[KUTIPAN TEKS (Vector Search)]\n` + context
             }
         }
 
@@ -145,6 +178,7 @@ ${context || 'Tidak ada bagian dokumen atau entitas yang relevan ditemukan.'}`
                             } catch { /* client disconnected */ }
                         }
                     )
+
                     controller.enqueue(encoder.encode(`data: [DONE]\n\n`))
                 } catch (err) {
                     logger.error('Document chat streaming error:', err)

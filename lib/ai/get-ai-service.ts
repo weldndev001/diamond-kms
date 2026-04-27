@@ -4,6 +4,7 @@ import { env } from '@/lib/env'
 import { decrypt } from '@/lib/security/key-encryptor'
 import { GeminiService } from './providers/gemini'
 import { OpenAICompatService } from './providers/openai-compat'
+import { ModelsLabService } from './providers/modelslab'
 import type { AIProviderConfig, AIService } from './types'
 
 // Default Olla load balancer endpoint (self-hosted)
@@ -54,6 +55,41 @@ export function getAIService(config: AIProviderConfig): AIService {
             // Hybrid Injection: Use Gemini ONLY for embeddings
             if (process.env.AI_HYBRID_EMBED === 'true' && env.GEMINI_API_KEY) {
                 console.log("[AI-FACTORY] HYBRID MODE AKTIF: Chat via Olla, Embedding via Google Gemini!")
+                const gemini = new GeminiService(env.GEMINI_API_KEY)
+                Object.defineProperty(service, 'embeddingModel', { value: gemini.embeddingModel, writable: true })
+                service.generateEmbedding = async (text: string) => gemini.generateEmbedding(text)
+            }
+
+            return service
+        }
+
+        case 'modelslab': {
+            const apiKey = process.env.AI_MODELSLAB_API_KEY || ''
+            const service = new ModelsLabService({
+                apiKey,
+                endpoint: process.env.AI_MODELSLAB_ENDPOINT || 'https://modelslab.com/api/v6/llm/chat/completions',
+                modelId: process.env.AI_MODELSLAB_MODEL || 'google-gemma-4-E2B-it',
+                providerName: 'modelslab-primary',
+            })
+
+            // Hybrid Injection: Use Olla/Ollama ONLY for embeddings (Self-hosted is better for local vectors)
+            const olla = new OpenAICompatService({
+                baseURL: process.env.AI_ENDPOINT || OLLA_DEFAULT,
+                apiKey: process.env.AI_API_KEY || 'ollama-dummy-key',
+                chatModel: process.env.AI_CHAT_MODEL || 'llama3.3:70b',
+                embedModel: process.env.AI_EMBED_MODEL || 'nomic-embed-text',
+                visionEmbedModel: env.AI_VISION_EMBED_MODEL || undefined,
+                providerName: 'ollama-embedding-sidecar',
+            })
+
+            // Override embedding and rerank methods to use Olla by default
+            Object.defineProperty(service, 'embeddingModel', { value: olla.embeddingModel, writable: true })
+            service.generateEmbedding = async (text: string) => olla.generateEmbedding(text)
+            service.rerank = async (query, docs) => olla.rerank(query, docs)
+
+            // OPTIONAL: Override with Gemini if Hybrid Mode is ON
+            if (process.env.AI_HYBRID_EMBED === 'true' && env.GEMINI_API_KEY) {
+                console.log("[AI-FACTORY] HYBRID MODE (MODELS-LAB): Chat via ModelsLab, Embedding via Google Gemini!")
                 const gemini = new GeminiService(env.GEMINI_API_KEY)
                 Object.defineProperty(service, 'embeddingModel', { value: gemini.embeddingModel, writable: true })
                 service.generateEmbedding = async (text: string) => gemini.generateEmbedding(text)

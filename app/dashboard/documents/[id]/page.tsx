@@ -5,9 +5,9 @@ import { useParams, useSearchParams } from 'next/navigation'
 import { getDocumentByIdAction } from '@/lib/actions/document.actions'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import {
-    ArrowLeft, FileText, Bot, Tag, FolderOpen, User,
     Maximize2, Minimize2, Loader2, Send, MessageSquare, Sparkles,
-    Trash2, ClipboardList, RefreshCcw
+    Trash2, ClipboardList, RefreshCcw, Settings, Database, Network, ArrowUpDown,
+    ArrowLeft, FileText, Bot, Tag, FolderOpen, User
 } from 'lucide-react'
 
 import Link from 'next/link'
@@ -15,6 +15,7 @@ import { DocumentPreviewCard } from '@/components/documents/DocumentPreviewCard'
 import { DocxPreview } from '@/components/documents/DocxPreview'
 import { XlsxPreview } from '@/components/documents/XlsxPreview'
 import { MarkdownPreview } from '@/components/documents/MarkdownPreview'
+import { SqlPreview } from '@/components/documents/SqlPreview'
 
 interface ChatMessage {
     role: 'user' | 'assistant'
@@ -39,6 +40,10 @@ export default function DocumentDetailPage() {
     const [isStreaming, setIsStreaming] = useState(false)
     const [isSummarizing, setIsSummarizing] = useState(false)
     const [reprocessing, setReprocessing] = useState(false)
+    const [showSettings, setShowSettings] = useState(false)
+    const [useVector, setUseVector] = useState(true)
+    const [useGraph, setUseGraph] = useState(true)
+    const [useRerank, setUseRerank] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -75,6 +80,7 @@ export default function DocumentDetailPage() {
                    /\.(xlsx|xls|csv)$/i.test(doc?.file_name || '') ||
                    /\.(xlsx|xls|csv)$/i.test(doc?.file_path || '')
     const isMarkdown = doc?.mime_type === 'text/markdown' || doc?.mime_type === 'text/x-markdown' || /\.(md|markdown)$/i.test(doc?.file_name || '') || /\.(md|markdown)$/i.test(doc?.file_path || '')
+    const isSql = doc?.mime_type === 'text/x-sql' || doc?.mime_type === 'application/sql' || doc?.mime_type === 'text/sql' || /\.(sql)$/i.test(doc?.file_name || '') || /\.(sql)$/i.test(doc?.file_path || '')
 
     // Use proxy endpoint to bypass signed URL JWT issues
     const loadPdfUrl = () => {
@@ -171,6 +177,9 @@ export default function DocumentDetailPage() {
                     documentId: doc.id,
                     question: q,
                     history: newMessages.slice(-8),
+                    useVector,
+                    useGraph,
+                    useRerank,
                 }),
             })
 
@@ -297,6 +306,9 @@ export default function DocumentDetailPage() {
                     documentId: doc.id,
                     question: summaryPrompt,
                     history: newMessages.slice(-20),
+                    useVector,
+                    useGraph,
+                    useRerank,
                 }),
             })
 
@@ -423,6 +435,81 @@ export default function DocumentDetailPage() {
                                 </div>
                             </div>
                                 <div className="flex items-center gap-1">
+                                    {/* RAG Settings Toggle */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setShowSettings(!showSettings)}
+                                            className={`p-1.5 rounded-md transition-all active:scale-95 border ${showSettings ? 'bg-navy-600 text-white border-navy-600' : 'text-text-400 hover:text-navy-700 hover:bg-navy-50 border-transparent'}`}
+                                            title="Konfigurasi Retrieval"
+                                        >
+                                            <Settings size={15} />
+                                        </button>
+
+                                        {showSettings && (
+                                            <div className="absolute top-10 right-0 z-[100] w-64 bg-white rounded-2xl shadow-2xl border border-surface-200 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                <div className="flex items-center justify-between mb-3 px-1">
+                                                    <h4 className="text-[11px] font-black text-navy-900 uppercase tracking-wider">Konfigurasi RAG</h4>
+                                                    <div className="h-1 w-8 bg-navy-100 rounded-full" />
+                                                </div>
+                                                
+                                                <div className="space-y-1.5">
+                                                    {/* Vector Toggle */}
+                                                    <label className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all ${!useVector && !useRerank ? 'opacity-50' : 'hover:bg-surface-50'}`}>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-lg bg-navy-50 flex items-center justify-center">
+                                                                <Database size={15} className="text-navy-600" />
+                                                            </div>
+                                                            <span className="text-xs font-bold text-navy-900">Vector Search</span>
+                                                        </div>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={useVector} 
+                                                            disabled={useVector && !useRerank}
+                                                            onChange={(e) => setUseVector(e.target.checked)}
+                                                            className="w-4 h-4 rounded border-surface-300 text-navy-600 focus:ring-navy-500 cursor-pointer"
+                                                        />
+                                                    </label>
+
+                                                    {/* Graph Toggle */}
+                                                    <label className="flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all hover:bg-surface-50">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                                                                <Network size={15} className="text-indigo-600" />
+                                                            </div>
+                                                            <span className="text-xs font-bold text-navy-900">Graph Context</span>
+                                                        </div>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={useGraph} 
+                                                            onChange={(e) => setUseGraph(e.target.checked)}
+                                                            className="w-4 h-4 rounded border-surface-300 text-navy-600 focus:ring-navy-500 cursor-pointer"
+                                                        />
+                                                    </label>
+
+                                                    {/* Rerank Toggle */}
+                                                    <label className="flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all hover:bg-surface-50">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-lg bg-secondary-50 flex items-center justify-center">
+                                                                <ArrowUpDown size={15} className="text-secondary-600" />
+                                                            </div>
+                                                            <span className="text-xs font-bold text-navy-900">Reranking</span>
+                                                        </div>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={useRerank} 
+                                                            disabled={useRerank && !useVector}
+                                                            onChange={(e) => setUseRerank(e.target.checked)}
+                                                            className="w-4 h-4 rounded border-surface-300 text-navy-600 focus:ring-navy-500 cursor-pointer"
+                                                        />
+                                                    </label>
+                                                </div>
+                                                <div className="mt-3 pt-3 border-t border-surface-100 text-[10px] text-text-400 px-1 italic leading-tight">
+                                                    * Aturan Sistem: Vector atau Reranking harus aktif salah satu.
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <button
                                         onClick={handleReprocess}
                                         disabled={reprocessing}
@@ -572,7 +659,7 @@ export default function DocumentDetailPage() {
                     <div className="px-6 py-4 border-b border-surface-200/60 bg-white flex justify-between items-center shrink-0">
                         <h2 className="font-bold font-display text-navy-900 flex items-center gap-2 text-sm">
                             <FileText size={15} className="text-navy-600" />
-                            {isPDF ? 'PDF Viewer' : isImage ? 'Image Preview' : isAudio ? 'Audio Player' : 'Preview Dokumen'}
+                            {isPDF ? 'PDF Viewer' : isImage ? 'Image Preview' : isAudio ? 'Audio Player' : isSql ? 'SQL Preview' : 'Preview Dokumen'}
                         </h2>
                         {isPDF && (
                             <button
@@ -662,6 +749,8 @@ export default function DocumentDetailPage() {
                             <XlsxPreview fileUrl={`/api/documents/pdf/${doc.file_path}`} />
                         ) : isMarkdown ? (
                             <MarkdownPreview fileUrl={`/api/documents/pdf/${doc.file_path}`} />
+                        ) : isSql ? (
+                            <SqlPreview fileUrl={`/api/documents/pdf/${doc.file_path}`} />
                         ) : (
                             <DocumentPreviewCard doc={doc} />
                         )}

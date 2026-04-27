@@ -109,6 +109,98 @@ export async function extractXlsxText(
 }
 
 /**
+ * Extract text from PowerPoint PPTX files using JSZip + XML parsing.
+ * PPTX is a ZIP archive containing XML slides at ppt/slides/slideN.xml.
+ * We extract all text runs (<a:t>) from each slide.
+ */
+export async function extractPptxText(
+    fileBuffer: Buffer,
+    fileName: string
+): Promise<ExtractedDocument> {
+    const JSZip = require('jszip')
+    const zip = await JSZip.loadAsync(fileBuffer)
+
+    // Collect slide files: ppt/slides/slide1.xml, slide2.xml, ...
+    const slideFiles: { name: string; num: number }[] = []
+    zip.forEach((relativePath: string) => {
+        const match = relativePath.match(/^ppt\/slides\/slide(\d+)\.xml$/i)
+        if (match) {
+            slideFiles.push({ name: relativePath, num: parseInt(match[1], 10) })
+        }
+    })
+
+    // Sort by slide number
+    slideFiles.sort((a, b) => a.num - b.num)
+
+    const pages: PageText[] = []
+    let fullText = `File: ${fileName}\n\n`
+
+    for (const slide of slideFiles) {
+        const xmlContent = await zip.file(slide.name)?.async('string')
+        if (!xmlContent) continue
+
+        // Extract all <a:t>...</a:t> text runs from slide XML
+        const textRuns: string[] = []
+        const textRegex = /<a:t>([\s\S]*?)<\/a:t>/g
+        let textMatch
+        while ((textMatch = textRegex.exec(xmlContent)) !== null) {
+            const text = textMatch[1].trim()
+            if (text) textRuns.push(text)
+        }
+
+        if (textRuns.length > 0) {
+            const slideText = `--- Slide ${slide.num} ---\n${textRuns.join('\n')}`
+            pages.push({ pageNum: slide.num, text: slideText })
+            fullText += slideText + '\n\n'
+        }
+    }
+
+    // Also try to extract notes from ppt/notesSlides/
+    const noteFiles: { name: string; num: number }[] = []
+    zip.forEach((relativePath: string) => {
+        const match = relativePath.match(/^ppt\/notesSlides\/notesSlide(\d+)\.xml$/i)
+        if (match) {
+            noteFiles.push({ name: relativePath, num: parseInt(match[1], 10) })
+        }
+    })
+    noteFiles.sort((a, b) => a.num - b.num)
+
+    if (noteFiles.length > 0) {
+        fullText += '\n--- Speaker Notes ---\n'
+        for (const note of noteFiles) {
+            const xmlContent = await zip.file(note.name)?.async('string')
+            if (!xmlContent) continue
+
+            const textRuns: string[] = []
+            const textRegex = /<a:t>([\s\S]*?)<\/a:t>/g
+            let textMatch
+            while ((textMatch = textRegex.exec(xmlContent)) !== null) {
+                const text = textMatch[1].trim()
+                if (text) textRuns.push(text)
+            }
+
+            if (textRuns.length > 0) {
+                const noteText = `Note (Slide ${note.num}): ${textRuns.join(' ')}`
+                fullText += noteText + '\n'
+                // Append notes to corresponding slide page if exists
+                const existingPage = pages.find(p => p.pageNum === note.num)
+                if (existingPage) {
+                    existingPage.text += `\n[Speaker Note]: ${textRuns.join(' ')}`
+                }
+            }
+        }
+    }
+
+    console.log(`[PPTX-EXTRACTOR] Extracted ${pages.length} slides, ${fullText.length} chars from ${fileName}`)
+
+    return {
+        fullText: fullText.trim(),
+        pages: pages.length > 0 ? pages : [{ pageNum: 1, text: fullText.trim() }],
+        pageCount: pages.length || 1,
+    }
+}
+
+/**
  * Extract images from PDF files for Vision Embedding.
  * Renders each PDF page as an image and returns base64-encoded images.
  * This approach catches all visual content (diagrams, charts, embedded images, etc.)

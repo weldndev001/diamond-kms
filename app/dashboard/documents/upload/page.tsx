@@ -323,7 +323,7 @@ export default function UploadDocumentPage() {
                             id="file-input"
                             type="file"
                             className="hidden"
-                            accept=".pdf,.doc,.docx,.txt,.md,.csv,.xlsx,.pptx,.sql,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.webm,.mkv"
+                            accept=".pdf,.doc,.docx,.txt,.md,.csv,.xlsx,.pptx,.sql,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.webm,.mkv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.svg"
                             onChange={handleFileChange}
                         />
 
@@ -345,7 +345,7 @@ export default function UploadDocumentPage() {
                                 </div>
                                 <div className="space-y-1">
                                     <p className="font-bold text-navy-900">{t('documents.drop_file_hint')}</p>
-                                    <p className="text-sm text-text-500">{t('documents.file_types_hint')} + Audio (.mp3, .wav, .m4a) + Video (.mp4, .mov, .avi, .webm)</p>
+                                    <p className="text-sm text-text-500">{t('documents.file_types_hint')} + Audio (.mp3, .wav, .m4a) + Video (.mp4, .mov, .avi, .webm) + Image (.jpg, .png, .gif, .webp)</p>
                                 </div>
                             </div>
                         )}
@@ -486,7 +486,7 @@ export default function UploadDocumentPage() {
                                                             <p>Status: <span className="font-bold text-navy-600">{doc.processing_status}</span></p>
                                                             <p>Progress: <span className="font-bold text-navy-600">{getLatestProgress(doc)}%</span></p>
                                                             <p>Completed: {doc.is_processed ? t('common.yes') : t('common.no')}</p>
-                                                            {doc.processing_error && <p className="text-red-600 mt-2 font-bold whitespace-pre-wrap">Error: {doc.processing_error}</p>}
+                                                            {(doc.processing_error && doc.processing_status === 'failed') && <p className="text-red-600 mt-2 font-bold whitespace-pre-wrap">Error: {doc.processing_error}</p>}
                                                         </div>
                                                         {doc.processing_status === 'processing' && (
                                                             <button
@@ -554,7 +554,7 @@ export default function UploadDocumentPage() {
                                         )}
 
                                         {/* Error */}
-                                        {doc.processing_error && (
+                                        {(doc.processing_error && doc.processing_status === 'failed') && (
                                             <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
                                                 <span className="font-bold">Error:</span> {doc.processing_error}
                                             </div>

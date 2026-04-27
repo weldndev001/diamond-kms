@@ -277,8 +277,8 @@ async function processContentInBackground(contentId: string, content: any) {
                     }
                     console.log(`✅ [PROCESS] ${imageEmbeddings.length} image chunks saved for "${content.title}"`)
                 }
-            } catch (visionErr) {
-                console.error(`⚠️ [PROCESS] Vision embedding failed (non-fatal):`, visionErr)
+            } catch (visionErr: any) {
+                console.error(`⚠️ [PROCESS] Vision embedding failed (non-fatal):`, visionErr.message || visionErr)
                 // Non-fatal: continue processing without image embeddings
             }
         }
@@ -343,8 +343,8 @@ ${textToExtract}`
                 }
             }
             logger.info(`Graph extraction completed for article ${contentId}. Entities: ${entityMap.size}.`)
-        } catch (graphErr) {
-            logger.error(`Graph Extraction failed for article ${contentId}:`, graphErr)
+        } catch (graphErr: any) {
+            console.error(`⚠️ [PROCESS] Graph Extraction failed for content (non-fatal):`, graphErr.message || graphErr)
             // Non-fatal, do not break document processing just because graph failed
         }
 

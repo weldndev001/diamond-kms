@@ -26,7 +26,7 @@ export interface AIService {
 
     /** Extract metadata from document */
     generateDocumentMetadata(
-        input: { text?: string; fileBuffer?: Buffer; fileName: string }
+        input: { text?: string; fileBuffer?: Buffer; imageBase64?: string; fileName: string }
     ): Promise<DocumentMetadata>
 
     /** 
