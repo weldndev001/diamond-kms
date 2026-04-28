@@ -69,6 +69,88 @@ async function rerankResults(results: any[], query: string, ai: AIService): Prom
     }
 }
 
+function isInventoryQuestion(question: string): boolean {
+    return /\b(daftar|isi|data apa|apa saja|apa aja|sumber|dokumen apa|konten apa|sumber apa)\b/i.test(question)
+}
+
+async function buildKnowledgeBaseInventoryContext(knowledgeBaseId: string, orgId: string): Promise<string> {
+    const kb = await prisma.knowledgeBase.findFirst({
+        where: { id: knowledgeBaseId, organization_id: orgId },
+        select: {
+            name: true,
+            description: true,
+            status: true,
+            group: { select: { name: true } },
+            documents: {
+                select: {
+                    source_id: true,
+                    source_type: true,
+                },
+            },
+        },
+    })
+
+    if (!kb) return ''
+
+    const documentSourceIds = kb.documents.filter((source) => source.source_type === 'document').map((source) => source.source_id)
+    const contentSourceIds = kb.documents.filter((source) => source.source_type === 'content').map((source) => source.source_id)
+
+    const [documents, contents] = await Promise.all([
+        documentSourceIds.length > 0
+            ? prisma.document.findMany({
+                where: { id: { in: documentSourceIds } },
+                select: {
+                    file_name: true,
+                    ai_title: true,
+                    ai_summary: true,
+                    is_processed: true,
+                    group: { select: { name: true } },
+                },
+            })
+            : Promise.resolve([]),
+        contentSourceIds.length > 0
+            ? prisma.content.findMany({
+                where: { id: { in: contentSourceIds } },
+                select: {
+                    title: true,
+                    category: true,
+                    status: true,
+                    is_processed: true,
+                    group: { select: { name: true } },
+                },
+            })
+            : Promise.resolve([]),
+    ])
+
+    const lines: string[] = []
+    lines.push(`[INVENTARIS KNOWLEDGE BASE]`)
+    lines.push(`Nama: ${kb.name}`)
+    if (kb.description) lines.push(`Deskripsi: ${kb.description}`)
+    lines.push(`Status: ${kb.status}`)
+    lines.push(`Grup: ${kb.group?.name || 'Global'}`)
+    lines.push(`Jumlah sumber: ${kb.documents.length}`)
+
+    if (documents.length > 0) {
+        lines.push(`Dokumen sumber:`)
+        documents.slice(0, 12).forEach((doc, index) => {
+            const title = doc.ai_title || doc.file_name
+            const groupName = doc.group?.name || 'Global'
+            const summary = doc.ai_summary ? ` - ${doc.ai_summary.slice(0, 120)}` : ''
+            lines.push(`${index + 1}. ${title} [${groupName}]${doc.is_processed ? '' : ' (belum diproses)'}${summary}`)
+        })
+    }
+
+    if (contents.length > 0) {
+        lines.push(`Konten sumber:`)
+        contents.slice(0, 12).forEach((content, index) => {
+            const groupName = content.group?.name || 'Global'
+            lines.push(`${index + 1}. ${content.title} [${groupName}]${content.is_processed ? '' : ' (belum diproses)'} - ${content.category} / ${content.status}`)
+        })
+    }
+
+    return lines.join('\n')
+}
+
 export async function ragQuery(
     params: RAGQueryParams
 ): Promise<Citation[]> {
@@ -93,6 +175,7 @@ export async function ragQuery(
     let relevantChunks: any[] = []
     let context = ''
     let graphContext = ''
+    let kbInventoryContext = ''
     let embeddingFailed = false
 
     try {
@@ -401,6 +484,18 @@ export async function ragQuery(
     }
     context = contextParts.join('\n\n---\n\n')
 
+    if (knowledgeBaseId && (isInventoryQuestion(question) || !context.trim())) {
+        try {
+            kbInventoryContext = await buildKnowledgeBaseInventoryContext(knowledgeBaseId, orgId)
+        } catch (inventoryErr) {
+            console.warn('⚠️ [RAG] Failed to build KB inventory context', inventoryErr)
+        }
+    }
+
+    if (kbInventoryContext) {
+        context = context ? `${kbInventoryContext}\n\n---\n\n${context}` : kbInventoryContext
+    }
+
     // ── STEP 5: Build system prompt ─────────────────────────────
     let systemPrompt = ''
     const summaryHeader = sessionSummary ? `### RINGKASAN DISKUSI SEBELUMNYA\n${sessionSummary}\n\n` : ''
@@ -415,7 +510,7 @@ export async function ragQuery(
 
     // ── STEP 6: Build prompt from history + new question ────────
     const historyText = history
-        .slice(-6) 
+        .slice(-20) 
         .map((m) => `${m.role === 'user' ? 'User' : 'Asisten'}: ${m.content}`)
         .join('\n')
 

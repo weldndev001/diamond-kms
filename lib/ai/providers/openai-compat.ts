@@ -39,6 +39,10 @@ export class OpenAICompatService implements AIService {
     }
 
     async generateEmbedding(text: string): Promise<number[]> {
+        if (this.visionEmbedModel && this.embeddingModel === this.visionEmbedModel) {
+            return this.generateVisionQueryEmbedding(text);
+        }
+
         return withRetry(async () => {
             try {
                 // console.log(`[AI-SELFHOSTED] Generating embedding for text length: ${text.length}`)

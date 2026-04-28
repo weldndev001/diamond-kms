@@ -248,3 +248,12 @@
 [2026-04-24T09:03:45.286Z] [PROCESS-BG] STARTED for 8b87f4b5-b879-4502-bf7d-a75bf1797580
 [2026-04-24T09:03:45.357Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
 [2026-04-24T09:03:45.404Z] Got AI service: modelslab-primary
+[2026-04-28T05:43:56.976Z] [PROCESS-BG] STARTED for f899d877-596d-495f-893a-7c8148ccb1b8
+[2026-04-28T05:44:43.200Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-28T05:44:43.240Z] Got AI service: ollama-self-hosted
+[2026-04-28T08:56:45.153Z] [PROCESS-BG] STARTED for f899d877-596d-495f-893a-7c8148ccb1b8
+[2026-04-28T08:57:17.818Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-28T08:57:17.934Z] Got AI service: ollama-self-hosted
+[2026-04-28T09:08:24.897Z] [PROCESS-BG] STARTED for 6ed265ac-c345-4e1a-a76b-3ffe936e494e
+[2026-04-28T09:08:25.859Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-28T09:08:25.957Z] Got AI service: ollama-self-hosted

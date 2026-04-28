@@ -168,6 +168,12 @@ export default function AIAssistantPage() {
         }
     }, [organization?.id])
 
+    useEffect(() => {
+        if (selectedContext === 'Global' && knowledgeBases.length === 1) {
+            setSelectedContext(knowledgeBases[0].id)
+        }
+    }, [knowledgeBases, selectedContext])
+
     const loadKBs = async (orgId: string) => {
         const kbs = await getKnowledgeBasesAction(orgId)
         setKnowledgeBases(kbs)
@@ -187,7 +193,13 @@ export default function AIAssistantPage() {
 
     const createNewSession = async () => {
         try {
-            const res = await fetch('/api/chat/sessions', { method: 'POST' })
+            const res = await fetch('/api/chat/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    knowledgeBaseId: selectedContext !== 'Global' ? selectedContext : undefined,
+                }),
+            })
             if (res.ok) {
                 const data = await res.json()
                 setActiveSessionId(data.session.id)
@@ -209,6 +221,7 @@ export default function AIAssistantPage() {
                 setActiveSessionId(sessionId)
                 setSessionTitle(data.session.title)
                 setSessionSummary(data.session.summary)
+                setSelectedContext(data.session.knowledge_base_id || 'Global')
                 setMessages(
                     data.session.messages.map((m: any) => ({
                         role: m.role as 'user' | 'assistant',
@@ -256,7 +269,13 @@ export default function AIAssistantPage() {
         let currentSessionId = activeSessionId
         if (!currentSessionId) {
             try {
-                const res = await fetch('/api/chat/sessions', { method: 'POST' })
+                const res = await fetch('/api/chat/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        knowledgeBaseId: selectedContext !== 'Global' ? selectedContext : undefined,
+                    }),
+                })
                 if (res.ok) {
                     const data = await res.json()
                     currentSessionId = data.session.id
