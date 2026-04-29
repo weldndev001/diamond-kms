@@ -42,9 +42,12 @@ export function getAIService(config: AIProviderConfig): AIService {
         case 'self_hosted': {
             // Ollama often doesn't need an API key, so we make it optional
             const apiKey = process.env.AI_API_KEY || (config.encryptedKey ? decrypt(config.encryptedKey) : 'ollama-dummy-key')
+            const baseUrl = process.env.AI_ENDPOINT || config.endpoint || OLLA_DEFAULT
+            
+            console.log(`\n🔗 [AI-FACTORY] Self-Hosted: ${baseUrl}`)
 
             const service = new OpenAICompatService({
-                baseURL: process.env.AI_ENDPOINT || config.endpoint || OLLA_DEFAULT,
+                baseURL: baseUrl,
                 apiKey,
                 chatModel: process.env.AI_CHAT_MODEL || config.chatModel || 'llama3.3:70b',
                 embedModel: process.env.AI_EMBED_MODEL || config.embedModel || 'nomic-embed-text',

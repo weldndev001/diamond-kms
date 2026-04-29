@@ -39,6 +39,7 @@ export class OpenAICompatService implements AIService {
     }
 
     async generateEmbedding(text: string): Promise<number[]> {
+        console.log(`\n🧠 [OPENAI-COMPAT] Embedding with model: ${this.embeddingModel} (BaseURL: ${this.client.baseURL})`)
         if (this.visionEmbedModel && this.embeddingModel === this.visionEmbedModel) {
             return this.generateVisionQueryEmbedding(text);
         }
@@ -241,6 +242,8 @@ export class OpenAICompatService implements AIService {
             const baseUrl = this.client.baseURL.replace(/\/$/, '')
             // Check if baseURL already contains /v1
             const url = baseUrl.includes('/v1') ? `${baseUrl}/rerank` : `${baseUrl}/v1/rerank`
+            
+            console.log(`\n🔍 [OPENAI-COMPAT] Rerank URL: ${url}`)
             
             try {
                 const response = await fetch(url, {
