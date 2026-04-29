@@ -526,7 +526,7 @@ export async function ragQuery(
         : question
 
     // ── STEP 7: Stream response ─────────────────────────────────
-    await ai.streamCompletion(fullPrompt, systemPrompt, onChunk, signal)
+    await ai.streamCompletion(fullPrompt, systemPrompt, onChunk, {}, signal)
 
     // ── STEP 8: Return citations ────────────────────────────────
     const citations: Citation[] = relevantChunks.map((c) => ({
