@@ -16,7 +16,8 @@ import {
     Plus, Search, MessageSquare, FileText, Bot, User, Send, Loader2,
     ArrowLeft, X, Check, BookOpen, File, ChevronRight, Sparkles,
     Trash2, ClipboardList, RefreshCcw, Settings, Database, Network, ArrowUpDown,
-    LayoutGrid, List, Globe, Lock, ShieldCheck, ExternalLink, Square
+    LayoutGrid, List, Globe, Lock, ShieldCheck, ExternalLink, Square, Tags,
+    FolderOpen, Clock, Users
 } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { ContentStatus, Role } from '@prisma/client'
@@ -908,7 +909,7 @@ function KBDetailView({ kb, onBack, onChat, onAddDoc, onUpload, onRemoveDoc, onD
                 </div>
                 <div className="card p-4 bg-indigo-50/50 border-indigo-100 flex items-center gap-4">
                     <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-indigo-600">
-                        <UsersIcon size={20} />
+                        <Users size={20} />
                     </div>
                     <div>
                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-400">GROUP</p>

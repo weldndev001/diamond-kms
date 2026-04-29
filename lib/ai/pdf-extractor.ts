@@ -234,7 +234,7 @@ export async function extractPDFImages(
         // we'll look for image objects in the raw PDF data
 
         // Try to extract raw image streams from PDF using pdf-parse's underlying pdfjs
-        const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js')
+        const pdfjsLib = await import('pdfjs-dist')
         const loadingTask = pdfjsLib.getDocument({ data: fileBuffer })
         const pdfDoc = await loadingTask.promise
         
