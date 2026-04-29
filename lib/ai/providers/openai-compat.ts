@@ -45,13 +45,20 @@ export class OpenAICompatService implements AIService {
 
         return withRetry(async () => {
             try {
-                // console.log(`[AI-SELFHOSTED] Generating embedding for text length: ${text.length}`)
+                const targetDim = parseInt(env.AI_EMBEDDING_DIMENSIONS || '1024', 10)
                 const response = await this.client.embeddings.create({
                     model: this.embeddingModel,
                     input: text,
+                    dimensions: targetDim,
                 })
-                const embedding = response.data[0]?.embedding
+                let embedding = response.data[0]?.embedding
                 if (!embedding) throw new Error('No embedding returned from provider')
+                
+                // Safety: Truncate if model returns more than requested (e.g. server ignores dimensions param)
+                if (embedding.length > targetDim) {
+                    console.log(`[AI-SELFHOSTED] Truncating embedding from ${embedding.length} to ${targetDim}`)
+                    embedding = embedding.slice(0, targetDim)
+                }
                 return embedding
             } catch (err: any) {
                 console.error(`[AI-SELFHOSTED] Embedding Error:`, err.message)
@@ -103,6 +110,7 @@ export class OpenAICompatService implements AIService {
         prompt: string,
         systemPrompt: string,
         onChunk: (chunk: string) => void,
+        options?: { maxTokens?: number; temperature?: number },
         signal?: AbortSignal
     ): Promise<void> {
         const requestBody: any = {
@@ -112,7 +120,8 @@ export class OpenAICompatService implements AIService {
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: prompt },
             ],
-            temperature: parseFloat(env.AI_TEMPERATURE || '0.7'),
+            max_tokens: options?.maxTokens ?? parseInt(env.AI_MAX_TOKENS || '2048', 10),
+            temperature: options?.temperature ?? parseFloat(env.AI_TEMPERATURE || '0.7'),
             top_p: parseFloat(env.AI_TOP_P || '0.9'),
             frequency_penalty: 0.5,
             presence_penalty: 0.1,
@@ -210,7 +219,7 @@ export class OpenAICompatService implements AIService {
                 
                 // Convert Buffer to File object acceptable by openai SDK in Next.js
                 // We use global File which is available in Next.js 13+ Node/Edge runtime
-                const file = new File([fileBuffer], fileName, { type: mimeType || 'audio/mpeg' })
+                const file = new File([new Uint8Array(fileBuffer)], fileName, { type: mimeType || 'audio/mpeg' })
                 
                 const response = await this.client.audio.transcriptions.create({
                     file: file,
@@ -295,6 +304,7 @@ export class OpenAICompatService implements AIService {
                 console.log(`[AI-SELFHOSTED] Generating image embedding with VL model: ${this.visionEmbedModel}`)
                 const startTime = Date.now()
 
+                const targetDim = parseInt(env.AI_EMBEDDING_DIMENSIONS || '1024', 10)
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
@@ -309,7 +319,7 @@ export class OpenAICompatService implements AIService {
                                 image_url: { url: imageUrl }
                             }
                         ],
-                        dimensions: 768
+                        dimensions: targetDim
                     })
                 })
 
@@ -319,8 +329,14 @@ export class OpenAICompatService implements AIService {
                 }
 
                 const data = await response.json()
-                const embedding = data.data?.[0]?.embedding
+                let embedding = data.data?.[0]?.embedding
                 if (!embedding) throw new Error('No embedding returned from VL model')
+
+                // Safety: Truncate if model returns more than requested
+                if (embedding.length > targetDim) {
+                    console.log(`[AI-SELFHOSTED] Truncating image embedding from ${embedding.length} to ${targetDim}`)
+                    embedding = embedding.slice(0, targetDim)
+                }
 
                 console.log(`[AI-SELFHOSTED] Image embedding generated in ${Date.now() - startTime}ms, dims: ${embedding.length}`)
                 return embedding
@@ -345,6 +361,12 @@ export class OpenAICompatService implements AIService {
                 const baseUrl = this.client.baseURL.replace(/\/$/, '')
                 const url = baseUrl.includes('/v1') ? `${baseUrl}/embeddings` : `${baseUrl}/v1/embeddings`
 
+                // Safety: Truncate text to a safe length (~450 tokens) to prevent 500 errors 
+                // if the chunker somehow produced a larger chunk or for direct API calls.
+                // 1200 chars / 2.5 = 480 tokens (conservative)
+                const safeText = text.length > 1200 ? text.slice(0, 1200) : text;
+
+                const targetDim = parseInt(env.AI_EMBEDDING_DIMENSIONS || '1024', 10)
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
@@ -353,8 +375,8 @@ export class OpenAICompatService implements AIService {
                     },
                     body: JSON.stringify({
                         model: this.visionEmbedModel,
-                        input: text,
-                        dimensions: 768
+                        input: safeText,
+                        dimensions: targetDim
                     })
                 })
 
@@ -364,8 +386,15 @@ export class OpenAICompatService implements AIService {
                 }
 
                 const data = await response.json()
-                const embedding = data.data?.[0]?.embedding
+                let embedding = data.data?.[0]?.embedding
                 if (!embedding) throw new Error('No embedding returned from VL model for text query')
+
+                // Safety: Truncate if model returns more than requested
+                if (embedding.length > targetDim) {
+                    console.log(`[AI-SELFHOSTED] Truncating vision query embedding from ${embedding.length} to ${targetDim}`)
+                    embedding = embedding.slice(0, targetDim)
+                }
+
                 return embedding
             } catch (err: any) {
                 console.error(`[AI-SELFHOSTED] Vision Query Embedding Error:`, err.message)

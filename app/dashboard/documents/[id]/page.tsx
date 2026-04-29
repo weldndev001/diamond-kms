@@ -7,7 +7,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import {
     Maximize2, Minimize2, Loader2, Send, MessageSquare, Sparkles,
     Trash2, ClipboardList, RefreshCcw, Settings, Database, Network, ArrowUpDown,
-    ArrowLeft, FileText, Bot, Tag, FolderOpen, User
+    ArrowLeft, FileText, Bot, Tag, FolderOpen, User, Square
 } from 'lucide-react'
 
 import Link from 'next/link'
@@ -16,6 +16,7 @@ import { DocxPreview } from '@/components/documents/DocxPreview'
 import { XlsxPreview } from '@/components/documents/XlsxPreview'
 import { MarkdownPreview } from '@/components/documents/MarkdownPreview'
 import { SqlPreview } from '@/components/documents/SqlPreview'
+import ReactMarkdown from 'react-markdown'
 
 interface ChatMessage {
     role: 'user' | 'assistant'
@@ -46,6 +47,8 @@ export default function DocumentDetailPage() {
     const [useRerank, setUseRerank] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLTextAreaElement>(null)
+    const abortControllerRef = useRef<AbortController | null>(null)
+    const summaryAbortControllerRef = useRef<AbortController | null>(null)
 
     // Fetch chart history on mount
     useEffect(() => {
@@ -154,6 +157,13 @@ export default function DocumentDetailPage() {
         }
     }
 
+    const stopStreaming = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort()
+            setIsStreaming(false)
+        }
+    }
+
     const sendMessage = async () => {
         const q = input.trim()
         if (!q || isStreaming || !doc) return
@@ -169,10 +179,14 @@ export default function DocumentDetailPage() {
         // Add empty assistant message for streaming
         setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
+        const controller = new AbortController()
+        abortControllerRef.current = controller
+
         try {
             const res = await fetch('/api/ai/chat-document', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
                 body: JSON.stringify({
                     documentId: doc.id,
                     question: q,
@@ -258,16 +272,21 @@ export default function DocumentDetailPage() {
                 })
             })
         } catch (err) {
-            setMessages(prev => {
-                const updated = [...prev]
-                updated[updated.length - 1] = {
-                    role: 'assistant',
-                    content: '⚠️ Koneksi terputus. Silakan coba lagi.',
-                }
-                return updated
-            })
+            if (err instanceof Error && err.name === 'AbortError') {
+                // Ignore abort error
+            } else {
+                setMessages(prev => {
+                    const updated = [...prev]
+                    updated[updated.length - 1] = {
+                        role: 'assistant',
+                        content: '⚠️ Koneksi terputus. Silakan coba lagi.',
+                    }
+                    return updated
+                })
+            }
         } finally {
             setIsStreaming(false)
+            abortControllerRef.current = null
         }
     }
 
@@ -298,10 +317,14 @@ export default function DocumentDetailPage() {
         setMessages(newMessages)
         setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
+        const controller = new AbortController()
+        summaryAbortControllerRef.current = controller
+
         try {
             const res = await fetch('/api/ai/chat-document', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
                 body: JSON.stringify({
                     documentId: doc.id,
                     question: summaryPrompt,
@@ -348,14 +371,19 @@ export default function DocumentDetailPage() {
                     }
                 }
             }
-        } catch {
-            setMessages(prev => {
-                const updated = [...prev]
-                updated[updated.length - 1] = { role: 'assistant', content: '⚠️ Koneksi terputus.' }
-                return updated
-            })
+        } catch (err) {
+            if (err instanceof Error && err.name === 'AbortError') {
+                // Ignore abort error
+            } else {
+                setMessages(prev => {
+                    const updated = [...prev]
+                    updated[updated.length - 1] = { role: 'assistant', content: '⚠️ Koneksi terputus.' }
+                    return updated
+                })
+            }
         } finally {
             setIsSummarizing(false)
+            summaryAbortControllerRef.current = null
         }
     }
 
@@ -604,8 +632,21 @@ export default function DocumentDetailPage() {
                                             ? 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white font-medium corner-right shadow-sm'
                                             : 'bg-surface-50 dark:bg-surface-50 text-text-900 border border-surface-200/50'
                                             }`}>
-                                            <div className={`text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'assistant' ? 'text-text-700' : ''}`}>
-                                                {msg.content || (
+                                            <div className={`text-sm leading-relaxed ${msg.role === 'assistant' ? 'text-text-700 markdown-content' : 'whitespace-pre-wrap'}`}>
+                                                {msg.content ? (
+                                                    <ReactMarkdown
+                                                        components={{
+                                                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                                            strong: ({ children }) => <strong className="font-black text-navy-900 dark:text-navy-400">{children}</strong>,
+                                                            ul: ({ children }) => <ul className="list-disc ml-4 mb-2 space-y-1">{children}</ul>,
+                                                            ol: ({ children }) => <ol className="list-decimal ml-4 mb-2 space-y-1">{children}</ol>,
+                                                            li: ({ children }) => <li className="pl-1">{children}</li>,
+                                                            code: ({ children }) => <code className="bg-navy-50 dark:bg-navy-900/50 px-1.5 py-0.5 rounded text-navy-700 dark:text-navy-300 font-mono text-[13px]">{children}</code>,
+                                                        }}
+                                                    >
+                                                        {msg.content}
+                                                    </ReactMarkdown>
+                                                ) : (
                                                     <span className="flex items-center gap-2 text-text-400">
                                                         <Loader2 size={14} className="animate-spin" />
                                                         Sedang berpikir...
@@ -642,13 +683,22 @@ export default function DocumentDetailPage() {
                                     disabled={isStreaming}
                                 />
 
-                                <button
-                                    onClick={sendMessage}
-                                    disabled={!input.trim() || isStreaming}
-                                    className="bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white hover:opacity-90 active:scale-95 disabled:grayscale disabled:opacity-50 disabled:scale-100 rounded-xl p-2.5 transition-all duration-300 shrink-0"
-                                >
-                                    {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                                </button>
+                                {isStreaming ? (
+                                    <button
+                                        onClick={stopStreaming}
+                                        className="bg-red-500 hover:bg-red-600 text-white rounded-xl p-2.5 transition-all duration-300 shrink-0"
+                                    >
+                                        <Square size={16} fill="currentColor" />
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={sendMessage}
+                                        disabled={!input.trim()}
+                                        className="bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white hover:opacity-90 active:scale-95 disabled:grayscale disabled:opacity-50 disabled:scale-100 rounded-xl p-2.5 transition-all duration-300 shrink-0"
+                                    >
+                                        <Send size={16} />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

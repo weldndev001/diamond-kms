@@ -11,21 +11,21 @@ export interface DocumentChunkData {
 }
 
 /**
- * Estimate token count: ~1 token per 3.5 characters
- * (average for mixed Indonesian/English text)
+ * Estimate token count: ~1 token per 2.8 characters
+ * (conservative for mixed Indonesian/English text, safer for models like Qwen)
  */
 function estimateTokens(text: string): number {
-    return Math.ceil(text.length / 3.5)
+    return Math.ceil(text.length / 2.8)
 }
 
 /**
  * Chunk document into semantically meaningful segments
- * @param overlapTokens - Overlap between chunks for continuity (default 50)
+ * @param overlapTokens - Overlap between chunks for continuity (default 60)
  */
 export function chunkDocument(
     pages: PageText[],
-    maxTokens = 600,
-    overlapTokens = 80
+    maxTokens = 420, // Reduced from 600 for safety with 512-token models
+    overlapTokens = 60
 ): DocumentChunkData[] {
     const chunks: DocumentChunkData[] = []
     let currentText = ''
@@ -34,33 +34,55 @@ export function chunkDocument(
     let chunkIndex = 0
 
     for (const page of pages) {
-        // Split page into paragraphs (double newline or sentence-ending newline)
+        // Split page into paragraphs
         const paragraphs = page.text
-            .split(/\n{2,}|(?<=\.\s)\n/)
+            .split(/\n{2,}/)
             .map((p) => p.trim())
-            .filter((p) => p.length > 20) // Skip very short paragraphs
+            .filter((p) => p.length > 5)
 
-        for (const para of paragraphs) {
-            const combined = currentText ? `${currentText}\n\n${para}` : para
-            const tokens = estimateTokens(combined)
-
-            if (tokens > maxTokens && currentText.length > 0) {
-                // Save current chunk
-                chunks.push({
-                    chunkIndex: chunkIndex++,
-                    content: currentText,
-                    pageStart: currentPageStart,
-                    pageEnd: currentPageEnd,
-                    tokenCount: estimateTokens(currentText),
-                })
-
-                // Start new chunk with overlap from previous
-                const overlapText = getLastNTokens(currentText, overlapTokens)
-                currentText = overlapText ? `${overlapText}\n\n${para}` : para
-                currentPageStart = page.pageNum
+        for (let para of paragraphs) {
+            // Safety: if a single paragraph is too large, split it by sentences
+            if (estimateTokens(para) > maxTokens) {
+                const sentences = para.split(/(?<=[.!?])\s+/)
+                for (const sentence of sentences) {
+                    const combined = currentText ? `${currentText}\n\n${sentence}` : sentence
+                    if (estimateTokens(combined) > maxTokens && currentText.length > 0) {
+                        chunks.push({
+                            chunkIndex: chunkIndex++,
+                            content: currentText,
+                            pageStart: currentPageStart,
+                            pageEnd: currentPageEnd,
+                            tokenCount: estimateTokens(currentText),
+                        })
+                        const overlapText = getLastNTokens(currentText, overlapTokens)
+                        currentText = overlapText ? `${overlapText}\n\n${sentence}` : sentence
+                        currentPageStart = page.pageNum
+                    } else {
+                        currentText = combined
+                    }
+                }
             } else {
-                currentText = combined
-                if (!currentText) currentPageStart = page.pageNum
+                const combined = currentText ? `${currentText}\n\n${para}` : para
+                if (estimateTokens(combined) > maxTokens && currentText.length > 0) {
+                    chunks.push({
+                        chunkIndex: chunkIndex++,
+                        content: currentText,
+                        pageStart: currentPageStart,
+                        pageEnd: currentPageEnd,
+                        tokenCount: estimateTokens(currentText),
+                    })
+                    const overlapText = getLastNTokens(currentText, overlapTokens)
+                    
+                    // If we have overlap text, the new chunk still starts from the previous chunk's end page
+                    // otherwise it starts from the current page
+                    const previousPageEnd = currentPageEnd
+                    currentText = overlapText ? `${overlapText}\n\n${para}` : para
+                    currentPageStart = overlapText ? previousPageEnd : page.pageNum
+                } else {
+                    // If starting a fresh chunk, set pageStart
+                    if (!currentText) currentPageStart = page.pageNum
+                    currentText = combined
+                }
             }
             currentPageEnd = page.pageNum
         }

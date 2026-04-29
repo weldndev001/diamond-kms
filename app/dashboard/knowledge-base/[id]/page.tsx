@@ -8,8 +8,9 @@ import { checkAcknowledgeStatusAction, acknowledgeReadAction } from '@/lib/actio
 import { createSuggestionAction } from '@/lib/actions/suggestion.actions'
 import { getReviewCommentsAction, createReviewCommentAction, resolveReviewCommentAction, deleteReviewCommentAction } from '@/lib/actions/review-comment.actions'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { ArrowLeft, Edit, FileText, CheckCircle, ExternalLink, Send, MessageSquarePlus, Maximize2, Minimize2, Loader2, Bot, MessageSquare, Sparkles, Trash2, ClipboardList, MessageCircle, X, Check, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Edit, FileText, CheckCircle, ExternalLink, Send, MessageSquarePlus, Maximize2, Minimize2, Loader2, Bot, MessageSquare, Sparkles, Trash2, ClipboardList, MessageCircle, X, Check, ChevronDown, ChevronUp, Square } from 'lucide-react'
 import Link from 'next/link'
+import ReactMarkdown from 'react-markdown'
 
 interface ChatMessage {
     role: 'user' | 'assistant'
@@ -53,6 +54,7 @@ export default function ContentDetailPage() {
     const inputRef = useRef<HTMLTextAreaElement>(null)
     const [articleFullscreen, setArticleFullscreen] = useState(false)
     const [reprocessing, setReprocessing] = useState(false)
+    const abortControllerRef = useRef<AbortController | null>(null)
 
     // Review comments state
     const [reviewComments, setReviewComments] = useState<ReviewComment[]>([])
@@ -289,6 +291,13 @@ export default function ContentDetailPage() {
         setPublishing(false)
     }
 
+    const stopStreaming = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort()
+            setIsStreaming(false)
+        }
+    }
+
     const sendMessage = async () => {
         const q = input.trim()
         if (!q || isStreaming || !content) return
@@ -302,10 +311,14 @@ export default function ContentDetailPage() {
         // Add empty assistant message for streaming
         setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
+        const controller = new AbortController()
+        abortControllerRef.current = controller
+
         try {
             const res = await fetch('/api/ai/chat-content', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
                 body: JSON.stringify({
                     contentId: content.id,
                     question: q,
@@ -388,16 +401,21 @@ export default function ContentDetailPage() {
                 })
             })
         } catch (err) {
-            setMessages(prev => {
-                const updated = [...prev]
-                updated[updated.length - 1] = {
-                    role: 'assistant',
-                    content: '⚠️ Connection lost. Please try again.',
-                }
-                return updated
-            })
+            if (err instanceof Error && err.name === 'AbortError') {
+                // Ignore
+            } else {
+                setMessages(prev => {
+                    const updated = [...prev]
+                    updated[updated.length - 1] = {
+                        role: 'assistant',
+                        content: '⚠️ Connection lost. Please try again.',
+                    }
+                    return updated
+                })
+            }
         } finally {
             setIsStreaming(false)
+            abortControllerRef.current = null
         }
     }
 
@@ -458,10 +476,14 @@ export default function ContentDetailPage() {
         setMessages(newMessages)
         setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
+        const controller = new AbortController()
+        abortControllerRef.current = controller
+
         try {
             const res = await fetch('/api/ai/chat-content', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
                 body: JSON.stringify({
                     contentId: content.id,
                     question: summaryPrompt,
@@ -505,14 +527,19 @@ export default function ContentDetailPage() {
                     }
                 }
             }
-        } catch {
-            setMessages(prev => {
-                const updated = [...prev]
-                updated[updated.length - 1] = { role: 'assistant', content: '⚠️ Connection lost.' }
-                return updated
-            })
+        } catch (err) {
+            if (err instanceof Error && err.name === 'AbortError') {
+                // Ignore
+            } else {
+                setMessages(prev => {
+                    const updated = [...prev]
+                    updated[updated.length - 1] = { role: 'assistant', content: '⚠️ Connection lost.' }
+                    return updated
+                })
+            }
         } finally {
             setIsSummarizing(false)
+            abortControllerRef.current = null
         }
     }
 
@@ -732,8 +759,21 @@ export default function ContentDetailPage() {
                                                     <span className="text-[10px] font-semibold text-navy-600">AISA</span>
                                                 </div>
                                             )}
-                                            <div className={`text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'assistant' ? 'text-text-700' : ''}`}>
-                                                {msg.content || (
+                                            <div className={`text-sm leading-relaxed ${msg.role === 'assistant' ? 'text-text-700 markdown-content' : 'whitespace-pre-wrap'}`}>
+                                                {msg.content ? (
+                                                    <ReactMarkdown
+                                                        components={{
+                                                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                                            strong: ({ children }) => <strong className="font-black text-navy-900 dark:text-navy-400">{children}</strong>,
+                                                            ul: ({ children }) => <ul className="list-disc ml-4 mb-2 space-y-1">{children}</ul>,
+                                                            ol: ({ children }) => <ol className="list-decimal ml-4 mb-2 space-y-1">{children}</ol>,
+                                                            li: ({ children }) => <li className="pl-1">{children}</li>,
+                                                            code: ({ children }) => <code className="bg-navy-50 dark:bg-navy-900/50 px-1.5 py-0.5 rounded text-navy-700 dark:text-navy-300 font-mono text-[13px]">{children}</code>,
+                                                        }}
+                                                    >
+                                                        {msg.content}
+                                                    </ReactMarkdown>
+                                                ) : (
                                                     <span className="flex items-center gap-2 text-text-400">
                                                         <Loader2 size={14} className="animate-spin" />
                                                         Thinking...
@@ -761,13 +801,22 @@ export default function ContentDetailPage() {
                                     disabled={isStreaming}
                                     style={{ minHeight: '42px' }}
                                 />
-                                <button
-                                    onClick={sendMessage}
-                                    disabled={!input.trim() || isStreaming}
-                                    className="btn btn-primary p-2.5 shrink-0 disabled:opacity-40"
-                                >
-                                    {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                                </button>
+                                {isStreaming ? (
+                                    <button
+                                        onClick={stopStreaming}
+                                        className="bg-red-500 text-white rounded-md p-2.5 shrink-0 transition-colors"
+                                    >
+                                        <Square size={16} fill="currentColor" />
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={sendMessage}
+                                        disabled={!input.trim()}
+                                        className="btn btn-primary p-2.5 shrink-0 disabled:opacity-40"
+                                    >
+                                        <Send size={16} />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

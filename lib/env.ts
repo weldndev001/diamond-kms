@@ -28,6 +28,8 @@ export const env = {
     AI_MAX_TOKENS: getEnv('AI_MAX_TOKENS') || '2048',
     AI_RERANK_MODEL: getEnv('AI_RERANK_MODEL') || 'qwen3-reranker-0.6b-q8_0-ggmlorg.gguf',
     AI_VISION_EMBED_MODEL: getEnv('AI_VISION_EMBED_MODEL') || '',
+    AI_AUDIO_MODEL: getEnv('AI_AUDIO_MODEL') || '',
+    AI_EMBEDDING_DIMENSIONS: getEnv('AI_EMBEDDING_DIMENSIONS') || '1024',
 
     // Security
     CRON_SECRET: getEnv('CRON_SECRET'),

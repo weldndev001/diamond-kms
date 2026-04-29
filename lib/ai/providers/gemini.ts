@@ -59,13 +59,15 @@ export class GeminiService implements AIService {
         prompt: string,
         systemPrompt: string,
         onChunk: (chunk: string) => void,
+        options?: { maxTokens?: number; temperature?: number },
         signal?: AbortSignal
     ): Promise<void> {
         const model = this.genAI.getGenerativeModel({
             model: this.chatModel,
             systemInstruction: systemPrompt,
             generationConfig: {
-                temperature: parseFloat(env.AI_TEMPERATURE || '0.7'),
+                maxOutputTokens: options?.maxTokens ?? parseInt(env.AI_MAX_TOKENS || '2048', 10),
+                temperature: options?.temperature ?? parseFloat(env.AI_TEMPERATURE || '0.7'),
                 topP: parseFloat(env.AI_TOP_P || '0.9'),
                 topK: parseInt(env.AI_TOP_K || '40', 10),
                 frequencyPenalty: 0.5,

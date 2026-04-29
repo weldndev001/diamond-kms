@@ -6,7 +6,7 @@ import { useTranslation } from '@/hooks/useTranslation'
 import {
     MessageSquare, Send, FileText, Loader2, Bot, User,
     Sparkles, Plus, Trash2, FileBarChart, History, PanelLeftOpen, PanelLeftClose, LayoutGrid, List,
-    Settings, Database, Network, ArrowUpDown
+    Settings, Database, Network, ArrowUpDown, Square
 } from 'lucide-react'
 import { getKnowledgeBasesAction } from '@/lib/actions/knowledge-base.actions'
 
@@ -77,6 +77,7 @@ export default function AIAssistantPage() {
     const { organization } = useCurrentUser()
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const abortControllerRef = useRef<AbortController | null>(null)
 
 
     const scrollToBottom = useCallback(() => {
@@ -262,6 +263,14 @@ export default function AIAssistantPage() {
         setSummaryLoading(false)
     }
 
+    const stopStreaming = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort()
+            setIsStreaming(false)
+            setIsThinking(false)
+        }
+    }
+
     const sendMessage = async () => {
         const question = input.trim()
         if (!question || isStreaming) return
@@ -296,10 +305,15 @@ export default function AIAssistantPage() {
         setIsStreaming(true)
         setIsThinking(true)
 
+        // Create new AbortController for this request
+        const controller = new AbortController()
+        abortControllerRef.current = controller
+
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
                 body: JSON.stringify({
                     question,
                     history: messages.slice(-6),
@@ -398,6 +412,7 @@ export default function AIAssistantPage() {
         } finally {
             setIsStreaming(false)
             setIsThinking(false)
+            abortControllerRef.current = null
         }
     }
 
@@ -727,13 +742,23 @@ export default function AIAssistantPage() {
                                 rows={1}
                                 className="flex-1 bg-transparent translate-y-[1px] outline-none text-[15px] font-medium placeholder:text-text-400 resize-none max-h-32 py-1 scrollbar-thin"
                             />
-                            <button
-                                onClick={sendMessage}
-                                disabled={!input.trim() || isStreaming}
-                                className="bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white hover:opacity-90 active:scale-95 disabled:grayscale disabled:opacity-50 disabled:scale-100 rounded-xl p-3 transition-all duration-300"
-                            >
-                                <Send size={18} />
-                            </button>
+                            {isStreaming ? (
+                                <button
+                                    onClick={stopStreaming}
+                                    className="bg-red-500 hover:bg-red-600 text-white rounded-xl p-3 transition-all duration-300"
+                                    title="Stop AI Response"
+                                >
+                                    <Square size={18} fill="currentColor" />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={sendMessage}
+                                    disabled={!input.trim()}
+                                    className="bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white hover:opacity-90 active:scale-95 disabled:grayscale disabled:opacity-50 disabled:scale-100 rounded-xl p-3 transition-all duration-300"
+                                >
+                                    <Send size={18} />
+                                </button>
+                            )}
                         </div>
                         <p className="text-center text-[9px] font-black text-text-300 mt-4 uppercase tracking-[0.2em] opacity-60">
                             {t('ai_assistant.disclaimer')}

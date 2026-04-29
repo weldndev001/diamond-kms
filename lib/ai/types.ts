@@ -21,6 +21,7 @@ export interface AIService {
         prompt: string,
         systemPrompt: string,
         onChunk: (chunk: string) => void,
+        options?: { maxTokens?: number; temperature?: number },
         signal?: AbortSignal
     ): Promise<void>
 

@@ -15,8 +15,8 @@ import {
 import {
     Plus, Search, MessageSquare, FileText, Bot, User, Send, Loader2,
     ArrowLeft, X, Check, BookOpen, File, ChevronRight, Sparkles,
-    Trash2, Tags, FolderOpen, Clock, Users as UsersIcon,
-    LayoutGrid, List, Globe, Lock, ShieldCheck, ExternalLink
+    Trash2, ClipboardList, RefreshCcw, Settings, Database, Network, ArrowUpDown,
+    LayoutGrid, List, Globe, Lock, ShieldCheck, ExternalLink, Square
 } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { ContentStatus, Role } from '@prisma/client'
@@ -409,6 +409,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
     const endRef = useRef<HTMLDivElement>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const abortControllerRef = useRef<AbortController | null>(null)
 
 
 
@@ -433,28 +434,81 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
 
     const renderCitations = (citationList?: Citation[]) => {
         if (!citationList || citationList.length === 0) return null
+
+        // Group by documentId to avoid redundant cards
+        const groupedMap = new Map<string, {
+            docId: string,
+            title: string,
+            groupName: string,
+            sourceType: 'DOCUMENT' | 'ARTICLE',
+            pages: Set<number>,
+            contentSnippet: string
+        }>()
+
+        citationList.forEach(c => {
+            if (!groupedMap.has(c.documentId)) {
+                groupedMap.set(c.documentId, {
+                    docId: c.documentId,
+                    title: c.documentTitle,
+                    groupName: c.groupName,
+                    sourceType: c.sourceType || 'DOCUMENT',
+                    pages: new Set<number>(),
+                    contentSnippet: c.chunkContent
+                })
+            }
+            const item = groupedMap.get(c.documentId)!
+            // Add all pages in the range
+            for (let p = c.pageStart; p <= (c.pageEnd || c.pageStart); p++) {
+                item.pages.add(p)
+            }
+        })
+
+        const groupedCitations = Array.from(groupedMap.values())
+
+        const formatRanges = (pages: Set<number>) => {
+            const sorted = Array.from(pages).sort((a, b) => a - b)
+            if (sorted.length === 0) return ''
+            const ranges: string[] = []
+            let start = sorted[0]
+            let end = sorted[0]
+            for (let i = 1; i <= sorted.length; i++) {
+                if (i < sorted.length && sorted[i] === end + 1) {
+                    end = sorted[i]
+                } else {
+                    ranges.push(start === end ? `${start}` : `${start}–${end}`)
+                    if (i < sorted.length) {
+                        start = sorted[i]
+                        end = sorted[i]
+                    }
+                }
+            }
+            return ranges.join(', ')
+        }
+
         return (
             <div className="mt-4 pt-3 border-t border-surface-200 dark:border-slate-700/50">
                 <p className="text-[10px] font-bold text-text-400 uppercase tracking-wider mb-2">
                     {t('ai_assistant.reference_sources') || 'SUMBER DOKUMEN'}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {citationList.slice(0, 4).map((c, i) => {
+                    {groupedCitations.slice(0, 4).map((c, i) => {
                         const isArticle = c.sourceType === 'ARTICLE'
-                        const cleanText = c.chunkContent.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim()
+                        const pageList = formatRanges(c.pages)
+                        const locationLabel = isArticle ? `Bagian ${pageList}` : `Hal. ${pageList}`
+                        
+                        // Use the first page of the group for the link
+                        const firstPage = Array.from(c.pages).sort((a, b) => a - b)[0] || 1
+                        const cleanText = c.contentSnippet.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim()
                         const searchSnippet = cleanText.substring(0, 35)
                         const encodedKeyword = encodeURIComponent(searchSnippet)
 
                         const href = isArticle
-                            ? `/dashboard/knowledge-base/${c.documentId}#:~:text=${encodedKeyword}`
-                            : `/dashboard/documents/${c.documentId}?page=${c.pageStart}&search=${encodedKeyword}`
+                            ? `/dashboard/knowledge-base/${c.docId}#:~:text=${encodedKeyword}`
+                            : `/dashboard/documents/${c.docId}?page=${firstPage}&search=${encodedKeyword}`
 
                         const pathSegments = isArticle
-                            ? ['Basis Pengetahuan', c.documentTitle]
-                            : ['Dokumen', c.documentTitle]
-                        const locationLabel = isArticle
-                            ? `Bagian ${c.pageStart}`
-                            : `Hal. ${c.pageStart}${c.pageEnd > c.pageStart ? `–${c.pageEnd}` : ''}`
+                            ? ['Basis Pengetahuan', c.title]
+                            : ['Dokumen', c.title]
                         
                         return (
                             <a
@@ -470,7 +524,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <p className="font-bold text-navy-900 dark:text-white text-[11px] truncate group-hover:text-navy-700 dark:group-hover:text-navy-300 leading-tight">
-                                            {c.documentTitle}
+                                            {c.title}
                                         </p>
                                         <div className="flex items-center gap-1 mt-1">
                                             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-tight ${isArticle ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-navy-50 text-navy-600 border border-navy-200'}`}>
@@ -485,7 +539,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
                                         <div className="flex items-center gap-1 mt-1.5 text-[9px] text-text-400 group-hover:text-navy-500 transition-colors">
                                             <span className="opacity-70">📂</span>
                                             <span className="font-medium truncate">
-                                                {pathSegments[0]} › {pathSegments[1]?.substring(0, 30)}{(pathSegments[1]?.length || 0) > 30 ? '...' : ''} › {locationLabel}
+                                                {pathSegments[0]} › {pathSegments[1]?.substring(0, 30)}{(pathSegments[1]?.length || 0) > 30 ? '...' : ''}
                                             </span>
                                         </div>
                                     </div>
@@ -508,6 +562,13 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
     useEffect(() => {
         endRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages, isTyping])
+
+    const stopStreaming = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort()
+            setIsTyping(false)
+        }
+    }
 
     const sendMessage = async () => {
         const q = input.trim()
@@ -540,11 +601,14 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
         if (textareaRef.current) textareaRef.current.style.height = 'auto'
         setIsTyping(true)
 
+        const controller = new AbortController()
+        abortControllerRef.current = controller
 
         try {
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
                 body: JSON.stringify({
                     question: q,
                     history: messages.slice(-6),
@@ -619,9 +683,14 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
             }
 
         } catch (e) {
-            setMessages(prev => [...prev, { role: 'assistant', content: 'Maaf, terjadi kesalahan.' }])
+            if (e instanceof Error && e.name === 'AbortError') {
+                // Ignore
+            } else {
+                setMessages(prev => [...prev, { role: 'assistant', content: 'Maaf, terjadi kesalahan.' }])
+            }
         } finally {
             setIsTyping(false)
+            abortControllerRef.current = null
         }
     }
 
@@ -704,10 +773,17 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
                             className="flex-1 bg-transparent outline-none text-sm resize-none max-h-32 py-1 scrollbar-thin"
                         />
 
-                        <button onClick={sendMessage} disabled={!input.trim() || isTyping || isDraft}
-                            className="bg-navy-600 text-white rounded-lg p-2 disabled:bg-surface-200">
-                            <Send size={16} />
-                        </button>
+                        {isTyping ? (
+                            <button onClick={stopStreaming}
+                                className="bg-red-500 text-white rounded-lg p-2">
+                                <Square size={16} fill="currentColor" />
+                            </button>
+                        ) : (
+                            <button onClick={sendMessage} disabled={!input.trim() || isDraft}
+                                className="bg-navy-600 text-white rounded-lg p-2 disabled:bg-surface-200">
+                                <Send size={16} />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

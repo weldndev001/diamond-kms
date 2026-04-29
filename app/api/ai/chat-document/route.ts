@@ -49,120 +49,112 @@ export async function POST(req: NextRequest) {
         // Get AI service
         const ai = await getAIServiceForOrg(document.organization_id)
 
-        // Try to find relevant chunks (may be empty if not processed yet)
-        let context = ''
-        const docTitle = document.ai_title || document.file_name
+        // PARALLEL RETRIEVAL: Fetch vector context and graph context concurrently
+        const [vectorContext, graphContext] = await Promise.all([
+            // Task 1: Vector Search (if enabled)
+            (async () => {
+                if (!useVector && !useRerank) return '';
+                
+                try {
+                    // Embed the question
+                    const questionEmbedding = await ai.generateEmbedding(question)
+                    const vectorStr = JSON.stringify(questionEmbedding)
 
-        if (document.is_processed) {
-            let relevantChunks: any[] = []
-
-            if (useVector || useRerank) {
-                // Embed the question
-                const questionEmbedding = await ai.generateEmbedding(question)
-                const vectorStr = JSON.stringify(questionEmbedding)
-
-                // Cosine similarity search — top 15 chunks (more if we want to rerank)
-                const limit = useRerank ? 15 : 6
-                relevantChunks = await prisma.$queryRawUnsafe<
-                    {
-                        chunk_id: string
-                        content: string
-                        similarity: number
-                        page_start: number
-                        page_end: number
-                    }[]
-                >(
-                    `SELECT
-                        dc.id AS chunk_id,
-                        dc.content,
-                        1 - (dc.embedding <=> $1::vector) AS similarity,
-                        dc.page_number AS page_start,
-                        COALESCE(dc.page_end, dc.page_number) AS page_end
-                    FROM document_chunks dc
-                    WHERE dc.document_id = $2
-                      AND dc.embedding IS NOT NULL
-                    ORDER BY similarity DESC
-                    LIMIT $3`,
-                    vectorStr,
-                    documentId,
-                    limit
-                )
-
-                // Reranking if enabled
-                if (useRerank && relevantChunks.length > 0) {
-                    try {
-                        const documents = relevantChunks.map(c => c.content)
-                        const reranked = await ai.rerank(question, documents)
-                        
-                        relevantChunks = reranked.map((r: any) => {
-                            const original = relevantChunks[r.index]
-                            return { ...original, similarity: r.score }
-                        }).sort((a: any, b: any) => b.similarity - a.similarity).slice(0, 6)
-                    } catch (err) {
-                        console.warn('[CHAT-DOCUMENT] Reranking failed, fallback to vector', err)
-                    }
-                } else {
-                    relevantChunks = relevantChunks.slice(0, 6)
-                }
-
-                context = relevantChunks
-                    .map(
-                        (c, i) =>
-                            `[Bagian ${i + 1}, Hal. ${c.page_start}${c.page_end !== c.page_start ? `-${c.page_end}` : ''}]\n${c.content}`
+                    // Initial search - top 15 if reranking, else top 7
+                    const limit = useRerank ? 15 : 7
+                    let chunks = await prisma.$queryRawUnsafe<
+                        { id: string; content: string; similarity: number; page_number: number; page_end: number; }[]
+                    >(
+                        `SELECT id, content, 1 - (embedding <=> $1::vector) AS similarity, page_number, page_end
+                         FROM document_chunks
+                         WHERE document_id = $2 AND embedding IS NOT NULL
+                         ORDER BY similarity DESC LIMIT $3`,
+                        vectorStr, documentId, limit
                     )
-                    .join('\n\n---\n\n')
-            }
 
-            // Fetch Graph Entities & Relationships
-            if (useGraph) {
-                const entities = await prisma.documentEntity.findMany({
-                    where: { document_id: documentId },
-                    take: 15
-                })
-                const relationships = await prisma.documentRelationship.findMany({
-                    where: { document_id: documentId },
-                    include: { source_entity: true, target_entity: true },
-                    take: 30
-                })
+                    // Reranking
+                    if (useRerank && chunks.length > 0) {
+                        try {
+                            const reranked = await ai.rerank(question, chunks.map(c => c.content))
+                            chunks = reranked.map(r => chunks[r.index]).slice(0, 6)
+                        } catch (err) {
+                            console.warn('[CHAT-DOCUMENT] Reranking failed:', err)
+                            chunks = chunks.slice(0, 6)
+                        }
+                    } else {
+                        chunks = chunks.slice(0, 6)
+                    }
 
-                if (entities.length > 0 || relationships.length > 0) {
-                    let graphContext = `[KNOWLEDGE GRAPH ENTITAS & RELASI]\n`
+                    return chunks.map((c, i) => 
+                        `[Kutipan ${i + 1}, Hal. ${c.page_number}${c.page_end && c.page_end !== c.page_number ? `-${c.page_end}` : ''}]\n${c.content}`
+                    ).join('\n\n')
+                } catch (err) {
+                    console.error('[CHAT-DOCUMENT] Vector search error:', err)
+                    return ''
+                }
+            })(),
+
+            // Task 2: Knowledge Graph (if enabled)
+            (async () => {
+                if (!useGraph) return '';
+                try {
+                    const [entities, relationships] = await Promise.all([
+                        prisma.documentEntity.findMany({ where: { document_id: documentId }, take: 10 }),
+                        prisma.documentRelationship.findMany({ 
+                            where: { document_id: documentId }, 
+                            include: { source_entity: true, target_entity: true },
+                            take: 15 
+                        })
+                    ])
+
+                    if (entities.length === 0 && relationships.length === 0) return '';
+
+                    let graphText = '[GRAF PENGETAHUAN]\n'
                     if (entities.length > 0) {
-                        graphContext += `Entitas Utama:\n` + entities.map((e: any) => `- ${e.name} (${e.type}): ${e.description || ''}`).join('\n') + '\n\n'
+                        graphText += 'Entitas: ' + entities.map(e => `${e.name} (${e.type})`).join(', ') + '\n'
                     }
                     if (relationships.length > 0) {
-                        graphContext += `Relasi Hubungan:\n` + relationships.map((r: any) => `- ${r.source_entity.name} [${r.relationship}] ${r.target_entity.name}${r.description ? ` (${r.description})` : ''}`).join('\n') + '\n\n'
+                        graphText += 'Hubungan: ' + relationships.map(r => `${r.source_entity.name} ${r.relationship} ${r.target_entity.name}`).join('; ') + '\n'
                     }
-                    context = graphContext + (context ? `\n[KUTIPAN TEKS (Vector Search)]\n` + context : '')
+                    return graphText
+                } catch (err) {
+                    console.error('[CHAT-DOCUMENT] Graph retrieval error:', err)
+                    return ''
                 }
-            }
-        }
+            })()
+        ])
 
-        // System prompt scoped to this document
-        const systemPrompt = `Anda adalah asisten AI yang membantu user memahami dokumen "${docTitle}".
-${document.ai_summary ? `Ringkasan dokumen: ${document.ai_summary}` : ''}
+        const context = [graphContext, vectorContext].filter(Boolean).join('\n\n---\n\n')        // SYSTEM PROMPT: Optimized for performance and reasoning
+        const docTitle = document.ai_title || document.file_name
+        const systemPrompt = `Anda adalah pakar dokumen yang membantu memahami "${docTitle}".
+${document.ai_summary ? `Ringkasan Dokumen: ${document.ai_summary}` : ''}
 
-ATURAN PENTING:
-- Jawab pertanyaan HANYA berdasarkan konteks dokumen di bawah, yang mencakup ringkasan teks dan graf pengetahuan entitas + relasinya.
-- Jika informasi tidak ditemukan, katakan "Informasi ini tidak ditemukan dalam dokumen ini."
-- Sebutkan bagian/halaman atau nama entitas relevan saat menjawab.
-- Berikan jawaban yang SERTA MERTA, ringkas, dan langsung ke intinya. DILARANG KERAS mengulang-ulang kalimat, poin, atau kesimpulan yang sama.
-- JIKA Anda sudah memberikan kesimpulan atau ringkasan, SELESAIKAN jawaban Anda dan JANGAN menulis ulang kesimpulan/catatan tersebut.
+PANDUAN JAWABAN:
+1. Jawab secara LANGSUNG di awal kalimat (misal: "Boleh", "Tidak boleh", "Ya", "Tidak").
+2. Berikan alasan teknis/hukum berdasarkan KONTEKS setelah jawaban langsung tersebut.
+3. Gunakan FORMAT BOLD (**teks**) untuk nomor pasal, jadwal, atau poin krusial.
+4. Jika skenario user tidak tertulis secara literal, gunakan inferensi logis berdasarkan prinsip umum atau norma yang ada dalam dokumen.
+5. Bedah pertanyaan berdasarkan variabel Subjek, Tindakan, Lokasi, dan Waktu untuk memastikan akurasi.
 
-KONTEKS DARI DOKUMEN:
-${context || 'Tidak ada bagian dokumen atau entitas yang relevan ditemukan.'}`
+ATURAN KETAT:
+- Jawab HANYA berdasarkan KONTEKS di bawah. Jika tidak ada, katakan: "Informasi tidak ditemukan dalam dokumen."
+- Sebutkan nomor halaman/kutipan (misal: Pasal X atau Hal Y).
+- Jawaban harus padat, akurat, dan tidak bertele-tele.
 
-        // Build chat prompt
-        const historyText = (history as { role: string; content: string }[])
-            .slice(-8)
-            .map((m) => `${m.role === 'user' ? 'User' : 'Asisten'}: ${m.content}`)
+KONTEKS DOKUMEN:
+${context || 'Konteks tidak tersedia.'}`
+
+        // History handling: Limit to 6 turns
+        const historyMsgs = (history as { role: string; content: string }[])
+            .slice(-6)
+            .map(m => `${m.role === 'user' ? 'User' : 'Asisten'}: ${m.content}`)
             .join('\n')
-
-        const fullPrompt = historyText
-            ? `${historyText}\n\nUser: ${question}`
+        
+        const fullPrompt = historyMsgs 
+            ? `Berikut adalah riwayat percakapan sebelumnya:\n${historyMsgs}\n\nPertanyaan Baru User: ${question}` 
             : question
 
-        // Stream response
+        // Stream response with improved temperature for responsiveness
         const encoder = new TextEncoder()
         const stream = new ReadableStream({
             async start(controller) {
@@ -172,26 +164,21 @@ ${context || 'Tidak ada bagian dokumen atau entitas yang relevan ditemukan.'}`
                         systemPrompt,
                         (chunk: string) => {
                             try {
-                                controller.enqueue(
-                                    encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`)
-                                )
-                            } catch { /* client disconnected */ }
-                        }
+                                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`))
+                            } catch { /* disconnect */ }
+                        },
+                        { temperature: 0.4 } // Balanced temperature for speed and logic
                     )
-
                     controller.enqueue(encoder.encode(`data: [DONE]\n\n`))
                 } catch (err) {
-                    logger.error('Document chat streaming error:', err)
+                    logger.error('Chat stream error:', err)
                     const msg = err instanceof Error ? err.message : 'Unknown error'
-                    // check if msg contains 504
-                    const friendlyMsg = msg.includes('504')
-                        ? 'Server AI mengalami Timeout (504). Beban dokumen terlalu panjang atau server sedang sibuk memproses model berat.'
-                        : msg
-                    controller.enqueue(
-                        encoder.encode(`data: ${JSON.stringify({ error: friendlyMsg })}\n\n`)
-                    )
+                    const friendlyMsg = msg.includes('504') 
+                        ? 'Server AI Timeout. Beban dokumen terlalu panjang atau server sedang sibuk.' 
+                        : 'Gagal menghasilkan jawaban.'
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: friendlyMsg })}\n\n`))
                 } finally {
-                    try { controller.close() } catch { /* already closed */ }
+                    try { controller.close() } catch { }
                 }
             },
         })

@@ -354,8 +354,9 @@ async function processDocumentInBackground(documentId: string, document: any) {
         await Promise.all(
             chunks.map((chunk, i) =>
                 limit(async () => {
+                    processedChunks++
                     const currentProgress = 50 + Math.floor((processedChunks / totalChunks) * 40)
-                    const embMsg = `Membuat vektor embeddings (Bagian ${processedChunks + 1}/${totalChunks})...`
+                    const embMsg = `Membuat vektor embeddings (Bagian ${processedChunks}/${totalChunks})...`
 
                     // Check if cancelled
                     const currentDoc = await prisma.document.findUnique({

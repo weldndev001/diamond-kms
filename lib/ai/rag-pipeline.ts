@@ -256,7 +256,7 @@ export async function ragQuery(
                         FROM combined_chunks
                     )
                     SELECT * FROM ranked_chunks
-                    WHERE doc_rank <= 3
+                    WHERE doc_rank <= 2
                     ORDER BY similarity DESC
                     LIMIT 8
                     `,
@@ -264,7 +264,7 @@ export async function ragQuery(
                     orgId
                 )
 
-                const threshold = Number(env.AI_SIMILARITY_THRESHOLD) || 0.40
+                const threshold = Number(env.AI_SIMILARITY_THRESHOLD) || 0.45
                 relevantChunks = relevantChunks.filter(c => c.similarity > threshold)
             }
 
@@ -474,13 +474,18 @@ export async function ragQuery(
         docIndex++
         const isDoc = group.sourceType === 'DOCUMENT'
         const label = isDoc ? 'Dokumen' : 'Artikel'
+        
+        // Include document title clearly for the AI to cite
+        contextParts.push(`### ${label} ${docIndex}: ${group.title}`)
+        
         const chunkTexts = group.chunks.map((c) => {
             const location = isDoc
-                ? `Hal. ${c.page_start}${c.page_end !== c.page_start ? `-${c.page_end}` : ''}`
+                ? `Halaman ${c.page_start}${c.page_end !== c.page_start ? `-${c.page_end}` : ''}`
                 : `Bagian ${c.page_start}`
-            return `[${location}]\n${c.content}`
+            return `[SUMBER: ${group.title}, ${location}]\n${c.content}`
         }).join('\n\n')
-        contextParts.push(`[${label} ${docIndex}: ${group.title}]\n${chunkTexts}`)
+        
+        contextParts.push(chunkTexts)
     }
     context = contextParts.join('\n\n---\n\n')
 
@@ -500,12 +505,14 @@ export async function ragQuery(
     let systemPrompt = ''
     const summaryHeader = sessionSummary ? `### RINGKASAN DISKUSI SEBELUMNYA\n${sessionSummary}\n\n` : ''
 
+    const focusInstruction = "\n\nINSTRUKSI PENTING: Fokus HANYA pada pertanyaan terbaru user. JANGAN berikan informasi tambahan dari dokumen atau riwayat chat yang tidak relevan dengan pertanyaan spesifik tersebut."
+
     if (knowledgeBaseId) {
-        systemPrompt = `${summaryHeader}${aiPrompts.aisa.strict_mode}\n${context || 'Daftar dokumen kosong.'}${graphContext}`
+        systemPrompt = `${summaryHeader}${aiPrompts.aisa.strict_mode}\n${context || 'Daftar dokumen kosong.'}${graphContext}${focusInstruction}`
     } else if (context.trim()) {
-        systemPrompt = `${summaryHeader}${aiPrompts.aisa.flexible_mode}\n${context}${graphContext}`
+        systemPrompt = `${summaryHeader}${aiPrompts.aisa.flexible_mode}\n${context}${graphContext}${focusInstruction}`
     } else {
-        systemPrompt = `${summaryHeader}${aiPrompts.aisa.general_mode}${graphContext}`
+        systemPrompt = `${summaryHeader}${aiPrompts.aisa.general_mode}${graphContext}${focusInstruction}`
     }
 
     // ── STEP 6: Build prompt from history + new question ────────
