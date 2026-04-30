@@ -2,7 +2,7 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { ContentStatus, Role } from '@prisma/client'
+import { ContentStatus, Role, Prisma } from '@prisma/client'
 import { getSessionUser, isAdmin, isGroupAdmin, isSupervisor } from '@/lib/auth/server-utils'
 
 /**
@@ -184,7 +184,7 @@ export async function addSourcesToKBAction(
         await prisma.knowledgeBase.update({
             where: { id: kbId },
             data: { 
-                suggested_questions: null,
+                suggested_questions: Prisma.DbNull,
                 updated_at: new Date()
             }
         });
@@ -223,7 +223,7 @@ export async function removeSourceFromKBAction(
         await prisma.knowledgeBase.update({
             where: { id: kbId },
             data: { 
-                suggested_questions: null,
+                suggested_questions: Prisma.DbNull,
                 updated_at: new Date()
             }
         });
