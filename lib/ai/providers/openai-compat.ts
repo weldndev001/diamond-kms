@@ -31,6 +31,8 @@ export class OpenAICompatService implements AIService {
             baseURL: config.baseURL,
             apiKey: config.apiKey,
             defaultHeaders: {
+                // weldn.ai Olla proxy requirement
+                'X-API-KEY': config.apiKey,
                 // OpenRouter requires these headers
                 'HTTP-Referer': 'https://diamond-kms.app',
                 'X-Title': 'DIAMOND KMS',
@@ -250,7 +252,8 @@ export class OpenAICompatService implements AIService {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.client.apiKey}`
+                        'Authorization': `Bearer ${this.client.apiKey}`,
+                        'X-API-KEY': this.client.apiKey
                     },
                     body: JSON.stringify({
                         model: env.AI_RERANK_MODEL,
@@ -312,7 +315,8 @@ export class OpenAICompatService implements AIService {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.client.apiKey}`
+                        'Authorization': `Bearer ${this.client.apiKey}`,
+                        'X-API-KEY': this.client.apiKey
                     },
                     body: JSON.stringify({
                         model: this.visionEmbedModel,
@@ -374,7 +378,8 @@ export class OpenAICompatService implements AIService {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.client.apiKey}`
+                        'Authorization': `Bearer ${this.client.apiKey}`,
+                        'X-API-KEY': this.client.apiKey
                     },
                     body: JSON.stringify({
                         model: this.visionEmbedModel,

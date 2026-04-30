@@ -20,6 +20,13 @@ export const env = {
 
     // AI Providers
     GEMINI_API_KEY: getEnv('GEMINI_API_KEY'),
+    AI_PROVIDER: getEnv('AI_PROVIDER') || 'managed',
+    AI_ENDPOINT: getEnv('AI_ENDPOINT') || 'https://llm01.weldn.ai/olla/openai/v1',
+    AI_API_KEY: getEnv('AI_API_KEY'),
+    AI_CHAT_MODEL: getEnv('AI_CHAT_MODEL'),
+    AI_EMBED_MODEL: getEnv('AI_EMBED_MODEL'),
+    AI_HYBRID_EMBED: getEnv('AI_HYBRID_EMBED') || 'false',
+    AI_HYBRID_VISION: getEnv('AI_HYBRID_VISION') || 'true',
     AI_SIMILARITY_THRESHOLD: getEnv('AI_SIMILARITY_THRESHOLD') || '0.40',
     AI_TEMPERATURE: getEnv('AI_TEMPERATURE') || '0.7',
     AI_TOP_P: getEnv('AI_TOP_P') || '0.9',
