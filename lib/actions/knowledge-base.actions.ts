@@ -344,7 +344,7 @@ export async function getKBRecommendationsAction(kbId: string) {
             const cleanResponse = response.replace(/```json|```/g, '').trim();
             questions = JSON.parse(cleanResponse);
         } catch {
-            const match = response.match(/\[.*\]/s);
+            const match = response.match(/\[[\s\S]*\]/);
             if (match) questions = JSON.parse(match[0]);
         }
 
