@@ -13,6 +13,10 @@ model Organization {
   name                      String
   slug                      String         @unique
   industry_segment          String
+  description               String?        @db.Text
+  country                   String?
+  industry                  String?
+  sub_industry              String?
   subscription_status       String
   subscription_expires_at   DateTime?
   ai_provider_config        Json?
@@ -152,6 +156,7 @@ model KnowledgeBase {
   description     String?  @db.Text
   status          ContentStatus @default(DRAFT)
   published_at    DateTime?
+  suggested_questions Json?
   created_at      DateTime @default(now())
   updated_at      DateTime @default(now()) @updatedAt
 

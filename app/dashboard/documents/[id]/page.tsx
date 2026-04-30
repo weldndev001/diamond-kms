@@ -21,6 +21,7 @@ import ReactMarkdown from 'react-markdown'
 interface ChatMessage {
     role: 'user' | 'assistant'
     content: string
+    created_at?: string
 }
 
 export default function DocumentDetailPage() {
@@ -168,7 +169,7 @@ export default function DocumentDetailPage() {
         const q = input.trim()
         if (!q || isStreaming || !doc) return
 
-        const userMsg: ChatMessage = { role: 'user', content: q }
+        const userMsg: ChatMessage = { role: 'user', content: q, created_at: new Date().toISOString() }
         const newMessages = [...messages, userMsg]
         setMessages(newMessages)
         setInput('')
@@ -177,7 +178,7 @@ export default function DocumentDetailPage() {
 
 
         // Add empty assistant message for streaming
-        setMessages(prev => [...prev, { role: 'assistant', content: '' }])
+        setMessages(prev => [...prev, { role: 'assistant', content: '', created_at: new Date().toISOString() }])
 
         const controller = new AbortController()
         abortControllerRef.current = controller
@@ -268,7 +269,7 @@ export default function DocumentDetailPage() {
                 body: JSON.stringify({
                     documentId: params.id,
                     title: doc?.title || 'Document Q&A',
-                    messages: [...newMessages, { role: 'assistant', content: fullText }]
+                    messages: [...newMessages, { role: 'assistant', content: fullText, created_at: new Date().toISOString() }]
                 })
             })
         } catch (err) {
@@ -312,10 +313,10 @@ export default function DocumentDetailPage() {
         setIsSummarizing(true)
 
         const summaryPrompt = 'Buatkan ringkasan dari seluruh percakapan kita di atas dalam bentuk poin-poin utama.'
-        const userMsg: ChatMessage = { role: 'user', content: summaryPrompt }
+        const userMsg: ChatMessage = { role: 'user', content: summaryPrompt, created_at: new Date().toISOString() }
         const newMessages = [...messages, userMsg]
         setMessages(newMessages)
-        setMessages(prev => [...prev, { role: 'assistant', content: '' }])
+        setMessages(prev => [...prev, { role: 'assistant', content: '', created_at: new Date().toISOString() }])
 
         const controller = new AbortController()
         summaryAbortControllerRef.current = controller
@@ -628,31 +629,40 @@ export default function DocumentDetailPage() {
                                                 <Bot size={16} className="text-navy-600" />
                                             </div>
                                         )}
-                                        <div className={`rounded-2xl px-5 py-3.5 max-w-[85%] text-[14px] leading-relaxed transition-all duration-300 ${msg.role === 'user'
-                                            ? 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white font-medium corner-right shadow-sm'
-                                            : 'bg-surface-50 dark:bg-surface-50 text-text-900 border border-surface-200/50'
-                                            }`}>
-                                            <div className={`text-sm leading-relaxed ${msg.role === 'assistant' ? 'text-text-700 markdown-content' : 'whitespace-pre-wrap'}`}>
-                                                {msg.content ? (
-                                                    <ReactMarkdown
-                                                        components={{
-                                                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                                                            strong: ({ children }) => <strong className="font-black text-navy-900 dark:text-navy-400">{children}</strong>,
-                                                            ul: ({ children }) => <ul className="list-disc ml-4 mb-2 space-y-1">{children}</ul>,
-                                                            ol: ({ children }) => <ol className="list-decimal ml-4 mb-2 space-y-1">{children}</ol>,
-                                                            li: ({ children }) => <li className="pl-1">{children}</li>,
-                                                            code: ({ children }) => <code className="bg-navy-50 dark:bg-navy-900/50 px-1.5 py-0.5 rounded text-navy-700 dark:text-navy-300 font-mono text-[13px]">{children}</code>,
-                                                        }}
-                                                    >
-                                                        {msg.content}
-                                                    </ReactMarkdown>
-                                                ) : (
-                                                    <span className="flex items-center gap-2 text-text-400">
-                                                        <Loader2 size={14} className="animate-spin" />
-                                                        Sedang berpikir...
-                                                    </span>
-                                                )}
+                                        <div className="flex flex-col max-w-[85%]">
+                                            <div className={`rounded-2xl px-5 py-3.5 text-[14px] leading-relaxed transition-all duration-300 ${msg.role === 'user'
+                                                ? 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white font-medium corner-right shadow-sm'
+                                                : 'bg-surface-50 dark:bg-surface-50 text-text-900 border border-surface-200/50'
+                                                }`}>
+                                                <div className={`text-sm leading-relaxed ${msg.role === 'assistant' ? 'text-text-700 markdown-content' : 'whitespace-pre-wrap'}`}>
+                                                    {msg.content ? (
+                                                        <ReactMarkdown
+                                                            components={{
+                                                                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                                                strong: ({ children }) => <strong className="font-black text-navy-900 dark:text-navy-400">{children}</strong>,
+                                                                ul: ({ children }) => <ul className="list-disc ml-4 mb-2 space-y-1">{children}</ul>,
+                                                                ol: ({ children }) => <ol className="list-decimal ml-4 mb-2 space-y-1">{children}</ol>,
+                                                                li: ({ children }) => <li className="pl-1">{children}</li>,
+                                                                code: ({ children }) => <code className="bg-navy-50 dark:bg-navy-900/50 px-1.5 py-0.5 rounded text-navy-700 dark:text-navy-300 font-mono text-[13px]">{children}</code>,
+                                                            }}
+                                                        >
+                                                            {msg.content}
+                                                        </ReactMarkdown>
+                                                    ) : (
+                                                        <span className="flex items-center gap-2 text-text-400">
+                                                            <Loader2 size={14} className="animate-spin" />
+                                                            Sedang berpikir...
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
+                                            {msg.created_at && (
+                                                <span className={`text-[10px] text-text-400 mt-1.5 px-2 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                                                    {new Date(msg.created_at).toLocaleString('id-ID', {
+                                                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                                                    })}
+                                                </span>
+                                            )}
                                         </div>
                                         {msg.role === 'user' && (
                                             <div className="w-8 h-8 bg-surface-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1 border border-surface-200 shadow-sm overflow-hidden">

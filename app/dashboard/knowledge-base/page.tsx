@@ -10,7 +10,8 @@ import {
     removeSourceFromKBAction,
     getKBChatSessionsAction,
     deleteKnowledgeBaseAction,
-    publishKnowledgeBaseAction
+    publishKnowledgeBaseAction,
+    getKBRecommendationsAction
 } from '@/lib/actions/knowledge-base.actions'
 import {
     Plus, Search, MessageSquare, FileText, Bot, User, Send, Loader2,
@@ -408,9 +409,26 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
     const [sidebarTab, setSidebarTab] = useState<'docs' | 'history'>('docs')
     const [showNewSessionModal, setShowNewSessionModal] = useState(false)
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
+    const [recommendations, setRecommendations] = useState<string[]>([])
+    const [loadingRecs, setLoadingRecs] = useState(false)
     const endRef = useRef<HTMLDivElement>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const abortControllerRef = useRef<AbortController | null>(null)
+
+    const fetchRecs = useCallback(async () => {
+        setLoadingRecs(true)
+        try {
+            const recs = await getKBRecommendationsAction(kb.id)
+            setRecommendations(recs)
+        } catch { /* ignore */ }
+        setLoadingRecs(false)
+    }, [kb.id])
+
+    useEffect(() => {
+        if (messages.length === 0) {
+            fetchRecs()
+        }
+    }, [messages.length, fetchRecs])
 
 
 
@@ -734,10 +752,41 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
                         </div>
                     )}
                     {messages.length === 0 && !isTyping && (
-                        <div className="text-center py-16 text-text-400">
-                            <Sparkles size={48} className="mx-auto mb-4 opacity-20" />
+                        <div className="text-center py-10 max-w-2xl mx-auto px-4">
+                            <div className="w-16 h-16 bg-navy-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-navy-600 shadow-sm border border-navy-100">
+                                <Bot size={32} />
+                            </div>
                             <h3 className="font-bold text-navy-900 text-xl mb-2">Tanya AISA tentang {kb.name}</h3>
-                            <p className="text-sm">Silakan ajukan pertanyaan seputar dokumen yang ada di KB ini.</p>
+                            <p className="text-sm text-text-400 mb-8">Saya telah mempelajari dokumen Anda. Silakan ajukan pertanyaan atau pilih topik di bawah ini:</p>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                                {loadingRecs ? (
+                                    [1, 2, 3, 4].map(i => (
+                                        <div key={i} className="h-16 bg-surface-100 animate-pulse rounded-xl border border-surface-200" />
+                                    ))
+                                ) : (
+                                    (recommendations.length > 0 ? recommendations : [
+                                        "Ringkaskan isi seluruh dokumen ini",
+                                        "Apa poin-poin penting dalam KB ini?",
+                                        "Cari informasi terbaru dari sumber ini",
+                                        "Bagaimana cara mengimplementasikan ini?"
+                                    ]).map((rec, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => {
+                                                setInput(rec)
+                                                setTimeout(() => {
+                                                    document.getElementById('kb-send-btn')?.click()
+                                                }, 100)
+                                            }}
+                                            className="text-left p-4 bg-white border border-surface-200 rounded-xl text-xs font-semibold text-navy-800 hover:border-navy-500 hover:bg-navy-50 transition-all group flex items-start gap-3 shadow-sm"
+                                        >
+                                            <Sparkles size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                                            <span className="line-clamp-2">{rec}</span>
+                                        </button>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     )}
                     {messages.map((msg, i) => (
@@ -780,7 +829,7 @@ function KBChatView({ kb, onBack, onAddDoc, onRemoveDoc, chatSessions, onNewSess
                                 <Square size={16} fill="currentColor" />
                             </button>
                         ) : (
-                            <button onClick={sendMessage} disabled={!input.trim() || isDraft}
+                            <button id="kb-send-btn" onClick={sendMessage} disabled={!input.trim() || isDraft}
                                 className="bg-navy-600 text-white rounded-lg p-2 disabled:bg-surface-200">
                                 <Send size={16} />
                             </button>

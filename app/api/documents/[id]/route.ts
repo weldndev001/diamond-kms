@@ -48,9 +48,14 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
     // Physically delete from local storage
     try {
-        const uploadDir = env.UPLOAD_DIR || './uploads'
+        const IS_VERCEL = process.env.VERCEL === '1' || !!process.env.VERCEL_URL
+        const uploadDir = IS_VERCEL ? '/tmp/uploads' : (env.UPLOAD_DIR || './uploads')
         const safeFilePath = document.file_path.replace(/\.\./g, '')
-        const fullPath = join(process.cwd(), uploadDir, 'documents', safeFilePath)
+        
+        // On Vercel, /tmp is absolute, so we don't join with process.cwd()
+        const fullPath = IS_VERCEL 
+            ? join(uploadDir, 'documents', safeFilePath)
+            : join(process.cwd(), uploadDir, 'documents', safeFilePath)
 
         if (existsSync(fullPath)) {
             await unlink(fullPath)

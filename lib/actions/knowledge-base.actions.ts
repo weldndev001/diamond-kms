@@ -181,6 +181,14 @@ export async function addSourcesToKBAction(
             return { success: false, error: 'Unauthorized' }
         }
 
+        await prisma.knowledgeBase.update({
+            where: { id: kbId },
+            data: { 
+                suggested_questions: null,
+                updated_at: new Date()
+            }
+        });
+
         await prisma.knowledgeBaseSource.createMany({
             data: sources.map((s: any) => ({
                 knowledge_base_id: kbId,
@@ -211,6 +219,14 @@ export async function removeSourceFromKBAction(
         if (!await isSupervisor(kb.group_id || undefined)) {
             return { success: false, error: 'Unauthorized' }
         }
+
+        await prisma.knowledgeBase.update({
+            where: { id: kbId },
+            data: { 
+                suggested_questions: null,
+                updated_at: new Date()
+            }
+        });
 
         await prisma.knowledgeBaseSource.deleteMany({
             where: {
@@ -272,5 +288,79 @@ export async function getKBChatSessionsAction(kbId: string) {
     } catch (err) {
         console.error('Error fetching KB chat sessions', err)
         return []
+    }
+}
+/**
+ * Gets AI-recommended questions based on KB content (with caching)
+ */
+export async function getKBRecommendationsAction(kbId: string) {
+    try {
+        const kb = await prisma.knowledgeBase.findUnique({
+            where: { id: kbId },
+            include: { documents: true }
+        });
+        if (!kb) return [];
+
+        // 1. Check cache first
+        if (kb.suggested_questions && Array.isArray(kb.suggested_questions) && kb.suggested_questions.length > 0) {
+            return kb.suggested_questions as string[];
+        }
+
+        // 2. If no cache, generate with AI
+        const docIds = kb.documents.filter(d => d.source_type === 'document').map(d => d.source_id);
+        const contentIds = kb.documents.filter(d => d.source_type === 'content').map(d => d.source_id);
+        
+        const [docs, contents] = await Promise.all([
+            prisma.document.findMany({
+                where: { id: { in: docIds } },
+                select: { ai_title: true, ai_summary: true, ai_tags: true, file_name: true }
+            }),
+            prisma.content.findMany({
+                where: { id: { in: contentIds } },
+                select: { title: true, category: true }
+            })
+        ]);
+
+        const context = [
+            ...docs.map(d => `${d.ai_title || d.file_name}: ${d.ai_summary || ''} [${d.ai_tags?.join(', ') || ''}]`),
+            ...contents.map(c => `${c.title}: ${c.category}`)
+        ].join('\n').slice(0, 1500);
+
+        if (!context.trim()) {
+            return ["Apa saja dokumen yang ada di sini?", "Bagaimana cara mulai?", "Apa fitur utama sistem ini?"];
+        }
+
+        const { getAIServiceForOrg } = await import('@/lib/ai/get-ai-service');
+        const ai = await getAIServiceForOrg(kb.organization_id);
+        
+        const prompt = `Berdasarkan ringkasan isi Knowledge Base berikut, buatkan 4 contoh pertanyaan singkat, spesifik, dan menarik yang mungkin diajukan oleh pengguna dalam Bahasa Indonesia. Berikan hasilnya dalam format JSON array string saja tanpa markdown. 
+        Jangan gunakan kata "Apakah", buatlah pertanyaan yang langsung to-the-point dan menggugah rasa ingin tahu.
+        ISI KNOWLEDGE BASE:
+        ${context}`;
+
+        const response = await ai.generateCompletion(prompt, { jsonMode: true });
+        let questions: string[] = [];
+        try {
+            const cleanResponse = response.replace(/```json|```/g, '').trim();
+            questions = JSON.parse(cleanResponse);
+        } catch {
+            const match = response.match(/\[.*\]/s);
+            if (match) questions = JSON.parse(match[0]);
+        }
+
+        const finalQuestions = Array.isArray(questions) ? questions.slice(0, 4) : [];
+
+        // 3. Save to cache in background
+        if (finalQuestions.length > 0) {
+            prisma.knowledgeBase.update({
+                where: { id: kbId },
+                data: { suggested_questions: finalQuestions }
+            }).catch(e => console.error('Cache save failed', e));
+        }
+
+        return finalQuestions;
+    } catch (err) {
+        console.error('Error generating recommendations', err);
+        return [];
     }
 }

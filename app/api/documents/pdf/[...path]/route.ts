@@ -34,12 +34,18 @@ export async function GET(
     }
 
     try {
-        const uploadDir = env.UPLOAD_DIR || './uploads'
+        const IS_VERCEL = process.env.VERCEL === '1' || !!process.env.VERCEL_URL
+        const uploadDir = IS_VERCEL ? '/tmp/uploads' : (env.UPLOAD_DIR || './uploads')
         const safeFilePath = filePath.replace(/\.\./g, '')
         const isDev = process.env.NODE_ENV === 'development'
-        const fullPath = join(process.cwd(), uploadDir, 'documents', safeFilePath)
+        
+        // On Vercel, /tmp is absolute, so we don't join with process.cwd()
+        const fullPath = IS_VERCEL 
+            ? join(uploadDir, 'documents', safeFilePath)
+            : join(process.cwd(), uploadDir, 'documents', safeFilePath)
         
         // Log the path being checked for debugging
+        console.log(`[PDF Proxy] Environment: ${IS_VERCEL ? 'Vercel' : 'Local'}`)
         console.log(`[PDF Proxy] Checking path: ${fullPath}`)
 
         if (!existsSync(fullPath)) {
@@ -56,11 +62,12 @@ export async function GET(
                     <p><b>File tidak ditemukan di server.</b></p>
                     <div style="background:#f1f5f9;padding:15px;border-radius:8px;font-size:12px;margin-top:20px;font-family:monospace">
                         <b>Debug Info:</b><br/>
+                        Env: ${IS_VERCEL ? 'Vercel' : 'Local/Dev'}<br/>
                         Path: ${safeFilePath}<br/>
-                        ${isDev ? `Full Path: ${fullPath}<br/>` : ''}
+                        ${(isDev || IS_VERCEL) ? `Full Path: ${fullPath}<br/>` : ''}
                         Directory: ${dirExists ? 'Exists' : 'MISSING'}
                     </div>
-                    <p style="font-size:13px;margin-top:20px">Pastikan file sudah terunggah ke folder <code>uploads/documents/</code> di server lokal Anda.</p>
+                    <p style="font-size:13px;margin-top:20px">Pastikan file sudah terunggah ke folder <code>${IS_VERCEL ? '/tmp/uploads' : 'uploads'}/documents/</code> di server Anda.</p>
                 </body></html>`,
                 {
                     status: 404,

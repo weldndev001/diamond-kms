@@ -244,7 +244,7 @@ async function processContentInBackground(contentId: string, content: any) {
                         console.error(`❌ [PROCESS] DB Insert FAILED for Article chunk ${i}:`, dbErr.message)
                         throw new Error(`Database Error: ${dbErr.message}`)
                     }
-                    processedChunks++
+                    // Removed redundant processedChunks++ to fix 100%+ progress bug
                 })
             )
         )

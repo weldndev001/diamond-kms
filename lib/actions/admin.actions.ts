@@ -127,6 +127,10 @@ export async function updateOrganizationAction(orgId: string, data: {
     slogan?: string
     logoUrl?: string
     systemLanguage?: string
+    description?: string
+    country?: string
+    industry?: string
+    subIndustry?: string
 }) {
     try {
         await prisma.organization.update({
@@ -137,7 +141,11 @@ export async function updateOrganizationAction(orgId: string, data: {
                 app_name: data.appName,
                 slogan: data.slogan,
                 logo_url: data.logoUrl,
-                system_language: data.systemLanguage
+                system_language: data.systemLanguage,
+                description: data.description,
+                country: data.country,
+                industry: data.industry,
+                sub_industry: data.subIndustry
             }
         })
         revalidatePath('/dashboard/hrd/website')

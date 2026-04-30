@@ -189,83 +189,105 @@ export async function ragQuery(
         } else {
             // ── STEP 2 & 3: Vector Retrieval ───────────────────────────
             if (useVector) {
-                const questionEmbedding = await ai.generateEmbedding(question)
-                const vectorStr = JSON.stringify(questionEmbedding)
+                // --- QUERY EXPANSION (Multi-Query) ---
+                let searchQueries = [question];
+                if (question.length > 20) {
+                    try {
+                        const expansion = await ai.generateCompletion(
+                            `Berikan 1 variasi pertanyaan singkat dalam Bahasa Indonesia yang memiliki makna sama dengan: "${question}". Langsung berikan pertanyaannya saja.`,
+                            { maxTokens: 50 }
+                        );
+                        if (expansion && expansion.length > 5) {
+                            searchQueries.push(expansion.trim());
+                        }
+                    } catch (e) {
+                        console.warn('[RAG] Query expansion failed', e);
+                    }
+                }
 
-                const docGroupFilter = scopedToGroup ? `AND d.group_id = '${groupId}'` : ''
-                const contentGroupFilter = scopedToGroup ? `AND (c.group_id = '${groupId}' OR c.group_id IS NULL)` : ''
-            
-                const docKBJoin = knowledgeBaseId ? `JOIN knowledge_base_sources kbs ON kbs.source_id = d.id AND kbs.source_type = 'document' AND kbs.knowledge_base_id = '${knowledgeBaseId}'` : ''
-                const contentKBJoin = knowledgeBaseId ? `JOIN knowledge_base_sources kbs2 ON kbs2.source_id = c.id AND kbs2.source_type = 'content' AND kbs2.knowledge_base_id = '${knowledgeBaseId}'` : ''
+                const allRelevantChunks: any[] = [];
+                for (const q of searchQueries) {
+                    const questionEmbedding = await ai.generateEmbedding(q)
+                    const vectorStr = JSON.stringify(questionEmbedding)
 
-                relevantChunks = await prisma.$queryRawUnsafe<any[]>(
-                    `
-                    WITH doc_chunks AS (
-                        SELECT
-                            dc.id AS chunk_id,
-                            d.id AS document_id,
-                            COALESCE(d.ai_title, d.file_name) AS doc_title,
-                            dc.content,
-                            1 - (dc.embedding <=> $1::vector) AS similarity,
-                            dc.page_number AS page_start,
-                            COALESCE(dc.page_end, dc.page_number) AS page_end,
-                            g.name AS group_name,
-                            'DOCUMENT' AS source_type
-                        FROM document_chunks dc
-                        JOIN documents d ON dc.document_id = d.id
-                        JOIN groups g ON d.group_id = g.id
-                        ${docKBJoin}
-                        WHERE d.organization_id = $2
-                        AND d.is_processed = true
-                        AND dc.embedding IS NOT NULL
-                        ${docGroupFilter}
-                        ORDER BY similarity DESC
-                        LIMIT 15
-                    ),
-                    content_chunks_raw AS (
-                        SELECT
-                            cc.id AS chunk_id,
-                            c.id AS document_id,
-                            c.title AS doc_title,
-                            cc.content,
-                            1 - (cc.embedding <=> $1::vector) AS similarity,
-                            cc.chunk_index AS page_start,
-                            cc.chunk_index AS page_end,
-                            COALESCE(g.name, 'Global') AS group_name,
-                            'ARTICLE' AS source_type
-                        FROM content_chunks cc
-                        JOIN contents c ON cc.content_id = c.id
-                        LEFT JOIN groups g ON c.group_id = g.id
-                        ${contentKBJoin}
-                        WHERE c.organization_id = $2
-                        AND c.status = 'PUBLISHED'
-                        AND c.is_processed = true
-                        AND cc.embedding IS NOT NULL
-                        ${contentGroupFilter}
-                        ORDER BY similarity DESC
-                        LIMIT 15
-                    ),
-                    combined_chunks AS (
+                    const docGroupFilter = scopedToGroup ? `AND d.group_id = '${groupId}'` : ''
+                    const contentGroupFilter = scopedToGroup ? `AND (c.group_id = '${groupId}' OR c.group_id IS NULL)` : ''
+                
+                    const docKBJoin = knowledgeBaseId ? `JOIN knowledge_base_sources kbs ON kbs.source_id = d.id AND kbs.source_type = 'document' AND kbs.knowledge_base_id = '${knowledgeBaseId}'` : ''
+                    const contentKBJoin = knowledgeBaseId ? `JOIN knowledge_base_sources kbs2 ON kbs2.source_id = c.id AND kbs2.source_type = 'content' AND kbs2.knowledge_base_id = '${knowledgeBaseId}'` : ''
+
+                    const chunks = await prisma.$queryRawUnsafe<any[]>(
+                        `
+                        WITH doc_chunks AS (
+                            SELECT
+                                dc.id AS chunk_id,
+                                d.id AS document_id,
+                                COALESCE(d.ai_title, d.file_name) AS doc_title,
+                                dc.content,
+                                1 - (dc.embedding <=> $1::vector) AS similarity,
+                                dc.page_number AS page_start,
+                                COALESCE(dc.page_end, dc.page_number) AS page_end,
+                                g.name AS group_name,
+                                'DOCUMENT' AS source_type
+                            FROM document_chunks dc
+                            JOIN documents d ON dc.document_id = d.id
+                            JOIN groups g ON d.group_id = g.id
+                            ${docKBJoin}
+                            WHERE d.organization_id = $2
+                            AND d.is_processed = true
+                            AND dc.embedding IS NOT NULL
+                            ${docGroupFilter}
+                            ORDER BY similarity DESC
+                            LIMIT 10
+                        ),
+                        content_chunks_raw AS (
+                            SELECT
+                                cc.id AS chunk_id,
+                                c.id AS document_id,
+                                c.title AS doc_title,
+                                cc.content,
+                                1 - (cc.embedding <=> $1::vector) AS similarity,
+                                cc.chunk_index AS page_start,
+                                cc.chunk_index AS page_end,
+                                COALESCE(g.name, 'Global') AS group_name,
+                                'ARTICLE' AS source_type
+                            FROM content_chunks cc
+                            JOIN contents c ON cc.content_id = c.id
+                            LEFT JOIN groups g ON c.group_id = g.id
+                            ${contentKBJoin}
+                            WHERE c.organization_id = $2
+                            AND c.status = 'PUBLISHED'
+                            AND c.is_processed = true
+                            AND cc.embedding IS NOT NULL
+                            ${contentGroupFilter}
+                            ORDER BY similarity DESC
+                            LIMIT 10
+                        )
                         SELECT * FROM doc_chunks
                         UNION ALL
                         SELECT * FROM content_chunks_raw
-                    ),
-                    ranked_chunks AS (
-                        SELECT *,
-                            ROW_NUMBER() OVER(PARTITION BY document_id ORDER BY similarity DESC) as doc_rank
-                        FROM combined_chunks
+                        ORDER BY similarity DESC
+                        LIMIT 12
+                        `,
+                        vectorStr,
+                        orgId
                     )
-                    SELECT * FROM ranked_chunks
-                    WHERE doc_rank <= 2
-                    ORDER BY similarity DESC
-                    LIMIT 8
-                    `,
-                    vectorStr,
-                    orgId
-                )
+                    allRelevantChunks.push(...chunks);
+                }
 
-                const threshold = Number(env.AI_SIMILARITY_THRESHOLD) || 0.45
-                relevantChunks = relevantChunks.filter(c => c.similarity > threshold)
+                // Deduplicate chunks by ID
+                const seenIds = new Set();
+                relevantChunks = allRelevantChunks.filter(c => {
+                    if (seenIds.has(c.chunk_id)) return false;
+                    seenIds.add(c.chunk_id);
+                    return true;
+                });
+
+                // Final sort and limit
+                relevantChunks.sort((a, b) => b.similarity - a.similarity);
+                
+                const threshold = Number(env.AI_SIMILARITY_THRESHOLD) || 0.42 // Slightly lower threshold because we rerank
+                relevantChunks = relevantChunks.filter(c => c.similarity > threshold).slice(0, 12)
             }
 
             // ── STEP 2.5: Vision Embedding Search (Cross-Modal) ──────────
@@ -447,8 +469,12 @@ export async function ragQuery(
             }
 
             // ── STEP 3.7: Reranking (Feature Toggle) ────────────────────
-            if (useRerank && relevantChunks.length > 0) {
+            // Default to reranking if we have enough chunks to make it worthwhile
+            const shouldRerank = useRerank || (relevantChunks.length > 3);
+            if (shouldRerank && relevantChunks.length > 0) {
                 relevantChunks = await rerankResults(relevantChunks, question, ai);
+                // Keep top 8 after reranking
+                relevantChunks = relevantChunks.slice(0, 8);
             }
         }
     } catch (error) {
@@ -505,7 +531,7 @@ export async function ragQuery(
     let systemPrompt = ''
     const summaryHeader = sessionSummary ? `### RINGKASAN DISKUSI SEBELUMNYA\n${sessionSummary}\n\n` : ''
 
-    const focusInstruction = "\n\nINSTRUKSI PENTING: Fokus HANYA pada pertanyaan terbaru user. JANGAN berikan informasi tambahan dari dokumen atau riwayat chat yang tidak relevan dengan pertanyaan spesifik tersebut."
+    const focusInstruction = "\n\nINSTRUKSI PENTING: Fokus pada pertanyaan terbaru user dengan tetap memperhatikan konteks spesifik dari riwayat chat (jika ada skenario/kasus yang sedang dibahas). Berikan jawaban yang TEPAT SASARAN pada kasus tersebut dan JANGAN memberikan rangkuman dokumen/aturan yang tidak relevan dengan detail kejadian spesifik yang ditanyakan."
 
     if (knowledgeBaseId) {
         systemPrompt = `${summaryHeader}${aiPrompts.aisa.strict_mode}\n${context || 'Daftar dokumen kosong.'}${graphContext}${focusInstruction}`

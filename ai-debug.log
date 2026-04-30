@@ -1,0 +1,6 @@
+[2026-04-30T07:27:23.769Z] [PROCESS-BG] STARTED for 7d3fb10f-8512-4660-8040-9d6aa3e807ee
+[2026-04-30T07:27:24.753Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-30T07:27:24.974Z] Got AI service: ollama-self-hosted
+[2026-04-30T07:46:50.511Z] [PROCESS-BG] STARTED for f73dede6-82f1-4323-9878-4bc4d31b3f65
+[2026-04-30T07:47:48.191Z] Calling getAIServiceForOrg for d6e0b650-5dd7-42eb-bddf-b8c624f7ede4
+[2026-04-30T07:47:48.237Z] Got AI service: ollama-self-hosted

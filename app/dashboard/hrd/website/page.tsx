@@ -17,6 +17,8 @@ import {
 } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import ImageCropper from '@/components/shared/ImageCropper'
+import SearchableSelect from '@/components/shared/SearchableSelect'
+import { COUNTRIES } from '@/lib/constants/countries'
 
 export default function WebsiteSettingsPage() {
     const { organization, refresh } = useCurrentUser()
@@ -36,6 +38,12 @@ export default function WebsiteSettingsPage() {
     const [logo, setLogo] = useState('Logo-Movio-250x70.png')
     const [crossGroup, setCrossGroup] = useState(false)
     const [systemLanguage, setSystemLanguage] = useState('en-US')
+    
+    // New Profile Fields
+    const [description, setDescription] = useState('')
+    const [country, setCountry] = useState('')
+    const [industry, setIndustry] = useState('')
+    const [subIndustry, setSubIndustry] = useState('')
     
     const [isSaving, setIsSaving] = useState(false)
     const [success, setSuccess] = useState('')
@@ -101,6 +109,10 @@ export default function WebsiteSettingsPage() {
             setLogo(orgRes.data.logo_url || 'Logo-Movio-250x70.png')
             setSystemLanguage(orgRes.data.system_language || 'en-US')
             setCrossGroup(orgRes.data.cross_group_query_enabled ?? false)
+            setDescription(orgRes.data.description || '')
+            setCountry(orgRes.data.country || '')
+            setIndustry(orgRes.data.industry || '')
+            setSubIndustry(orgRes.data.sub_industry || '')
         }
         setLoading(false)
     }
@@ -139,7 +151,11 @@ export default function WebsiteSettingsPage() {
                 slogan: slogan,
                 logoUrl: logo,
                 systemLanguage: systemLanguage,
-                crossGroupQueryEnabled: crossGroup
+                crossGroupQueryEnabled: crossGroup,
+                description,
+                country,
+                industry,
+                subIndustry
             })
 
             if (res.success) {
@@ -234,6 +250,55 @@ export default function WebsiteSettingsPage() {
                                                 className="input-field"
                                                 placeholder="Brief description of the application slogan..."
                                             />
+                                        </div>
+
+                                        {/* Additional Organization Profile */}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-text-700">{t('settings.description', 'Organization Description')}</label>
+                                            <textarea
+                                                value={description}
+                                                onChange={(e) => setDescription(e.target.value)}
+                                                className="input-field min-h-[80px] resize-y"
+                                                placeholder="Tell us about your organization..."
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-text-700">{t('settings.country', 'Country')}</label>
+                                                <SearchableSelect
+                                                    options={COUNTRIES}
+                                                    value={country}
+                                                    onChange={(val) => setCountry(val)}
+                                                    placeholder="Select Country"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-text-700">{t('settings.industry', 'Industry')}</label>
+                                                <select
+                                                    value={industry}
+                                                    onChange={(e) => setIndustry(e.target.value)}
+                                                    className="input-field cursor-pointer appearance-none bg-white"
+                                                >
+                                                    <option value="" disabled>Select Industry</option>
+                                                    <option value="Finance">Finance</option>
+                                                    <option value="Technology">Technology</option>
+                                                    <option value="Healthcare">Healthcare</option>
+                                                    <option value="Education">Education</option>
+                                                    <option value="Retail">Retail</option>
+                                                    <option value="Manufacturing">Manufacturing</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-text-700">{t('settings.sub_industry', 'Sub-Industry')}</label>
+                                                <input
+                                                    type="text"
+                                                    value={subIndustry}
+                                                    onChange={(e) => setSubIndustry(e.target.value)}
+                                                    className="input-field"
+                                                    placeholder="Example: Banking"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 

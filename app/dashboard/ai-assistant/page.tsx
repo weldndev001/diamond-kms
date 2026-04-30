@@ -6,7 +6,7 @@ import { useTranslation } from '@/hooks/useTranslation'
 import {
     MessageSquare, Send, FileText, Loader2, Bot, User,
     Sparkles, Plus, Trash2, FileBarChart, History, PanelLeftOpen, PanelLeftClose, LayoutGrid, List,
-    Settings, Database, Network, ArrowUpDown, Square
+    Settings, Database, Network, ArrowUpDown, Square, Edit2, Check, X
 } from 'lucide-react'
 import { getKnowledgeBasesAction } from '@/lib/actions/knowledge-base.actions'
 
@@ -14,6 +14,7 @@ interface Message {
     role: 'user' | 'assistant'
     content: string
     citations?: Citation[]
+    created_at?: string
 }
 
 interface Citation {
@@ -57,6 +58,8 @@ export default function AIAssistantPage() {
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
     const [sessionTitle, setSessionTitle] = useState(t('ai_assistant.new_chat'))
     const [loadingSessions, setLoadingSessions] = useState(false)
+    const [editingSessionId, setEditingSessionId] = useState<string | null>(null)
+    const [editingTitle, setEditingTitle] = useState('')
 
     // Chat state
     const [messages, setMessages] = useState<Message[]>([])
@@ -227,7 +230,8 @@ export default function AIAssistantPage() {
                     data.session.messages.map((m: any) => ({
                         role: m.role as 'user' | 'assistant',
                         content: m.content,
-                        citations: m.citations ? (typeof m.citations === 'string' ? JSON.parse(m.citations) : m.citations) : undefined
+                        citations: m.citations ? (typeof m.citations === 'string' ? JSON.parse(m.citations) : m.citations) : undefined,
+                        created_at: m.created_at
                     }))
                 )
                 setCitations([])
@@ -244,6 +248,27 @@ export default function AIAssistantPage() {
                 setMessages([])
                 setSessionTitle(t('ai_assistant.new_chat'))
                 setSessionSummary(null)
+            }
+        } catch { /* ignore */ }
+    }
+
+    const updateSessionTitle = async (sessionId: string, newTitle: string) => {
+        if (!newTitle.trim()) {
+            setEditingSessionId(null)
+            return
+        }
+        try {
+            const res = await fetch(`/api/chat/sessions/${sessionId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: newTitle }),
+            })
+            if (res.ok) {
+                setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, title: newTitle } : s))
+                if (activeSessionId === sessionId) {
+                    setSessionTitle(newTitle)
+                }
+                setEditingSessionId(null)
             }
         } catch { /* ignore */ }
     }
@@ -295,7 +320,7 @@ export default function AIAssistantPage() {
             }
         }
 
-        const userMessage: Message = { role: 'user', content: question }
+        const userMessage: Message = { role: 'user', content: question, created_at: new Date().toISOString() }
         setMessages((prev) => [...prev, userMessage])
         setInput('')
         if (textareaRef.current) textareaRef.current.style.height = 'auto'
@@ -367,11 +392,15 @@ export default function AIAssistantPage() {
                             } else if (currentEvent === 'done') {
                                 setMessages((prev) => [
                                     ...prev,
-                                    { role: 'assistant', content: fullResponse, citations: receivedCitations.length > 0 ? receivedCitations : undefined },
+                                    { role: 'assistant', content: fullResponse, citations: receivedCitations.length > 0 ? receivedCitations : undefined, created_at: new Date().toISOString() },
                                 ])
                                 setStreamingText('')
                             } else if (currentEvent === 'title_updated' && json.title) {
                                 setSessionTitle(json.title)
+                                // Update sidebar list immediately
+                                setSessions(prev => prev.map(s => 
+                                    s.id === currentSessionId ? { ...s, title: json.title } : s
+                                ))
                             } else if (currentEvent === 'error') {
                                 switchError = new Error(json.message || 'AI error')
                             }
@@ -455,21 +484,74 @@ export default function AIAssistantPage() {
                                     ? 'bg-white/10 text-white ring-1 ring-white/20'
                                     : 'hover:bg-white/5 text-slate-400 hover:text-white'
                                     }`}
-                                onClick={() => loadSession(s.id)}
+                                onClick={() => {
+                                    if (editingSessionId !== s.id) loadSession(s.id)
+                                }}
                             >
-                                <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
                                     <MessageSquare size={16} className={activeSessionId === s.id ? 'text-navy-600' : 'text-text-400'} />
-                                    <span className="text-sm font-semibold truncate leading-none translate-y-[-1px]">{s.title || t('ai_assistant.untitled_chat')}</span>
+                                    {editingSessionId === s.id ? (
+                                        <input
+                                            autoFocus
+                                            value={editingTitle}
+                                            onChange={(e) => setEditingTitle(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') updateSessionTitle(s.id, editingTitle)
+                                                if (e.key === 'Escape') setEditingSessionId(null)
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="bg-slate-800 text-white text-sm font-semibold rounded px-2 py-0.5 outline-none ring-1 ring-navy-500 w-full"
+                                        />
+                                    ) : (
+                                        <span className="text-sm font-semibold truncate leading-none translate-y-[-1px]">{s.title || t('ai_assistant.untitled_chat')}</span>
+                                    )}
                                 </div>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation()
-                                        deleteSession(s.id)
-                                    }}
-                                    className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-danger-bg hover:text-danger rounded-lg transition-all"
-                                >
-                                    <Trash2 size={14} />
-                                </button>
+                                <div className="flex items-center gap-1 shrink-0 ml-2">
+                                    {editingSessionId === s.id ? (
+                                        <>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    updateSessionTitle(s.id, editingTitle)
+                                                }}
+                                                className="p-1.5 text-green-400 hover:bg-green-400/10 rounded-lg transition-all"
+                                            >
+                                                <Check size={14} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setEditingSessionId(null)
+                                                }}
+                                                className="p-1.5 text-slate-400 hover:bg-white/10 rounded-lg transition-all"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setEditingSessionId(s.id)
+                                                    setEditingTitle(s.title)
+                                                }}
+                                                className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-white/10 text-slate-400 hover:text-white rounded-lg transition-all"
+                                            >
+                                                <Edit2 size={14} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    deleteSession(s.id)
+                                                }}
+                                                className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-danger-bg hover:text-danger rounded-lg transition-all"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         ))
                     )}
@@ -669,14 +751,23 @@ export default function AIAssistantPage() {
                                     <Bot size={16} className="text-navy-600" />
                                 </div>
                             )}
-                            <div
-                                className={`rounded-2xl px-6 py-4 max-w-[85%] md:max-w-[80%] text-[15px] leading-relaxed transition-all duration-300 ${msg.role === 'user'
-                                    ? 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white font-medium corner-right shadow-sm'
-                                    : 'bg-surface-50 dark:bg-surface-50 text-text-900 border border-surface-200/50'
-                                    }`}
-                            >
-                                <p className="whitespace-pre-wrap">{msg.content}</p>
-                                {msg.role === 'assistant' && renderCitations(msg.citations || [])}
+                            <div className="flex flex-col max-w-[85%] md:max-w-[80%]">
+                                <div
+                                    className={`rounded-2xl px-6 py-4 text-[15px] leading-relaxed transition-all duration-300 ${msg.role === 'user'
+                                        ? 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white font-medium corner-right shadow-sm'
+                                        : 'bg-surface-50 dark:bg-surface-50 text-text-900 border border-surface-200/50'
+                                        }`}
+                                >
+                                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                                    {msg.role === 'assistant' && renderCitations(msg.citations || [])}
+                                </div>
+                                {msg.created_at && (
+                                    <span className={`text-[10px] text-text-400 mt-1.5 px-2 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                                        {new Date(msg.created_at).toLocaleString('id-ID', {
+                                            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                                        })}
+                                    </span>
+                                )}
                             </div>
                             {msg.role === 'user' && (
                                 <div className="w-10 h-10 bg-surface-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1 border border-surface-200 shadow-sm transition-transform active:scale-90 overflow-hidden">

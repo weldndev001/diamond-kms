@@ -4,10 +4,13 @@ import { translations } from '@/lib/i18n/translations'
 export const useTranslation = () => {
     const { language } = useLanguageStore()
     
-    const t = (key: string, variables?: Record<string, string>) => {
+    const t = (key: string, options?: Record<string, string> | string) => {
         const keys = key.split('.')
         let result: any = translations[language]
         
+        const variables = typeof options === 'object' ? options : undefined;
+        const defaultValue = typeof options === 'string' ? options : undefined;
+
         for (const k of keys) {
             if (result && result[k]) {
                 result = result[k]
@@ -18,7 +21,7 @@ export const useTranslation = () => {
                     if (fallback && fallback[fk]) {
                         fallback = fallback[fk]
                     } else {
-                        return key // Return the key itself if not found in fallback
+                        return defaultValue || key // Return the default value if provided, or the key itself
                     }
                 }
                 result = fallback

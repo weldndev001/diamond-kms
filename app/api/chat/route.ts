@@ -154,14 +154,16 @@ export async function POST(req: NextRequest) {
                         // No citations for greetings
                         send('done', { done: true })
                     } else {
-                        // ── Fetch session summary if available ──
+                        // ── Fetch session summary and title if available ──
                         let sessionSummary: string | undefined
+                        let currentTitle: string | undefined
                         if (sessionId) {
                             const chatSession = await prisma.chatSession.findUnique({
                                 where: { id: sessionId },
-                                select: { summary: true }
+                                select: { summary: true, title: true }
                             })
                             sessionSummary = chatSession?.summary || undefined
+                            currentTitle = chatSession?.title || undefined
                         }
 
                         // ── Normal RAG query ──────────────────────────────
@@ -195,20 +197,27 @@ export async function POST(req: NextRequest) {
                                     where: { session_id: sessionId },
                                 })
 
-                                // Auto-generate title if this is the first exchange
-                                if (msgCount === 0) {
+                                // Auto-generate title if this is the first exchange OR title is still default
+                                const isDefaultTitle = !currentTitle || currentTitle === 'New Chat' || currentTitle === 'Untitled Chat'
+                                if (msgCount === 0 || isDefaultTitle) {
                                     try {
                                         const { getAIServiceForOrg } = await import('@/lib/ai/get-ai-service')
                                         const ai = await getAIServiceForOrg(orgId)
-                                        const title = await ai.generateCompletion(
-                                            `Buatkan judul singkat (maksimal 6 kata, tanpa tanda kutip) untuk percakapan yang dimulai dengan pertanyaan: "${question.slice(0, 200)}". JANGAN GUNAKAN FORMAT MARKDOWN ATAU BINTANG.`,
-                                            { maxTokens: 30 }
-                                        )
-                                        await prisma.chatSession.update({
-                                            where: { id: sessionId },
-                                            data: { title: title.trim().replace(/^["']|["']$/g, '').slice(0, 80) },
-                                        })
-                                        send('title_updated', { title: title.trim() })
+                                        const titlePrompt = `Buatkan judul sangat singkat (maksimal 5-6 kata) dalam Bahasa Indonesia untuk percakapan yang dimulai dengan pertanyaan: "${question.slice(0, 300)}". JANGAN gunakan tanda kutip, JANGAN gunakan format markdown atau bintang. Langsung berikan judulnya saja.`
+                                        
+                                        const title = await ai.generateCompletion(titlePrompt, { maxTokens: 40 })
+                                        const cleanTitle = title.trim()
+                                            .replace(/^["']|["']$/g, '')
+                                            .replace(/\*/g, '')
+                                            .slice(0, 80)
+
+                                        if (cleanTitle && cleanTitle.length > 2) {
+                                            await prisma.chatSession.update({
+                                                where: { id: sessionId },
+                                                data: { title: cleanTitle },
+                                            })
+                                            send('title_updated', { title: cleanTitle })
+                                        }
                                     } catch (titleErr) {
                                         logger.warn('Failed to generate chat title', titleErr)
                                     }

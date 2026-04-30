@@ -62,12 +62,14 @@ export async function POST(req: NextRequest) {
         return ApiResponse.notFound('Document')
     }
 
-    // Run background processing without awaiting
-    processDocumentInBackground(documentId, document).catch(err => {
+    // Run background processing and await it to prevent Vercel Serverless early termination
+    try {
+        await processDocumentInBackground(documentId, document)
+    } catch (err) {
         logger.error(`Critical failure in background processing for ${documentId}:`, err)
-    })
+    }
 
-    return NextResponse.json({ success: true, message: 'Processing started in background' })
+    return NextResponse.json({ success: true, message: 'Processing completed or failed' })
 }
 
 async function processDocumentInBackground(documentId: string, document: any) {
@@ -386,7 +388,7 @@ async function processDocumentInBackground(documentId: string, document: any) {
                         console.error(`❌ [PROCESS] DB Insert FAILED for chunk ${i}:`, dbErr.message)
                         throw new Error(`Database Error: ${dbErr.message}`)
                     }
-                    processedChunks++
+                    // Removed redundant processedChunks++ to fix 100%+ progress bug
                 })
             )
         )

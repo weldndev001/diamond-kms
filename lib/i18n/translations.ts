@@ -313,6 +313,10 @@ export const translations = {
             settings_success: 'Settings updated successfully',
             save_failed: 'Failed to update settings',
             loading: 'Loading settings...',
+            description: 'Organization Description',
+            country: 'Country',
+            industry: 'Industry',
+            sub_industry: 'Sub-Industry',
         },
         maintenance: {
             title: 'System Maintenance',
@@ -864,6 +868,10 @@ export const translations = {
             settings_success: 'Pengaturan berhasil diperbarui',
             save_failed: 'Gagal memperbarui pengaturan',
             loading: 'Memuat pengaturan...',
+            description: 'Deskripsi Organisasi',
+            country: 'Negara',
+            industry: 'Industri',
+            sub_industry: 'Sub-Industri',
         },
         maintenance: {
             title: 'Pemeliharaan Sistem',

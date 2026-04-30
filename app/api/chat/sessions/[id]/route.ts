@@ -44,6 +44,36 @@ export async function DELETE(
     if (!session) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     await prisma.chatSession.delete({ where: { id } })
-
     return NextResponse.json({ success: true })
+}
+
+export async function PATCH(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const sessionAuth = await getServerSession(authOptions)
+    if (!sessionAuth?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const userId = (sessionAuth.user as any).id
+    const { id } = await params
+
+    try {
+        const body = await req.json()
+        const { title } = body
+
+        // Ensure ownership
+        const session = await prisma.chatSession.findFirst({
+            where: { id, user_id: userId },
+        })
+        if (!session) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+        const updated = await prisma.chatSession.update({
+            where: { id },
+            data: { title: title.slice(0, 80) },
+        })
+
+        return NextResponse.json({ session: updated })
+    } catch (err) {
+        return NextResponse.json({ error: 'Failed to update session' }, { status: 500 })
+    }
 }

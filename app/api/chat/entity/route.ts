@@ -35,7 +35,8 @@ export async function GET(req: NextRequest) {
 
         const formattedMessages = session.messages.map(msg => ({
             role: msg.role,
-            content: msg.content
+            content: msg.content,
+            created_at: msg.created_at
         }))
 
         return NextResponse.json({
@@ -104,10 +105,11 @@ export async function POST(req: NextRequest) {
 
         if (messages.length > 0) {
             await prisma.chatMessage.createMany({
-                data: messages.map(msg => ({
+                data: messages.map((msg: any) => ({
                     session_id: session!.id,
                     role: msg.role,
-                    content: msg.content
+                    content: msg.content,
+                    created_at: msg.created_at ? new Date(msg.created_at) : undefined
                 }))
             })
         }
