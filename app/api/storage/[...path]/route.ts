@@ -3,6 +3,7 @@ import { env } from '@/lib/env'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import mime from 'mime'
+import prisma from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,8 +46,6 @@ export async function GET(
     }
 
     try {
-        import prisma from '@/lib/prisma'
-        
         console.log(`[Storage API] Fetching from Database: ${filePath}`)
 
         const storageFile = await prisma.storageFile.findUnique({

@@ -24,7 +24,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     }
 
     try {
-        import prisma from '@/lib/prisma'
         const safeFilePath = document.file_path.replace(/\.\./g, '')
         const dbPath = `documents/${safeFilePath}`
         

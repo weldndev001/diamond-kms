@@ -3,10 +3,12 @@ import { env } from '@/lib/env'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
+import prisma from '@/lib/prisma'
+
 export const dynamic = 'force-dynamic'
 
 export async function GET(
-    req: NextRequest,
+    _request: NextRequest,
     { params }: { params: Promise<{ path: string[] }> }
 ) {
     const session = await getServerSession(authOptions)
@@ -30,8 +32,7 @@ export async function GET(
         return NextResponse.json({ error: 'Missing file path' }, { status: 400 })
     }
 
-        const IS_VERCEL = process.env.VERCEL === '1' || !!process.env.VERCEL_URL
-        import prisma from '@/lib/prisma'
+        const IS_VERCEL = process.env.Vercel === '1' || !!process.env.VERCEL_URL
         const safeFilePath = filePath.replace(/\.\./g, '')
         const dbPath = `documents/${safeFilePath}`
         
