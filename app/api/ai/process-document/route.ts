@@ -125,7 +125,7 @@ async function processDocumentInBackground(documentId: string, document: any) {
                 throw new Error('Database storage file not found')
             }
 
-            fileBuffer = storageFile.content
+            fileBuffer = Buffer.from(storageFile.content)
             console.log(`✅ [PROCESS] Fetched from Database: ${dbPath} (${fileBuffer.length} bytes)`)
         } catch (storageErr: any) {
             console.error(`❌ [PROCESS] DB Storage read FAILED:`, storageErr?.message)
