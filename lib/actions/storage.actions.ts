@@ -1,12 +1,9 @@
 'use server'
 
-import { env } from '@/lib/env'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import prisma from '@/lib/prisma'
 
 /**
- * Uploads a file to the local filesystem.
+ * Uploads a file to the database storage.
  * This is a self-hosted replacement for external storage.
  * 
  * IMPORTANT: Returns a RELATIVE publicUrl (e.g. /api/storage/faqs/image.png)
@@ -28,25 +25,27 @@ export async function uploadFileAction(formData: FormData) {
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
         
-        // Ensure upload directory exists
-        const IS_VERCEL = process.env.VERCEL === '1' || !!process.env.VERCEL_URL
-        const uploadDir = IS_VERCEL ? '/tmp/uploads' : (env.UPLOAD_DIR || './uploads')
-        
         // Ensure path uses forward slashes and doesn't escape
         const safePath = path.replace(/\\/g, '/').replace(/\.\./g, '')
-        const fullPath = join(uploadDir, bucket, safePath)
-        const dirPath = join(fullPath, '..')
+        const storagePath = `${bucket}/${safePath}`
 
-        console.log(`[Storage] Environment: ${IS_VERCEL ? 'Vercel' : 'Local'}`)
-        console.log(`[Storage] Target full path: ${fullPath}`)
+        console.log(`[Storage] Saving to Database: ${storagePath}`)
 
-        if (!existsSync(dirPath)) {
-            console.log(`[Storage] Creating directory: ${dirPath}`)
-            await mkdir(dirPath, { recursive: true })
-        }
+        await prisma.storageFile.upsert({
+            where: { path: storagePath },
+            update: {
+                content: buffer,
+                mime_type: file.type || 'application/octet-stream',
+                created_at: new Date()
+            },
+            create: {
+                path: storagePath,
+                content: buffer,
+                mime_type: file.type || 'application/octet-stream'
+            }
+        })
 
-        await writeFile(fullPath, buffer)
-        console.log(`[Storage] Successfully wrote file to disk`)
+        console.log(`[Storage] Successfully saved to Database`)
 
         // ALWAYS use relative URL — works on any domain
         const publicUrl = `/api/storage/${bucket}/${path}`

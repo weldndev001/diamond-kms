@@ -11,7 +11,6 @@ function getEnv(key: string, required = false): string {
 }
 
 export const env = {
-    // Storage (Local Filesystem)
     UPLOAD_DIR: getEnv('UPLOAD_DIR') || './uploads',
 
     // Database

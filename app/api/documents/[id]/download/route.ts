@@ -3,9 +3,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import { env } from '@/lib/env'
-import { join } from 'path'
-import { existsSync } from 'fs'
-import { readFile } from 'fs/promises'
 import mime from 'mime'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -27,21 +24,22 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     }
 
     try {
-        const IS_VERCEL = process.env.VERCEL === '1' || !!process.env.VERCEL_URL
-        const uploadDir = IS_VERCEL ? '/tmp/uploads' : (env.UPLOAD_DIR || './uploads')
+        import prisma from '@/lib/prisma'
         const safeFilePath = document.file_path.replace(/\.\./g, '')
+        const dbPath = `documents/${safeFilePath}`
         
-        // On Vercel, /tmp is absolute, so we don't join with process.cwd()
-        const fullPath = IS_VERCEL 
-            ? join(uploadDir, 'documents', safeFilePath)
-            : join(process.cwd(), uploadDir, 'documents', safeFilePath)
+        console.log(`[Download] Fetching from Database: ${dbPath}`)
 
-        if (!existsSync(fullPath)) {
-            return NextResponse.json({ success: false, error: 'File not found on server' }, { status: 404 })
+        const storageFile = await prisma.storageFile.findUnique({
+            where: { path: dbPath }
+        })
+
+        if (!storageFile) {
+            return NextResponse.json({ success: false, error: 'File not found in database' }, { status: 404 })
         }
 
-        const buffer = await readFile(fullPath)
-        const mimeType = mime.getType(fullPath) || 'application/octet-stream'
+        const buffer = storageFile.content
+        const mimeType = storageFile.mime_type || mime.getType(dbPath) || 'application/octet-stream'
 
         return new NextResponse(buffer, {
             headers: {

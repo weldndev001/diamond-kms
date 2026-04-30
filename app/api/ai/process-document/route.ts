@@ -11,9 +11,6 @@ import { getAIServiceForOrg } from '@/lib/ai/get-ai-service'
 import { extractPDFText, extractPlainText, extractPDFImages } from '@/lib/ai/pdf-extractor'
 import { chunkDocument } from '@/lib/ai/chunker'
 import { env } from '@/lib/env'
-import { join } from 'path'
-import { existsSync } from 'fs'
-import { readFile } from 'fs/promises'
 
 export const maxDuration = 300 // Allow up to 5 minutes for large videos/PDFs
 
@@ -114,22 +111,25 @@ async function processDocumentInBackground(documentId: string, document: any) {
         let extractedText = ''
 
         try {
-            const IS_VERCEL = process.env.VERCEL === '1' || !!process.env.VERCEL_URL
-            const uploadDir = IS_VERCEL ? '/tmp/uploads' : (env.UPLOAD_DIR || './uploads')
-            
             const safeFilePath = document.file_path.replace(/\\/g, '/').replace(/\.\./g, '')
-            const fullPath = join(uploadDir, 'documents', safeFilePath)
+            const dbPath = `documents/${safeFilePath}`
+            
+            console.log(`[PROCESS] Fetching from Database: ${dbPath}`)
 
-            if (existsSync(fullPath)) {
-                fileBuffer = await readFile(fullPath)
-                console.log(`✅ [PROCESS] Read file locally: ${fullPath} (${fileBuffer.length} bytes)`)
-            } else {
-                console.log(`⚠️ [PROCESS] File not found locally: ${fullPath}`)
-                throw new Error('Local file not found')
+            const storageFile = await prisma.storageFile.findUnique({
+                where: { path: dbPath }
+            })
+
+            if (!storageFile) {
+                console.error(`❌ [PROCESS] DB Storage file not found:`, dbPath)
+                throw new Error('Database storage file not found')
             }
+
+            fileBuffer = storageFile.content
+            console.log(`✅ [PROCESS] Fetched from Database: ${dbPath} (${fileBuffer.length} bytes)`)
         } catch (storageErr: any) {
-            console.error(`❌ [PROCESS] Local file read FAILED:`, storageErr?.message)
-            logger.warn('Local file read failed', storageErr)
+            console.error(`❌ [PROCESS] DB Storage read FAILED:`, storageErr?.message)
+            logger.warn('DB Storage read failed', storageErr)
         }
 
         // STEP 2: Extract text based on file type

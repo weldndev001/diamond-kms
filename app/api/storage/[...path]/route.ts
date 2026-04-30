@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { env } from '@/lib/env'
-import { join } from 'path'
-import { existsSync } from 'fs'
-import { readFile } from 'fs/promises'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import mime from 'mime'
@@ -48,17 +45,20 @@ export async function GET(
     }
 
     try {
-        const IS_VERCEL = process.env.VERCEL === '1' || !!process.env.VERCEL_URL
-        const uploadDir = IS_VERCEL ? '/tmp/uploads' : (env.UPLOAD_DIR || './uploads')
+        import prisma from '@/lib/prisma'
         
-        const fullPath = join(uploadDir, filePath)
+        console.log(`[Storage API] Fetching from Database: ${filePath}`)
 
-        if (!existsSync(fullPath)) {
-            console.warn(`[Storage API] File not found on disk: ${fullPath}`)
+        const storageFile = await prisma.storageFile.findUnique({
+            where: { path: filePath }
+        })
+
+        if (!storageFile) {
+            console.warn(`[Storage API] File not found in Database: ${filePath}`)
             return new NextResponse(
                 `<html><body style="margin:40px;font-family:sans-serif;color:#666">
                     <h3>⚠️ Gagal memuat file</h3>
-                    <p>File tidak ditemukan di storage: ${filePath}</p>
+                    <p>File tidak ditemukan di database storage: ${filePath}</p>
                 </body></html>`,
                 {
                     status: 404,
@@ -67,8 +67,8 @@ export async function GET(
             )
         }
 
-        const buffer = await readFile(fullPath)
-        const mimeType = mime.getType(fullPath) || 'application/octet-stream'
+        const buffer = storageFile.content
+        const mimeType = storageFile.mime_type || mime.getType(filePath) || 'application/octet-stream'
 
         return new NextResponse(buffer, {
             headers: {

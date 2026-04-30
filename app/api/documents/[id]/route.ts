@@ -3,9 +3,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import { env } from '@/lib/env'
-import { unlink } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const session = await getServerSession(authOptions)
@@ -46,22 +43,16 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const document = await prisma.document.findUnique({ where: { id } })
     if (!document) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 })
 
-    // Physically delete from local storage
+    // Physically delete from database storage
     try {
-        const IS_VERCEL = process.env.VERCEL === '1' || !!process.env.VERCEL_URL
-        const uploadDir = IS_VERCEL ? '/tmp/uploads' : (env.UPLOAD_DIR || './uploads')
         const safeFilePath = document.file_path.replace(/\.\./g, '')
+        const dbPath = `documents/${safeFilePath}`
         
-        // On Vercel, /tmp is absolute, so we don't join with process.cwd()
-        const fullPath = IS_VERCEL 
-            ? join(uploadDir, 'documents', safeFilePath)
-            : join(process.cwd(), uploadDir, 'documents', safeFilePath)
-
-        if (existsSync(fullPath)) {
-            await unlink(fullPath)
-        }
+        await prisma.storageFile.delete({
+            where: { path: dbPath }
+        }).catch(() => null) // Ignore if already deleted
     } catch (err) {
-        console.error('Failed to delete file from local storage:', err)
+        console.error('Failed to delete file from database storage:', err)
     }
 
     await prisma.document.delete({ where: { id } })

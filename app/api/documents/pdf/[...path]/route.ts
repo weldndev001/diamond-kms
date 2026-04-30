@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { env } from '@/lib/env'
-import { join } from 'path'
-import { existsSync } from 'fs'
-import { readFile } from 'fs/promises'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -33,41 +30,28 @@ export async function GET(
         return NextResponse.json({ error: 'Missing file path' }, { status: 400 })
     }
 
-    try {
         const IS_VERCEL = process.env.VERCEL === '1' || !!process.env.VERCEL_URL
-        const uploadDir = IS_VERCEL ? '/tmp/uploads' : (env.UPLOAD_DIR || './uploads')
+        import prisma from '@/lib/prisma'
         const safeFilePath = filePath.replace(/\.\./g, '')
-        const isDev = process.env.NODE_ENV === 'development'
+        const dbPath = `documents/${safeFilePath}`
         
-        // On Vercel, /tmp is absolute, so we don't join with process.cwd()
-        const fullPath = IS_VERCEL 
-            ? join(uploadDir, 'documents', safeFilePath)
-            : join(process.cwd(), uploadDir, 'documents', safeFilePath)
-        
-        // Log the path being checked for debugging
-        console.log(`[PDF Proxy] Environment: ${IS_VERCEL ? 'Vercel' : 'Local'}`)
-        console.log(`[PDF Proxy] Checking path: ${fullPath}`)
+        console.log(`[PDF Proxy] Fetching from Database: ${dbPath}`)
 
-        if (!existsSync(fullPath)) {
-            console.error('[PDF Proxy] File NOT found at:', fullPath)
-            
-            // Check if directory exists at least
-            const dirPath = join(fullPath, '..')
-            const dirExists = existsSync(dirPath)
-            console.log(`[PDF Proxy] Parent directory exists: ${dirExists} (${dirPath})`)
+        const storageFile = await prisma.storageFile.findUnique({
+            where: { path: dbPath }
+        })
 
+        if (!storageFile) {
+            console.error('[PDF Proxy] File NOT found in Database:', dbPath)
             return new NextResponse(
                 `<html><body style="margin:40px;font-family:sans-serif;color:#666;line-height:1.6">
-                    <h3 style="color:#e11d48">⚠️ Gagal memuat PDF</h3>
-                    <p><b>File tidak ditemukan di server.</b></p>
+                    <h3 style="color:#e11d48">⚠️ Gagal memuat Dokumen</h3>
+                    <p><b>File tidak ditemukan di database.</b></p>
                     <div style="background:#f1f5f9;padding:15px;border-radius:8px;font-size:12px;margin-top:20px;font-family:monospace">
                         <b>Debug Info:</b><br/>
                         Env: ${IS_VERCEL ? 'Vercel' : 'Local/Dev'}<br/>
-                        Path: ${safeFilePath}<br/>
-                        ${(isDev || IS_VERCEL) ? `Full Path: ${fullPath}<br/>` : ''}
-                        Directory: ${dirExists ? 'Exists' : 'MISSING'}
+                        DB Path: ${dbPath}
                     </div>
-                    <p style="font-size:13px;margin-top:20px">Pastikan file sudah terunggah ke folder <code>${IS_VERCEL ? '/tmp/uploads' : 'uploads'}/documents/</code> di server Anda.</p>
                 </body></html>`,
                 {
                     status: 404,
@@ -76,7 +60,7 @@ export async function GET(
             )
         }
 
-        const buffer = await readFile(fullPath)
+        const buffer = storageFile.content
         
         let mimeType = 'application/pdf'
         try {

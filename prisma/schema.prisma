@@ -750,3 +750,12 @@ model VerificationToken {
   @@unique([identifier, token])
   @@map("verification_tokens")
 }
+model StorageFile {
+  id         String   @id @default(uuid())
+  path       String   @unique // e.g., "documents/orgId/file.pdf"
+  content    Bytes
+  mime_type  String
+  created_at DateTime @default(now())
+
+  @@map("storage_files")
+}
