@@ -84,9 +84,8 @@ async function processDocumentInBackground(documentId: string, document: any) {
         console.error(`❌ [PROCESS] Failed to reset document status:`, resetErr)
     }
 
-    const fs = await import('fs')
-    fs.appendFileSync('ai-debug.log', `[${new Date().toISOString()}] [PROCESS-BG] STARTED for ${documentId}\n`)
     console.log(`\n🔄 [PROCESS] Starting background processing for ${documentId} (${document.file_name})`)
+    logger.info(`[PROCESS-BG] STARTED for ${documentId}`)
     try {
         await updateProcessingLog(documentId, 'processing', 'Memulai pemrosesan dokumen...', 5)
         console.log(`✅ [PROCESS] DB log updated successfully for ${documentId}`)
@@ -298,11 +297,10 @@ async function processDocumentInBackground(documentId: string, document: any) {
         sendEvent('progress', { step: 'metadata', message: msg3, progress: 30 })
         await updateProcessingLog(documentId, 'processing', msg3, 30)
 
-        const fs = await import('fs')
-        fs.appendFileSync('ai-debug.log', `[${new Date().toISOString()}] Calling getAIServiceForOrg for ${document.organization_id}\n`)
+        logger.info(`Calling getAIServiceForOrg for ${document.organization_id}`)
         const ai = await getAIServiceForOrg(document.organization_id)
         await updateProcessingLog(documentId, 'processing', `Menggunakan provider AI: ${ai.providerName} (${ai.embeddingModel})`, 35)
-        fs.appendFileSync('ai-debug.log', `[${new Date().toISOString()}] Got AI service: ${ai.providerName}\n`)
+        logger.info(`Got AI service: ${ai.providerName}`)
         console.log(`✅ [PROCESS] Got AI service: ${ai.providerName}, embedding: ${ai.embeddingModel}`)
 
         // STEP 4: Generate metadata (title, summary, tags)
