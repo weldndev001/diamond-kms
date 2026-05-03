@@ -1,0 +1,15 @@
+# =============================================================================
+# Docker ignore - exclude files not needed in container build
+# =============================================================================
+node_modules
+.next
+.git
+.env
+.env.*
+*.md
+scratch
+deploy
+ai-debug.log
+layout_dump.css
+uploads
+tsconfig.tsbuildinfo

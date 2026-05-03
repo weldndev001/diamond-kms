@@ -7,8 +7,8 @@ import { OpenAICompatService } from './providers/openai-compat'
 import { ModelsLabService } from './providers/modelslab'
 import type { AIProviderConfig, AIService } from './types'
 
-// Default Olla load balancer endpoint (self-hosted)
-const OLLA_DEFAULT = 'https://llm01.weldn.ai/olla/openai/v1'
+// Default fallback endpoint for self-hosted AI (local Ollama)
+const OLLA_DEFAULT = 'http://localhost:11434/v1'
 
 export function getAIService(config: AIProviderConfig): AIService {
     const provider = env.AI_PROVIDER || config.provider || 'managed'

@@ -1,120 +1,132 @@
-# DIAMOND Knowledge Management System (KMS)
+# 💎 DIAMOND Knowledge Management System (KMS)
 
-Welcome to **DIAMOND KMS**, a modern and comprehensive Knowledge Management System equipped with Artificial Intelligence (AI) to empower learning, knowledge sharing, and enterprise information management.
+**DIAMOND KMS** adalah sistem Knowledge Management modern berbasis AI yang mendukung pembelajaran, berbagi pengetahuan, dan manajemen informasi perusahaan.
 
-## 🚀 Features
+Diamond KMS mendukung **dua mode deployment**:
+- ☁️ **Online (Cloud)** — Deploy ke Vercel/VPS, akses dari mana saja via internet
+- 🏢 **Offline (On-Premise/LAN)** — Deploy ke server lokal kantor, akses via WiFi tanpa internet
 
-- **Knowledge Base & Content Management**
-  - Create, view, and organize documents and contents.
-  - Rich-text editing powered by [Tiptap](https://tiptap.dev/).
-  - Feature-complete management for internal knowledge and standard operating procedures (SOPs).
-  
-- **AI-Powered Capabilities**
-  - **AI Assistant:** Ask questions about company knowledge, extract insights, and summarize documents.
-  - Intelligent Semantic Search to locate information using natural language.
-  - Integrated with large language models including OpenAI and Google Generative AI (Gemini).
+> 📖 Panduan lengkap deployment tersedia di [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
-- **Employee Engagement & Training**
-  - **Quizzes:** Assess employee comprehension (Pemahaman Pegawai).
-  - **Read Trackers:** Monitor document reading compliance.
-  - **Leaderboard:** Gamify the learning experience.
+---
 
-- **Enterprise Workflows**
-  - Advanced multi-role access control (Super Admin, Group Admin, Supervisor, Maintainer).
-  - Document and Content Approvals pipeline.
-  - User and Group management tailored for Human Resources (HRD).
-  - Suggestion box for employees to contribute ideas.
+## 🚀 Fitur Utama
+
+- **Knowledge Base & Content Management** — Buat, kelola, dan organisir dokumen serta konten dengan rich-text editor (Tiptap)
+- **AI Assistant** — Tanya jawab tentang pengetahuan perusahaan, ringkasan dokumen, dan pencarian semantik
+- **Employee Engagement** — Kuis, Read Tracker, Leaderboard untuk gamifikasi pembelajaran
+- **Enterprise Workflows** — Multi-role access control, Approval pipeline, User & Group management
+- **Suggestion Box** — Karyawan bisa berkontribusi ide dan saran
 
 ---
 
 ## 🛠 Tech Stack
 
-Our application is built using the latest web technologies to ensure scalability, performance, and an exceptional user experience:
-
-- **Framework:** [Next.js 14](https://nextjs.org/) (App Router format)
-- **Language:** TypeScript
-- **Database ORM:** [Prisma](https://www.prisma.io/)
-- **Database:** PostgreSQL (Self-hosted on `db01.weldn.ai`)
-- **Authentication:** [NextAuth.js](https://next-auth.js.org/)
-- **Storage Provider:** Cloud Storage (S3-Compatible REST API)
-- **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
-- **UI Components:** [Radix UI](https://www.radix-ui.com/) & [shadcn/ui](https://ui.shadcn.com/)
-- **State Management:** [Zustand](https://zustand-demo.pmnd.rs/)
-- **Form Handling & Validation:** React Hook Form + Zod
-- **AI SDK:** Custom integrations using `@google/generative-ai` and `openai`
-
----
-
-## 📦 Getting Started
-
-### Prerequisites
-
-- Node.js (v18 or higher recommended)
-- npm, yarn, pnpm, or bun
-- A PostgreSQL Database (Local or Hosted)
-
-### Setup Instructions
-
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd diamond-kms
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Configure Environment Variables:**
-   Create a `.env` file at the root of your project based on `.env.example`. You will need variables for:
-   - Database connection (`DATABASE_URL`, `DIRECT_URL`)
-   - Storage directory (`UPLOAD_DIR`)
-   - Applicable AI API Keys (OpenAI, Gemini)
-
-4. **Initialize Database:**
-   Generate the Prisma client and run migrations (if any):
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   # Optional: run seeders if available
-   # npm run seed
-   ```
-
-5. **Start the Development Server:**
-   ```bash
-   npm run dev
-   ```
-   The application specifies port `7000`. Navigate to [http://localhost:7000](http://localhost:7000) in your browser.
+| Layer | Teknologi |
+|---|---|
+| Framework | [Next.js 14](https://nextjs.org/) (App Router) |
+| Language | TypeScript |
+| Database | PostgreSQL + [pgvector](https://github.com/pgvector/pgvector) |
+| ORM | [Prisma](https://www.prisma.io/) |
+| Auth | [NextAuth.js](https://next-auth.js.org/) |
+| Styling | [Tailwind CSS v4](https://tailwindcss.com/) |
+| UI | [Radix UI](https://www.radix-ui.com/) + [shadcn/ui](https://ui.shadcn.com/) |
+| State | [Zustand](https://zustand-demo.pmnd.rs/) |
+| AI | Gemini API / Ollama (Self-hosted) |
+| Form | React Hook Form + Zod |
 
 ---
 
-## 📜 Development Scripts
+## ⚡ Quick Start (Development)
 
-- `npm run dev`: Starts the Next.js development server on port 7000.
-- `npm run build`: Compiles the application for production deployment.
-- `npm run start`: Runs the production server on port 7000.
-- `npm run lint`: Runs ESLint to find and fix styling/syntax issues.
-- `npm run postinstall`: Automatically generates the Prisma client.
+```bash
+# 1. Clone repository
+git clone <repository-url>
+cd diamond-kms
+
+# 2. Install dependencies
+npm install
+
+# 3. Siapkan file .env (salin dari contoh dan sesuaikan)
+cp .env.example .env
+
+# 4. Setup database
+npx prisma generate
+npx prisma db push
+npx prisma db seed    # (opsional: data contoh)
+
+# 5. Jalankan
+npm run dev
+```
+
+Buka [http://localhost:7000](http://localhost:7000)
 
 ---
 
-## 🔒 Security & Access
+## 📦 Mode Deployment
 
-Authentication is securely managed through **NextAuth.js** using Credentials Provider with bcrypt encryption, combined with robust role-based routing natively integrated into the Next.js App Router (Middleware checks).
+Diamond KMS mendukung 2 mode deployment dari **1 codebase yang sama**. Perbedaannya hanya pada konfigurasi file `.env`:
 
-### Defined System Roles:
-- **SUPER_ADMIN**: Full system access, configuration, and HR/Billing management.
-- **MAINTAINER**: Access to system overviews, error logs, and AI service provider configurations.
-- **GROUP_ADMIN**: Can manage users, track document readings, and oversee approvals inside a group.
-- **SUPERVISOR**: Can monitor team progress and reading trackers.
-- *(Standard Users)*: Access to knowledge bases, quizzes, and the AI Assistant.
+| | ☁️ Online (Cloud) | 🏢 Offline (LAN) |
+|---|---|---|
+| **Hosting** | Vercel / VPS / Cloud | Server lokal di kantor |
+| **Database** | PostgreSQL Cloud (Supabase/Neon/RDS) | PostgreSQL lokal (Docker) |
+| **AI** | Gemini API / Self-hosted server | Ollama lokal (Docker) |
+| **File Storage** | Cloud atau Server Storage | Hard disk server lokal |
+| **Akses** | Via internet dari mana saja | Via WiFi/LAN kantor saja |
+| **Internet** | Dibutuhkan selalu | Hanya saat setup awal |
+
+> 📖 **Panduan lengkap**: Lihat [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) untuk instruksi detail kedua mode.
 
 ---
 
-## 💎 Design Guidelines
+## 📜 Scripts
 
-Always maintain consistency with the defined design rules and spacing defined in `tailwind.config` / `postcss-variables`, ensuring a premium and modern UI utilizing subtle borders, glassmorphic touches, and smooth transitions.
+| Perintah | Fungsi |
+|---|---|
+| `npm run dev` | Development server (port 7000) |
+| `npm run build` | Build production |
+| `npm run start` | Jalankan production server |
+| `npm run lint` | Cek linting |
+
+---
+
+## 🔒 Roles & Security
+
+Authentication menggunakan **NextAuth.js** dengan Credentials Provider + bcrypt.
+
+| Role | Akses |
+|---|---|
+| `MAINTAINER` | System overview, error logs, AI config |
+| `SUPER_ADMIN` | Full access, HR, Billing, semua fitur |
+| `GROUP_ADMIN` | Kelola user & approval dalam group |
+| `SUPERVISOR` | Monitor progress tim |
+| `STAFF` | Akses knowledge base, kuis, AI Assistant |
+
+---
+
+## 📁 Struktur Penting
+
+```
+diamond-kms/
+├── app/                    # Next.js App Router (pages & API)
+├── components/             # Komponen UI
+├── hooks/                  # Custom React hooks
+├── lib/                    # Business logic, AI service, Prisma
+│   ├── actions/            # Server Actions
+│   ├── ai/                 # AI Provider factory & services
+│   └── env.ts              # Environment variables config
+├── prisma/                 # Database schema & migrations
+├── deploy/                 # File deployment offline
+│   ├── PANDUAN_OFFLINE.md  # Panduan setup offline (detail)
+│   ├── setup-offline.sh    # Script setup Linux/macOS
+│   ├── setup-offline.bat   # Script setup Windows
+│   └── init-db.sql         # Init ekstensi PostgreSQL
+├── docker-compose.offline.yml  # Docker Compose untuk offline
+├── Dockerfile              # Build image Next.js
+├── .env.offline.example    # Template .env untuk offline
+└── docs/DEPLOYMENT.md      # Panduan deployment lengkap
+```
 
 ---
 

@@ -1,0 +1,126 @@
+# =============================================================================
+# Diamond KMS - Offline / On-Premise (LAN) Deployment
+# =============================================================================
+# Menjalankan seluruh stack di jaringan lokal tanpa koneksi internet.
+#
+# Cara Pakai:
+#   1. Pastikan Docker Desktop sudah terinstall
+#   2. Copy file .env.offline.example menjadi .env
+#   3. Jalankan: docker compose -f docker-compose.offline.yml up -d
+#   4. Setelah semua container running, jalankan setup database:
+#      docker compose -f docker-compose.offline.yml exec app npx prisma db push
+#      docker compose -f docker-compose.offline.yml exec app npx prisma db seed
+#   5. Akses aplikasi di http://localhost:7000 (atau http://<IP-Server>:7000)
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # 1. PostgreSQL Database (dengan pgvector untuk AI Embeddings)
+  # ---------------------------------------------------------------------------
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: dkms-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-diamondkms}
+      POSTGRES_USER: ${POSTGRES_USER:-diamondkms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-DiamondKMS2026!}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - dkms_pgdata:/var/lib/postgresql/data
+      - ./deploy/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-diamondkms} -d ${POSTGRES_DB:-diamondkms}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # 2. Ollama - Server AI Lokal (untuk Chat, Embedding, Reranking)
+  # ---------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: dkms-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - dkms_ollama:/root/.ollama
+    # Jika punya GPU NVIDIA, uncomment baris di bawah ini:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # 3. Diamond KMS Application (Next.js)
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dkms-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-7000}:7000"
+    environment:
+      # Database
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-diamondkms}:${POSTGRES_PASSWORD:-DiamondKMS2026!}@db:5432/${POSTGRES_DB:-diamondkms}"
+      DIRECT_URL: "postgresql://${POSTGRES_USER:-diamondkms}:${POSTGRES_PASSWORD:-DiamondKMS2026!}@db:5432/${POSTGRES_DB:-diamondkms}"
+      # Storage
+      UPLOAD_DIR: "/app/uploads"
+      # AI - Ollama Lokal
+      AI_PROVIDER: "self_hosted"
+      AI_ENDPOINT: "http://ollama:11434/v1"
+      AI_API_KEY: "ollama-local"
+      AI_CHAT_MODEL: "${AI_CHAT_MODEL:-gemma3:4b}"
+      AI_EMBED_MODEL: "${AI_EMBED_MODEL:-nomic-embed-text}"
+      AI_RERANK_MODEL: "${AI_RERANK_MODEL:-}"
+      AI_VISION_EMBED_MODEL: "${AI_VISION_EMBED_MODEL:-}"
+      AI_HYBRID_EMBED: "false"
+      AI_HYBRID_VISION: "false"
+      AI_TEMPERATURE: "${AI_TEMPERATURE:-0.7}"
+      AI_SIMILARITY_THRESHOLD: "${AI_SIMILARITY_THRESHOLD:-0.40}"
+      AI_TOP_P: "${AI_TOP_P:-0.9}"
+      AI_TOP_K: "${AI_TOP_K:-40}"
+      AI_REPETITION_PENALTY: "${AI_REPETITION_PENALTY:-1.15}"
+      AI_MAX_TOKENS: "${AI_MAX_TOKENS:-2048}"
+      AI_EMBEDDING_DIMENSIONS: "${AI_EMBEDDING_DIMENSIONS:-768}"
+      # Security
+      NEXTAUTH_URL: "http://localhost:${APP_PORT:-7000}"
+      NEXTAUTH_SECRET: "${NEXTAUTH_SECRET:-diamond-kms-offline-secret-change-me}"
+      NEXT_PUBLIC_APP_URL: "http://localhost:${APP_PORT:-7000}"
+      CRON_SECRET: "${CRON_SECRET:-diamond-kms-cron-secret}"
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY:-diamond-kms-encryption-key-32chr}"
+      # Monitoring (disabled for offline)
+      MONITORING_CENTER_URL: ""
+      INSTANCE_KEY: "${INSTANCE_KEY:-DKMS-OFFLINE-001}"
+      INSTANCE_NAME: "${INSTANCE_NAME:-Diamond KMS Offline}"
+      # License
+      ACTIVATION_MODE: "offline"
+      LICENSE_SECRET: "${LICENSE_SECRET:-diamond-kms-shared-secret-2026}"
+      LICENSE_KEY: "${LICENSE_KEY:-}"
+    volumes:
+      - dkms_uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+
+volumes:
+  dkms_pgdata:
+    driver: local
+  dkms_ollama:
+    driver: local
+  dkms_uploads:
+    driver: local
